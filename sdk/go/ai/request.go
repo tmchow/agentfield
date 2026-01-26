@@ -1,8 +1,10 @@
 package ai
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 )
 
@@ -35,6 +37,9 @@ type Request struct {
 
 	// Response format for structured outputs
 	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
+
+	Images []Image `json:"images,omitempty"`
+	Audios []Audio `json:"audios,omitempty"`
 }
 
 // ResponseFormat specifies the desired output format.
@@ -149,6 +154,87 @@ func WithSchema(schema interface{}) Option {
 				Schema: schemaBytes,
 			},
 		}
+		return nil
+	}
+}
+
+// Image options
+func WithImageFile(path string) Option {
+	return func(r *Request) error {
+		// Read the file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read image file: %w", err)
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(data)
+
+		r.Images = append(r.Images, Image{
+			Data:     encoded,
+			MIMEType: detectMIMEType(path),
+		})
+		return nil
+	}
+}
+
+func WithImageURL(url string) Option {
+	return func(r *Request) error {
+		r.Images = append(r.Images, Image{
+			URL: url,
+		})
+		return nil
+	}
+}
+
+func WithImageBytes(data []byte, mimeType string) Option {
+	return func(r *Request) error {
+		encoded := base64.StdEncoding.EncodeToString(data)
+
+		r.Images = append(r.Images, Image{
+			Data:     encoded,
+			MIMEType: mimeType,
+		})
+
+		return nil
+	}
+}
+
+// Audio options
+func WithAudioFile(path string) Option {
+	return func(r *Request) error {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read audio file: %w", err)
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(data)
+		r.Audios = append(r.Audios, Audio{
+			Data:   encoded,
+			Format: detectAudioFormat(path),
+		})
+
+		return nil
+	}
+}
+
+func WithAudioURL(url string) Option {
+	return func(r *Request) error {
+		r.Audios = append(r.Audios, Audio{
+			URL: url,
+		})
+		return nil
+	}
+}
+
+func WithAudioBytes(data []byte, format string) Option {
+	return func(r *Request) error {
+		encoded := base64.StdEncoding.EncodeToString(data)
+
+		r.Audios = append(r.Audios, Audio{
+			Data:   encoded,
+			Format: format,
+		})
+
 		return nil
 	}
 }

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 
@@ -141,6 +142,168 @@ func TestWithSchema_InvalidType(t *testing.T) {
 	// Passing an int should fail
 	err := WithSchema(42)(req)
 	assert.Error(t, err)
+}
+
+func TestWithImageFile(t *testing.T) {
+	// Create a temporary image file for testing
+	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	// Write dummy data to the file
+	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
+	assert.NoError(t, err)
+	tempFile.Close()
+
+	req := &Request{}
+	err = WithImageFile(tempFile.Name())(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Images, 1)
+	assert.NotEmpty(t, req.Images[0].Data)
+	assert.Equal(t, "image/jpeg", req.Images[0].MIMEType)
+}
+
+func TestWithImageURL(t *testing.T) {
+	req := &Request{}
+	testURL := "https://example.com/image.jpg"
+
+	err := WithImageURL(testURL)(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Images, 1)
+	assert.Equal(t, testURL, req.Images[0].URL)
+	assert.Empty(t, req.Images[0].Data)
+	assert.Empty(t, req.Images[0].MIMEType)
+}
+
+func TestWithImageBytes(t *testing.T) {
+	req := &Request{}
+	testBytes := []byte{0xFF, 0xD8, 0xFF}
+	testMIMEType := "image/jpeg"
+
+	err := WithImageBytes(testBytes, testMIMEType)(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Images, 1)
+	assert.NotEmpty(t, req.Images[0].Data)
+	assert.Equal(t, testMIMEType, req.Images[0].MIMEType)
+}
+
+func TestWithImageFile_Error(t *testing.T) {
+	req := &Request{}
+
+	err := WithImageFile("non_existent_file.jpg")(req)
+
+	assert.Error(t, err)
+	assert.Len(t, req.Images, 0)
+}
+
+func TestWithImageBytes_EmptyInput(t *testing.T) {
+	req := &Request{}
+
+	err := WithImageBytes(nil, "")(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Images, 0)
+}
+
+func TestMultipleImages(t *testing.T) {
+	req := &Request{}
+
+	err := WithImageURL("https://example.com/image1.jpg")(req)
+	assert.NoError(t, err)
+
+	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
+	assert.NoError(t, err)
+	tempFile.Close()
+
+	err = WithImageFile(tempFile.Name())(req)
+	assert.NoError(t, err)
+
+	testBytes := []byte{0x89, 0x50, 0x4E, 0x47}
+	err = WithImageBytes(testBytes, "image/png")(req)
+	assert.NoError(t, err)
+
+	assert.Len(t, req.Images, 3)
+	assert.Equal(t, "https://example.com/image1.jpg", req.Images[0].URL)
+	assert.NotEmpty(t, req.Images[1].Data)
+	assert.Equal(t, "image/jpeg", req.Images[1].MIMEType)
+	assert.NotEmpty(t, req.Images[2].Data)
+	assert.Equal(t, "image/png", req.Images[2].MIMEType)
+}
+
+func TestWithAudioFile(t *testing.T) {
+	// Create a temporary audio file for testing
+	tempFile, err := os.CreateTemp("", "test_audio_*.mp3")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	// Write dummy data to the file
+	_, err = tempFile.Write([]byte{0x01, 0x02, 0x03})
+	if err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
+	tempFile.Close()
+
+	req := &Request{}
+	err = WithAudioFile(tempFile.Name())(req)
+	if err != nil {
+		t.Fatalf("WithAudioFile failed: %v", err)
+	}
+
+	assert.Len(t, req.Audios, 1)
+	assert.NotEmpty(t, req.Audios[0].Data)
+	assert.Equal(t, "mp3", req.Audios[0].Format)
+}
+
+func TestWithAudioURL(t *testing.T) {
+	req := &Request{}
+	testURL := "https://example.com/audio.mp3"
+
+	err := WithAudioURL(testURL)(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Audios, 1)
+	assert.Equal(t, testURL, req.Audios[0].URL)
+	assert.Empty(t, req.Audios[0].Data)
+	assert.Empty(t, req.Audios[0].Format)
+}
+
+func TestWithAudioBytes(t *testing.T) {
+	req := &Request{}
+	testBytes := []byte{0x01, 0x02, 0x03}
+	testFormat := "mp3"
+
+	err := WithAudioBytes(testBytes, testFormat)(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Audios, 1)
+	assert.NotEmpty(t, req.Audios[0].Data)
+	assert.Equal(t, testFormat, req.Audios[0].Format)
+}
+
+func TestWithAudioFile_Error(t *testing.T) {
+	req := &Request{}
+
+	err := WithAudioFile("non_existent_file.mp3")(req)
+
+	assert.Error(t, err)
+	assert.Len(t, req.Audios, 0)
+}
+
+func TestWithAudioBytes_EmptyInput(t *testing.T) {
+	req := &Request{}
+
+	err := WithAudioBytes(nil, "")(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Audios, 0)
 }
 
 func TestStructToJSONSchema(t *testing.T) {
