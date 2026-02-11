@@ -19,8 +19,10 @@ func TestResponse_Text(t *testing.T) {
 				Choices: []Choice{
 					{
 						Message: Message{
-							Role:    "assistant",
-							Content: "Hello, world!",
+							Role: "assistant",
+							Content: []ContentPart{
+								{Type: "text", Text: "Hello, world!"},
+							},
 						},
 					},
 				},
@@ -47,12 +49,16 @@ func TestResponse_Text(t *testing.T) {
 				Choices: []Choice{
 					{
 						Message: Message{
-							Content: "First",
+							Content: []ContentPart{
+								{Type: "text", Text: "First"},
+							},
 						},
 					},
 					{
 						Message: Message{
-							Content: "Second",
+							Content: []ContentPart{
+								{Type: "text", Text: "Second"},
+							},
 						},
 					},
 				},
@@ -83,7 +89,9 @@ func TestResponse_JSON(t *testing.T) {
 				Choices: []Choice{
 					{
 						Message: Message{
-							Content: `{"name":"John","age":30}`,
+							Content: []ContentPart{
+								{Type: "text", Text: `{"name":"John","age":30}`},
+							},
 						},
 					},
 				},
@@ -108,7 +116,9 @@ func TestResponse_JSON(t *testing.T) {
 				Choices: []Choice{
 					{
 						Message: Message{
-							Content: "",
+							Content: []ContentPart{
+								{Type: "text", Text: ""},
+							},
 						},
 					},
 				},
@@ -122,7 +132,9 @@ func TestResponse_JSON(t *testing.T) {
 				Choices: []Choice{
 					{
 						Message: Message{
-							Content: "not json",
+							Content: []ContentPart{
+								{Type: "text", Text: "not json"},
+							},
 						},
 					},
 				},
@@ -160,7 +172,9 @@ func TestResponse_Into(t *testing.T) {
 		Choices: []Choice{
 			{
 				Message: Message{
-					Content: `{"value":42}`,
+					Content: []ContentPart{
+						{Type: "text", Text: `{"value":42}`},
+					},
 				},
 			},
 		},
@@ -258,8 +272,10 @@ func TestResponse_MarshalUnmarshal(t *testing.T) {
 			{
 				Index: 0,
 				Message: Message{
-					Role:    "assistant",
-					Content: "Hello!",
+					Role: "assistant",
+					Content: []ContentPart{
+						{Type: "text", Text: "Hello"},
+					},
 				},
 				FinishReason: "stop",
 			},

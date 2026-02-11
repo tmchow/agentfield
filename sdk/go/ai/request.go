@@ -9,10 +9,6 @@ import (
 )
 
 // Message represents a chat message.
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
 
 // Request represents an AI completion request.
 type Request struct {
@@ -37,9 +33,44 @@ type Request struct {
 
 	// Response format for structured outputs
 	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
+}
 
-	Images []Image `json:"images,omitempty"`
-	Audios []Audio `json:"audios,omitempty"`
+type Message struct {
+	Role    string        `json:"role"`
+	Content []ContentPart `json:"content"`
+}
+
+type ContentPart struct {
+	Type     string     `json:"type"` // "text" or "image_url"
+	Text     string     `json:"text,omitempty"`
+	ImageURL *ImageData `json:"image_url,omitempty"`
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	type Alias Message
+	aux := &struct {
+		Content json.RawMessage `json:"content"`
+		*Alias
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	var s string
+	if err := json.Unmarshal(aux.Content, &s); err == nil {
+		m.Content = []ContentPart{{Type: "text", Text: s}}
+		return nil
+	}
+
+	var arr []ContentPart
+	if err := json.Unmarshal(aux.Content, &arr); err != nil {
+		return err
+	}
+	m.Content = arr
+	return nil
 }
 
 // ResponseFormat specifies the desired output format.
@@ -61,7 +92,14 @@ type Option func(*Request) error
 // WithSystem adds a system message to the request.
 func WithSystem(content string) Option {
 	return func(r *Request) error {
-		r.Messages = append([]Message{{Role: "system", Content: content}}, r.Messages...)
+		r.Messages = append([]Message{
+			{
+				Role: "system",
+				Content: []ContentPart{
+					{Type: "text", Text: content},
+				},
+			},
+		}, r.Messages...)
 		return nil
 	}
 }
@@ -161,26 +199,49 @@ func WithSchema(schema interface{}) Option {
 // Image options
 func WithImageFile(path string) Option {
 	return func(r *Request) error {
-		// Read the file
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("read image file: %w", err)
 		}
 
+		mimeType := detectMIMEType(path)
 		encoded := base64.StdEncoding.EncodeToString(data)
 
-		r.Images = append(r.Images, Image{
-			Data:     encoded,
-			MIMEType: detectMIMEType(path),
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
+		}
+
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageData{
+				URL:    "data:" + mimeType + ";base64," + encoded,
+				Detail: "auto",
+			},
 		})
+
 		return nil
 	}
 }
 
 func WithImageURL(url string) Option {
 	return func(r *Request) error {
-		r.Images = append(r.Images, Image{
-			URL: url,
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
+		}
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageData{
+				URL:    url,
+				Detail: "auto",
+			},
 		})
 		return nil
 	}
@@ -191,56 +252,22 @@ func WithImageBytes(data []byte, mimeType string) Option {
 		if len(data) == 0 {
 			return nil
 		}
-
 		encoded := base64.StdEncoding.EncodeToString(data)
 
-		r.Images = append(r.Images, Image{
-			Data:     encoded,
-			MIMEType: mimeType,
-		})
-
-		return nil
-	}
-}
-
-// Audio options
-func WithAudioFile(path string) Option {
-	return func(r *Request) error {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read audio file: %w", err)
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
 		}
 
-		encoded := base64.StdEncoding.EncodeToString(data)
-		r.Audios = append(r.Audios, Audio{
-			Data:   encoded,
-			Format: detectAudioFormat(path),
-		})
-
-		return nil
-	}
-}
-
-func WithAudioURL(url string) Option {
-	return func(r *Request) error {
-		r.Audios = append(r.Audios, Audio{
-			URL: url,
-		})
-		return nil
-	}
-}
-
-func WithAudioBytes(data []byte, format string) Option {
-	return func(r *Request) error {
-		if len(data) == 0 {
-			return nil
-		}
-
-		encoded := base64.StdEncoding.EncodeToString(data)
-
-		r.Audios = append(r.Audios, Audio{
-			Data:   encoded,
-			Format: format,
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageData{
+				URL:    "data:" + mimeType + ";base64," + encoded,
+				Detail: "auto",
+			},
 		})
 
 		return nil

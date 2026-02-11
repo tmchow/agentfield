@@ -12,16 +12,30 @@ import (
 func TestWithSystem(t *testing.T) {
 	req := &Request{
 		Messages: []Message{
-			{Role: "user", Content: "Hello"},
+			{
+				Role: "user",
+				Content: []ContentPart{
+					{Type: "text", Text: "Hello"},
+				},
+			},
 		},
 	}
 
 	err := WithSystem("You are a helpful assistant")(req)
 	assert.NoError(t, err)
 	assert.Len(t, req.Messages, 2)
-	assert.Equal(t, "system", req.Messages[0].Role)
-	assert.Equal(t, "You are a helpful assistant", req.Messages[0].Content)
-	assert.Equal(t, "user", req.Messages[1].Role)
+
+	systemMsg := req.Messages[0]
+	assert.Equal(t, "system", systemMsg.Role)
+	assert.Len(t, systemMsg.Content, 1)
+	assert.Equal(t, "text", systemMsg.Content[0].Type)
+	assert.Equal(t, "You are a helpful assistant", systemMsg.Content[0].Text)
+
+	userMsg := req.Messages[1]
+	assert.Equal(t, "user", userMsg.Role)
+	assert.Len(t, userMsg.Content, 1)
+	assert.Equal(t, "text", userMsg.Content[0].Type)
+	assert.Equal(t, "Hello", userMsg.Content[0].Text)
 }
 
 func TestWithModel(t *testing.T) {
@@ -145,12 +159,10 @@ func TestWithSchema_InvalidType(t *testing.T) {
 }
 
 func TestWithImageFile(t *testing.T) {
-	// Create a temporary image file for testing
 	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
 	assert.NoError(t, err)
 	defer os.Remove(tempFile.Name())
 
-	// Write dummy data to the file
 	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
 	assert.NoError(t, err)
 	tempFile.Close()
@@ -159,9 +171,14 @@ func TestWithImageFile(t *testing.T) {
 	err = WithImageFile(tempFile.Name())(req)
 
 	assert.NoError(t, err)
-	assert.Len(t, req.Images, 1)
-	assert.NotEmpty(t, req.Images[0].Data)
-	assert.Equal(t, "image/jpeg", req.Images[0].MIMEType)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Contains(t, part.ImageURL.URL, "data:image/jpeg;base64,")
 }
 
 func TestWithImageURL(t *testing.T) {
@@ -171,10 +188,14 @@ func TestWithImageURL(t *testing.T) {
 	err := WithImageURL(testURL)(req)
 
 	assert.NoError(t, err)
-	assert.Len(t, req.Images, 1)
-	assert.Equal(t, testURL, req.Images[0].URL)
-	assert.Empty(t, req.Images[0].Data)
-	assert.Empty(t, req.Images[0].MIMEType)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Equal(t, testURL, part.ImageURL.URL)
 }
 
 func TestWithImageBytes(t *testing.T) {
@@ -185,9 +206,14 @@ func TestWithImageBytes(t *testing.T) {
 	err := WithImageBytes(testBytes, testMIMEType)(req)
 
 	assert.NoError(t, err)
-	assert.Len(t, req.Images, 1)
-	assert.NotEmpty(t, req.Images[0].Data)
-	assert.Equal(t, testMIMEType, req.Images[0].MIMEType)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Contains(t, part.ImageURL.URL, "data:image/jpeg;base64,")
 }
 
 func TestWithImageFile_Error(t *testing.T) {
@@ -196,7 +222,7 @@ func TestWithImageFile_Error(t *testing.T) {
 	err := WithImageFile("non_existent_file.jpg")(req)
 
 	assert.Error(t, err)
-	assert.Len(t, req.Images, 0)
+	assert.Len(t, req.Messages, 0)
 }
 
 func TestWithImageBytes_EmptyInput(t *testing.T) {
@@ -205,18 +231,26 @@ func TestWithImageBytes_EmptyInput(t *testing.T) {
 	err := WithImageBytes(nil, "")(req)
 
 	assert.NoError(t, err)
-	assert.Len(t, req.Images, 0)
+	assert.Len(t, req.Messages, 0)
 }
 
 func TestMultipleImages(t *testing.T) {
 	req := &Request{}
 
+	req.Messages = append(req.Messages, Message{
+		Role:    "user",
+		Content: []ContentPart{},
+	})
+
+	// Image via URL
 	err := WithImageURL("https://example.com/image1.jpg")(req)
 	assert.NoError(t, err)
 
+	// Image via file
 	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
 	assert.NoError(t, err)
 	defer os.Remove(tempFile.Name())
+
 	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
 	assert.NoError(t, err)
 	tempFile.Close()
@@ -228,82 +262,23 @@ func TestMultipleImages(t *testing.T) {
 	err = WithImageBytes(testBytes, "image/png")(req)
 	assert.NoError(t, err)
 
-	assert.Len(t, req.Images, 3)
-	assert.Equal(t, "https://example.com/image1.jpg", req.Images[0].URL)
-	assert.NotEmpty(t, req.Images[1].Data)
-	assert.Equal(t, "image/jpeg", req.Images[1].MIMEType)
-	assert.NotEmpty(t, req.Images[2].Data)
-	assert.Equal(t, "image/png", req.Images[2].MIMEType)
-}
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 3)
 
-func TestWithAudioFile(t *testing.T) {
-	// Create a temporary audio file for testing
-	tempFile, err := os.CreateTemp("", "test_audio_*.mp3")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer os.Remove(tempFile.Name())
+	part1 := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part1.Type)
+	assert.NotNil(t, part1.ImageURL)
+	assert.Equal(t, "https://example.com/image1.jpg", part1.ImageURL.URL)
 
-	// Write dummy data to the file
-	_, err = tempFile.Write([]byte{0x01, 0x02, 0x03})
-	if err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-	tempFile.Close()
+	part2 := req.Messages[0].Content[1]
+	assert.Equal(t, "image_url", part2.Type)
+	assert.NotNil(t, part2.ImageURL)
+	assert.Contains(t, part2.ImageURL.URL, "data:image/jpeg;base64,")
 
-	req := &Request{}
-	err = WithAudioFile(tempFile.Name())(req)
-	if err != nil {
-		t.Fatalf("WithAudioFile failed: %v", err)
-	}
-
-	assert.Len(t, req.Audios, 1)
-	assert.NotEmpty(t, req.Audios[0].Data)
-	assert.Equal(t, "mp3", req.Audios[0].Format)
-}
-
-func TestWithAudioURL(t *testing.T) {
-	req := &Request{}
-	testURL := "https://example.com/audio.mp3"
-
-	err := WithAudioURL(testURL)(req)
-
-	assert.NoError(t, err)
-	assert.Len(t, req.Audios, 1)
-	assert.Equal(t, testURL, req.Audios[0].URL)
-	assert.Empty(t, req.Audios[0].Data)
-	assert.Empty(t, req.Audios[0].Format)
-}
-
-func TestWithAudioBytes(t *testing.T) {
-	req := &Request{}
-	testBytes := []byte{0x01, 0x02, 0x03}
-	testFormat := "mp3"
-
-	err := WithAudioBytes(testBytes, testFormat)(req)
-
-	assert.NoError(t, err)
-	assert.Len(t, req.Audios, 1)
-	assert.NotEmpty(t, req.Audios[0].Data)
-	assert.Equal(t, testFormat, req.Audios[0].Format)
-}
-
-func TestWithAudioFile_Error(t *testing.T) {
-	req := &Request{}
-
-	err := WithAudioFile("non_existent_file.mp3")(req)
-
-	assert.Error(t, err)
-	assert.Len(t, req.Audios, 0)
-}
-
-func TestWithAudioBytes_EmptyInput(t *testing.T) {
-	req := &Request{}
-
-	err := WithAudioBytes(nil, "")(req)
-
-	assert.NoError(t, err)
-	assert.Len(t, req.Audios, 0)
+	part3 := req.Messages[0].Content[2]
+	assert.Equal(t, "image_url", part3.Type)
+	assert.NotNil(t, part3.ImageURL)
+	assert.Contains(t, part3.ImageURL.URL, "data:image/png;base64,")
 }
 
 func TestStructToJSONSchema(t *testing.T) {
@@ -412,7 +387,12 @@ func TestGoTypeToJSONType_WithPointer(t *testing.T) {
 func TestMultipleOptions(t *testing.T) {
 	req := &Request{
 		Messages: []Message{
-			{Role: "user", Content: "Hello"},
+			{
+				Role: "user",
+				Content: []ContentPart{
+					{Type: "text", Text: "Hello"},
+				},
+			},
 		},
 	}
 

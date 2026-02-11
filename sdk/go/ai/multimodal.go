@@ -2,16 +2,9 @@ package ai
 
 import "strings"
 
-type Image struct {
-	URL      string `json:"url,omitempty"`
-	Data     string `json:"data,omitempty"`
-	MIMEType string `json:"mime_type,omitempty"`
-}
-
-type Audio struct {
-	URL    string `json:"url,omitempty"`
-	Data   string `json:"data,omitempty"`
-	Format string `json:"format,omitempty"`
+type ImageData struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
 }
 
 func detectMIMEType(path string) string {
@@ -26,22 +19,5 @@ func detectMIMEType(path string) string {
 		return "image/webp"
 	default:
 		return "application/octet-stream"
-	}
-}
-
-func detectAudioFormat(path string) string {
-	switch {
-	case strings.HasSuffix(path, ".mp3"):
-		return "mp3"
-	case strings.HasSuffix(path, ".wav"):
-		return "wav"
-	case strings.HasSuffix(path, ".ogg"):
-		return "ogg"
-	case strings.HasSuffix(path, ".m4a"):
-		return "m4a"
-	case strings.HasSuffix(path, ".flac"):
-		return "flac"
-	default:
-		return "unknown"
 	}
 }
