@@ -302,6 +302,7 @@ class AgentFieldHandler:
                 status=self.agent._current_status,
                 mcp_servers=mcp_servers,
                 timestamp=datetime.now().isoformat(),
+                version=getattr(self.agent, 'version', '') or '',
             )
 
             # Send enhanced heartbeat

@@ -62,7 +62,7 @@ async function validateRegistration() {
   console.log('\n--- Validating multi-version registration ---\n');
 
   // List all nodes and check that both versions are registered
-  const nodesRes = await fetch(`${CP_URL}/api/v1/nodes`);
+  const nodesRes = await fetch(`${CP_URL}/api/v1/nodes?show_all=true`);
   if (!nodesRes.ok) {
     console.error(`Failed to list nodes: ${nodesRes.status} ${nodesRes.statusText}`);
     return;
@@ -80,7 +80,7 @@ async function validateRegistration() {
   console.log('\n[Execute] Sending requests to mv-demo.echo:');
   for (let i = 0; i < 4; i++) {
     try {
-      const res = await fetch(`${CP_URL}/api/v1/agent/execute/${AGENT_ID}.echo`, {
+      const res = await fetch(`${CP_URL}/api/v1/execute/${AGENT_ID}.echo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: { message: `request-${i}` } }),

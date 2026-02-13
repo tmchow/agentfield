@@ -66,6 +66,7 @@ type NodeRegistrationResponse struct {
 // NodeStatusUpdate is used for lease renewals.
 type NodeStatusUpdate struct {
 	Phase       string `json:"phase"`
+	Version     string `json:"version,omitempty"`
 	HealthScore *int   `json:"health_score,omitempty"`
 }
 
@@ -90,6 +91,7 @@ type ActionAckRequest struct {
 // ShutdownRequest notifies the control plane that the node is draining.
 type ShutdownRequest struct {
 	Reason          string `json:"reason,omitempty"`
+	Version         string `json:"version,omitempty"`
 	ExpectedRestart string `json:"expected_restart,omitempty"`
 }
 

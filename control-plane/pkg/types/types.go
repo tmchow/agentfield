@@ -332,6 +332,7 @@ type AgentStatusUpdate struct {
 	MCPStatus       *MCPStatusInfo        `json:"mcp_status,omitempty"`
 	Source          StatusSource          `json:"source"`
 	Reason          string                `json:"reason,omitempty"`
+	Version         string                `json:"version,omitempty"`
 }
 
 // Helper methods for AgentStatus

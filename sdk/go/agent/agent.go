@@ -708,6 +708,7 @@ func (a *Agent) markReady(ctx context.Context) error {
 	score := 100
 	_, err := a.client.UpdateStatus(ctx, a.cfg.NodeID, types.NodeStatusUpdate{
 		Phase:       "ready",
+		Version:     a.cfg.Version,
 		HealthScore: &score,
 	})
 	return err
@@ -1664,7 +1665,7 @@ func (a *Agent) startLeaseLoop() {
 func (a *Agent) shutdown(ctx context.Context) error {
 	close(a.stopLease)
 
-	if _, err := a.client.Shutdown(ctx, a.cfg.NodeID, types.ShutdownRequest{Reason: "shutdown"}); err != nil {
+	if _, err := a.client.Shutdown(ctx, a.cfg.NodeID, types.ShutdownRequest{Reason: "shutdown", Version: a.cfg.Version}); err != nil {
 		a.logger.Printf("failed to notify shutdown: %v", err)
 	}
 

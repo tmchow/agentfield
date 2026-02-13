@@ -298,14 +298,23 @@ func (sm *StatusManager) GetAgentStatusSnapshot(ctx context.Context, nodeID stri
 
 // UpdateAgentStatus updates the agent status with reconciliation
 func (sm *StatusManager) UpdateAgentStatus(ctx context.Context, nodeID string, update *types.AgentStatusUpdate) error {
+	// Resolve the agent node, supporting multi-version agents via the
+	// composite primary key (id, version). GetAgent only returns
+	// version="" rows; fall back to GetAgentVersion when a version is
+	// provided in the update.
+	resolvedAgent, resolveErr := sm.storage.GetAgent(ctx, nodeID)
+	if (resolveErr != nil || resolvedAgent == nil) && update.Version != "" {
+		resolvedAgent, resolveErr = sm.storage.GetAgentVersion(ctx, nodeID, update.Version)
+	}
+
 	// Protect pending_approval from non-admin updates. The tag approval service
 	// transitions agents out of pending_approval by modifying storage directly
 	// (not through UpdateAgentStatus). Therefore ALL updates flowing through this
 	// method must be blocked when the agent is pending_approval, to prevent
 	// heartbeats, health checks, lease renewals, and transition timeouts from
 	// overriding the admin-controlled state.
-	if agent, agentErr := sm.storage.GetAgent(ctx, nodeID); agentErr == nil && agent != nil {
-		if agent.LifecycleStatus == types.AgentStatusPendingApproval {
+	if resolveErr == nil && resolvedAgent != nil {
+		if resolvedAgent.LifecycleStatus == types.AgentStatusPendingApproval {
 			// Allow health score cache updates, but not lifecycle/state changes
 			if update.HealthScore != nil {
 				sm.cacheMutex.Lock()
@@ -322,7 +331,7 @@ func (sm *StatusManager) UpdateAgentStatus(ctx context.Context, nodeID string, u
 	// for event broadcasting. Using GetAgentStatus here would perform a live health check,
 	// which could return the same state as the update, causing oldStatus == newStatus
 	// and preventing status change events from being broadcast.
-	currentStatus, err := sm.GetAgentStatusSnapshot(ctx, nodeID, nil)
+	currentStatus, err := sm.GetAgentStatusSnapshot(ctx, nodeID, resolvedAgent)
 	if err != nil {
 		return fmt.Errorf("failed to get current status: %w", err)
 	}
@@ -615,10 +624,18 @@ func (sm *StatusManager) notifyStatusChanged(nodeID string, oldStatus, newStatus
 
 // broadcastStatusEvents broadcasts status change events using enhanced event system
 func (sm *StatusManager) broadcastStatusEvents(nodeID string, oldStatus, newStatus *types.AgentStatus) {
-	// Get updated agent for events
+	// Get updated agent for events (supports multi-version agents)
 	ctx := context.Background()
 	agent, err := sm.storage.GetAgent(ctx, nodeID)
-	if err != nil {
+	if err != nil || agent == nil {
+		// For versioned agents, GetAgent (version="") won't find them.
+		// Fall back to listing all versions and using the first match.
+		if versions, listErr := sm.storage.ListAgentVersions(ctx, nodeID); listErr == nil && len(versions) > 0 {
+			agent = versions[0]
+			err = nil
+		}
+	}
+	if err != nil || agent == nil {
 		logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to get agent for event broadcasting")
 		return
 	}

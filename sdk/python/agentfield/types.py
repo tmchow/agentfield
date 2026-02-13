@@ -36,13 +36,17 @@ class HeartbeatData:
     status: AgentStatus
     mcp_servers: List[MCPServerHealth]
     timestamp: str
+    version: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "status": self.status.value,
             "mcp_servers": [server.to_dict() for server in self.mcp_servers],
             "timestamp": self.timestamp,
         }
+        if self.version:
+            d["version"] = self.version
+        return d
 
 
 @dataclass

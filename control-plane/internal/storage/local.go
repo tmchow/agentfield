@@ -875,7 +875,11 @@ func (ls *LocalStorage) createSchema(ctx context.Context) error {
 	}
 
 	if err := ls.setupWorkflowExecutionFTS(); err != nil {
-		return err
+		if strings.Contains(err.Error(), "no such module: fts5") {
+			log.Printf("FTS5 module not available, full-text search will be degraded")
+		} else {
+			return err
+		}
 	}
 
 	if err := ls.ensureSQLiteIndexes(); err != nil {
@@ -1671,6 +1675,8 @@ func (ls *LocalStorage) runMigrations() error {
 			// For ALTER TABLE operations, check if column already exists
 			if strings.Contains(err.Error(), "duplicate column name") {
 				log.Printf("Column already exists for migration %s, marking as applied", migration.version)
+			} else if strings.Contains(err.Error(), "no such module: fts5") {
+				log.Printf("FTS5 module not available, skipping migration %s (search will be degraded)", migration.version)
 			} else {
 				return fmt.Errorf("failed to apply migration %s: %w", migration.version, err)
 			}
@@ -4968,6 +4974,25 @@ func (ls *LocalStorage) UpdateAgentVersion(ctx context.Context, id string, versi
 		return fmt.Errorf("failed to commit agent version transaction: %w", err)
 	}
 
+	return nil
+}
+
+// UpdateAgentTrafficWeight sets the traffic_weight for a specific (id, version) pair.
+func (ls *LocalStorage) UpdateAgentTrafficWeight(ctx context.Context, id string, version string, weight int) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context cancelled during update traffic weight: %w", err)
+	}
+
+	result, err := ls.db.ExecContext(ctx,
+		`UPDATE agent_nodes SET traffic_weight = ? WHERE id = ? AND version = ?`,
+		weight, id, version)
+	if err != nil {
+		return fmt.Errorf("failed to update traffic weight: %w", err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("agent (id=%s, version=%s) not found", id, version)
+	}
 	return nil
 }
 

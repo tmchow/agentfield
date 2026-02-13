@@ -1,6 +1,7 @@
 package connector
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -64,6 +65,12 @@ func (h *Handlers) RegisterRoutes(group *gin.RouterGroup) {
 		reasonerGroup.POST("/reasoners/:id/restart", h.RestartReasoner)
 		reasonerGroup.GET("/groups", h.ListAgentGroups)
 		reasonerGroup.GET("/groups/:group_id/nodes", h.ListGroupNodes)
+
+		// Version-aware routes (Phase 2)
+		reasonerGroup.GET("/reasoners/:id/versions", h.ListReasonerVersions)
+		reasonerGroup.GET("/reasoners/:id/versions/:version", h.GetReasonerVersion)
+		reasonerGroup.PUT("/reasoners/:id/versions/:version/weight", h.SetReasonerTrafficWeight)
+		reasonerGroup.POST("/reasoners/:id/versions/:version/restart", h.RestartReasonerVersion)
 	}
 
 	// Policy management routes (proxied admin endpoints)
@@ -78,7 +85,7 @@ func (h *Handlers) RegisterRoutes(group *gin.RouterGroup) {
 	if h.tagApprovalService != nil {
 		tagGroup := group.Group("")
 		tagGroup.Use(middleware.ConnectorCapabilityCheck("tag_management", caps))
-		tagHandlers := admin.NewTagApprovalHandlers(h.tagApprovalService)
+		tagHandlers := admin.NewTagApprovalHandlers(h.tagApprovalService, h.storage)
 		tagHandlers.RegisterRoutes(tagGroup)
 	}
 }
@@ -306,6 +313,178 @@ func (h *Handlers) ListGroupNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"nodes": result,
 		"total": len(result),
+	})
+}
+
+// ListReasonerVersions returns all versions of a specific agent.
+func (h *Handlers) ListReasonerVersions(c *gin.Context) {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+
+	versions, err := h.storage.ListAgentVersions(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Also check for the default (unversioned) agent
+	defaultAgent, _ := h.storage.GetAgent(ctx, id)
+
+	type versionInfo struct {
+		Version         string                     `json:"version"`
+		TrafficWeight   int                        `json:"traffic_weight"`
+		HealthStatus    types.HealthStatus         `json:"health_status"`
+		LifecycleStatus types.AgentLifecycleStatus `json:"lifecycle_status"`
+		BaseURL         string                     `json:"base_url"`
+		LastHeartbeat   time.Time                  `json:"last_heartbeat"`
+	}
+
+	var result []versionInfo
+	if defaultAgent != nil {
+		result = append(result, versionInfo{
+			Version:         defaultAgent.Version,
+			TrafficWeight:   defaultAgent.TrafficWeight,
+			HealthStatus:    defaultAgent.HealthStatus,
+			LifecycleStatus: defaultAgent.LifecycleStatus,
+			BaseURL:         defaultAgent.BaseURL,
+			LastHeartbeat:   defaultAgent.LastHeartbeat,
+		})
+	}
+	for _, v := range versions {
+		result = append(result, versionInfo{
+			Version:         v.Version,
+			TrafficWeight:   v.TrafficWeight,
+			HealthStatus:    v.HealthStatus,
+			LifecycleStatus: v.LifecycleStatus,
+			BaseURL:         v.BaseURL,
+			LastHeartbeat:   v.LastHeartbeat,
+		})
+	}
+
+	if len(result) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":       id,
+		"versions": result,
+		"total":    len(result),
+	})
+}
+
+// GetReasonerVersion returns detailed info for a specific (id, version) pair.
+func (h *Handlers) GetReasonerVersion(c *gin.Context) {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+	version := c.Param("version")
+
+	agent, err := h.storage.GetAgentVersion(ctx, id, version)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if agent == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent version not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":               agent.ID,
+		"version":          agent.Version,
+		"traffic_weight":   agent.TrafficWeight,
+		"health_status":    agent.HealthStatus,
+		"lifecycle_status": agent.LifecycleStatus,
+		"reasoners":        agent.Reasoners,
+		"skills":           agent.Skills,
+		"base_url":         agent.BaseURL,
+	})
+}
+
+// SetReasonerTrafficWeight updates the traffic_weight for a specific (id, version) pair.
+func (h *Handlers) SetReasonerTrafficWeight(c *gin.Context) {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+	version := c.Param("version")
+
+	var body struct {
+		Weight int `json:"weight"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "weight is required"})
+		return
+	}
+	if body.Weight < 0 || body.Weight > 10000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "weight must be between 0 and 10000"})
+		return
+	}
+
+	// Verify the version exists and get previous weight
+	agent, err := h.storage.GetAgentVersion(ctx, id, version)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if agent == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent version not found"})
+		return
+	}
+
+	previousWeight := agent.TrafficWeight
+
+	if err := h.storage.UpdateAgentTrafficWeight(ctx, id, version, body.Weight); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":         true,
+		"id":              id,
+		"version":         version,
+		"previous_weight": previousWeight,
+		"new_weight":      body.Weight,
+	})
+}
+
+// RestartReasonerVersion initiates a restart for a specific agent version.
+func (h *Handlers) RestartReasonerVersion(c *gin.Context) {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+	version := c.Param("version")
+
+	agent, err := h.storage.GetAgentVersion(ctx, id, version)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if agent == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "agent version not found"})
+		return
+	}
+
+	if h.statusManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "status manager not available"})
+		return
+	}
+
+	startingState := types.AgentStateStarting
+	update := &types.AgentStatusUpdate{
+		State:   &startingState,
+		Source:  types.StatusSourceManual,
+		Reason:  fmt.Sprintf("connector restart request (version: %s)", version),
+		Version: version,
+	}
+
+	if err := h.statusManager.UpdateAgentStatus(ctx, id, update); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":      true,
+		"id":           id,
+		"version":      version,
+		"restarted_at": time.Now().UTC().Format(time.RFC3339),
 	})
 }
 

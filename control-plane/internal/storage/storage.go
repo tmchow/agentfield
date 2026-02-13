@@ -115,6 +115,7 @@ type StorageProvider interface {
 	UpdateAgentHeartbeat(ctx context.Context, id string, version string, heartbeatTime time.Time) error
 	UpdateAgentLifecycleStatus(ctx context.Context, id string, status types.AgentLifecycleStatus) error
 	UpdateAgentVersion(ctx context.Context, id string, version string) error
+	UpdateAgentTrafficWeight(ctx context.Context, id string, version string, weight int) error
 
 	// Configuration
 	SetConfig(ctx context.Context, key string, value interface{}) error

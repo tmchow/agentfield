@@ -78,7 +78,7 @@ features:
       backup_interval: "24h"
     authorization:
       enabled: true
-      did_auth_enabled: true
+      did_auth_enabled: false
       domain: "localhost:8080"
       timestamp_window_seconds: 300
       default_approval_duration_hours: 24
@@ -131,7 +131,7 @@ features:
         enabled: false
       reasoner_management:
         enabled: true
-        read_only: true
+        read_only: false
       status_read:
         enabled: true
       observability_config:

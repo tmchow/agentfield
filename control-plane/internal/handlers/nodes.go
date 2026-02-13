@@ -781,8 +781,13 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 		needsDBUpdate, cached := heartbeatCache.shouldUpdateDatabase(nodeID, now, enhancedHeartbeat.Status, enhancedHeartbeat.MCPServers)
 
 		if needsDBUpdate {
-			// Verify node exists only when we need to update DB
+			// Verify node exists only when we need to update DB.
+			// Try default (version="") first; if not found and a version was
+			// provided in the heartbeat body, look up the specific version.
 			existingNode, err := storageProvider.GetAgent(ctx, nodeID)
+			if (err != nil || existingNode == nil) && enhancedHeartbeat.Version != "" {
+				existingNode, err = storageProvider.GetAgentVersion(ctx, nodeID, enhancedHeartbeat.Version)
+			}
 			if err != nil {
 				logger.Logger.Error().Err(err).Msgf("❌ Node %s not found during heartbeat update", nodeID)
 				c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
@@ -831,6 +836,9 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 					if existingNode == nil {
 						var err error
 						existingNode, err = storageProvider.GetAgent(ctx, nodeID)
+						if (err != nil || existingNode == nil) && enhancedHeartbeat.Version != "" {
+							existingNode, err = storageProvider.GetAgentVersion(ctx, nodeID, enhancedHeartbeat.Version)
+						}
 						if err != nil {
 							logger.Logger.Error().Err(err).Msgf("❌ Failed to get node %s for pending_approval check", nodeID)
 						}
@@ -894,6 +902,7 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 					HealthScore: enhancedHeartbeat.HealthScore,
 					Source:      types.StatusSourceHeartbeat,
 					Reason:      "health score from heartbeat",
+					Version:     enhancedHeartbeat.Version,
 				}
 
 				if err := statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {
@@ -918,7 +927,10 @@ func HeartbeatHandler(storageProvider storage.StorageProvider, uiService *servic
 					if existingNode == nil {
 						var err error
 						existingNode, err = storageProvider.GetAgent(ctx, nodeID)
-						if err != nil {
+						if (err != nil || existingNode == nil) && enhancedHeartbeat.Version != "" {
+							existingNode, err = storageProvider.GetAgentVersion(ctx, nodeID, enhancedHeartbeat.Version)
+						}
+						if err != nil || existingNode == nil {
 							logger.Logger.Error().Err(err).Msgf("❌ Failed to get node %s for lifecycle status update", nodeID)
 							c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 							return
