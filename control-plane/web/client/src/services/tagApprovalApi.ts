@@ -75,3 +75,27 @@ export async function rejectAgentTags(agentId: string, req: TagRejectionRequest)
   });
   return response.json();
 }
+
+// Agent tag summary from the UI-optimized endpoint
+export interface AgentTagSummary {
+  agent_id: string;
+  proposed_tags: string[];
+  approved_tags: string[];
+  lifecycle_status: string;
+  registered_at: string;
+}
+
+// List ALL agents with tag data (uses UI-optimized endpoint)
+export async function listAllAgentsWithTags(): Promise<{ agents: AgentTagSummary[]; total: number }> {
+  const response = await fetchWithAuth('/api/ui/v1/authorization/agents');
+  return response.json();
+}
+
+// Revoke agent tags
+export async function revokeAgentTags(agentId: string, reason?: string): Promise<any> {
+  const response = await fetchWithAuth(`${API_BASE}/admin/agents/${encodeURIComponent(agentId)}/revoke-tags`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+  return response.json();
+}

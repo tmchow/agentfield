@@ -79,18 +79,11 @@ export const navigationSections: NavigationSection[] = [
     title: 'Authorization',
     items: [
       {
-        id: 'tag-approval',
-        label: 'Tag Approvals',
-        href: '/authorization/tag-approval',
+        id: 'authorization',
+        label: 'Authorization',
+        href: '/authorization',
         icon: 'shield-check',
-        description: 'Review and approve agent tag registrations'
-      },
-      {
-        id: 'access-policies',
-        label: 'Access Policies',
-        href: '/authorization/access-policies',
-        icon: 'settings',
-        description: 'Manage tag-based access policies for cross-agent calls'
+        description: 'Manage access policies and agent tag approvals'
       }
     ]
   },

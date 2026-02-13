@@ -304,7 +304,7 @@ func TestAccessPolicyHandlers_UpdatePolicy_Success(t *testing.T) {
 func setupTagApprovalRouter(storage *mockTagStorage) *gin.Engine {
 	cfg := config.TagApprovalRulesConfig{DefaultMode: "manual"}
 	svc := services.NewTagApprovalService(cfg, storage)
-	handlers := NewTagApprovalHandlers(svc)
+	handlers := NewTagApprovalHandlers(svc, nil)
 
 	r := gin.New()
 	api := r.Group("/api/v1")

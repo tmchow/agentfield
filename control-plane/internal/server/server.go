@@ -1115,6 +1115,13 @@ func (s *AgentFieldServer) setupRoutes() {
 			// Identity & Trust endpoints (DID Explorer and Credentials)
 			identityHandler := ui.NewIdentityHandlers(s.storage)
 			identityHandler.RegisterRoutes(uiAPI)
+
+			// Authorization UI endpoints
+			authorization := uiAPI.Group("/authorization")
+			{
+				authorizationHandler := ui.NewAuthorizationHandler(s.storage)
+				authorization.GET("/agents", authorizationHandler.GetAgentsWithTagsHandler)
+			}
 		}
 
 		uiAPIV2 := s.Router.Group("/api/ui/v2")
@@ -1460,7 +1467,7 @@ func (s *AgentFieldServer) setupRoutes() {
 
 			// Tag approval admin routes
 			if s.tagApprovalService != nil {
-				tagApprovalHandlers := admin.NewTagApprovalHandlers(s.tagApprovalService)
+				tagApprovalHandlers := admin.NewTagApprovalHandlers(s.tagApprovalService, s.storage)
 				tagApprovalHandlers.RegisterRoutes(adminGroup)
 			}
 

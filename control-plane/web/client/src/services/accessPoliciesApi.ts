@@ -100,3 +100,8 @@ export async function deletePolicy(id: number): Promise<void> {
     method: 'DELETE',
   });
 }
+
+export async function listKnownTags(): Promise<{ tags: string[]; total: number }> {
+  const response = await fetchWithAuth(`${API_BASE}/admin/tags`);
+  return response.json();
+}
