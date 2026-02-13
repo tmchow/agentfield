@@ -3,9 +3,11 @@ package admin
 import (
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
 	"github.com/Agent-Field/agentfield/control-plane/internal/services"
+	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
 	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
 	"github.com/gin-gonic/gin"
 )
@@ -13,12 +15,14 @@ import (
 // TagApprovalHandlers handles admin tag approval HTTP requests.
 type TagApprovalHandlers struct {
 	tagApprovalService *services.TagApprovalService
+	storage            storage.StorageProvider
 }
 
 // NewTagApprovalHandlers creates a new tag approval admin handlers instance.
-func NewTagApprovalHandlers(tagApprovalService *services.TagApprovalService) *TagApprovalHandlers {
+func NewTagApprovalHandlers(tagApprovalService *services.TagApprovalService, storage storage.StorageProvider) *TagApprovalHandlers {
 	return &TagApprovalHandlers{
 		tagApprovalService: tagApprovalService,
+		storage:            storage,
 	}
 }
 
@@ -191,6 +195,59 @@ func (h *TagApprovalHandlers) RevokeAgentTags(c *gin.Context) {
 	})
 }
 
+// ListKnownTags returns all unique tags known to the system from agents and policies.
+// GET /api/v1/admin/tags
+func (h *TagApprovalHandlers) ListKnownTags(c *gin.Context) {
+	tagSet := make(map[string]struct{})
+
+	// Collect tags from all agents
+	agents, err := h.storage.ListAgents(c.Request.Context(), types.AgentFilters{})
+	if err != nil {
+		logger.Logger.Error().Err(err).Msg("Failed to list agents for known tags")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "list_failed",
+			"message": "Failed to collect known tags",
+		})
+		return
+	}
+
+	for _, agent := range agents {
+		for _, t := range agent.ProposedTags {
+			tagSet[t] = struct{}{}
+		}
+		for _, t := range agent.ApprovedTags {
+			tagSet[t] = struct{}{}
+		}
+		for _, r := range agent.Reasoners {
+			for _, t := range r.Tags {
+				tagSet[t] = struct{}{}
+			}
+			for _, t := range r.ProposedTags {
+				tagSet[t] = struct{}{}
+			}
+		}
+		for _, s := range agent.Skills {
+			for _, t := range s.Tags {
+				tagSet[t] = struct{}{}
+			}
+			for _, t := range s.ProposedTags {
+				tagSet[t] = struct{}{}
+			}
+		}
+	}
+
+	tags := make([]string, 0, len(tagSet))
+	for t := range tagSet {
+		tags = append(tags, t)
+	}
+	sort.Strings(tags)
+
+	c.JSON(http.StatusOK, gin.H{
+		"tags":  tags,
+		"total": len(tags),
+	})
+}
+
 // RegisterRoutes registers the tag approval admin routes.
 func (h *TagApprovalHandlers) RegisterRoutes(router *gin.RouterGroup) {
 	adminGroup := router.Group("/admin")
@@ -202,5 +259,6 @@ func (h *TagApprovalHandlers) RegisterRoutes(router *gin.RouterGroup) {
 			agentsGroup.POST("/:agent_id/reject-tags", h.RejectAgentTags)
 			agentsGroup.POST("/:agent_id/revoke-tags", h.RevokeAgentTags)
 		}
+		adminGroup.GET("/tags", h.ListKnownTags)
 	}
 }
