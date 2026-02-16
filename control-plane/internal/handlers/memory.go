@@ -61,11 +61,11 @@ type ErrorResponse struct {
 func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: SetMemoryHandler called")
+		logger.Logger.Debug().Str("operation", "set_memory").Str("handler", "SetMemoryHandler").Msg("handler invoked")
 
 		var req SetMemoryRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			logger.Logger.Debug().Err(err).Msg("🔍 MEMORY_HANDLER_DEBUG: JSON binding failed")
+			logger.Logger.Debug().Err(err).Str("operation", "bind_request").Msg("failed to bind JSON request")
 			c.JSON(http.StatusBadRequest, ErrorResponse{
 				Error:   "invalid_request",
 				Message: err.Error(),
@@ -73,23 +73,23 @@ func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 			})
 			return
 		}
-		logger.Logger.Debug().Msgf("🔍 MEMORY_HANDLER_DEBUG: Request parsed successfully: key=%s", req.Key)
+		logger.Logger.Debug().Str("operation", "parse_request").Str("key", req.Key).Msg("request parsed")
 
 		scope, scopeID := resolveScope(c, req.Scope)
-		logger.Logger.Debug().Msgf("🔍 MEMORY_HANDLER_DEBUG: Scope resolved: scope=%s, scopeID=%s", scope, scopeID)
+		logger.Logger.Debug().Str("operation", "resolve_scope").Str("scope", scope).Str("scope_id", scopeID).Msg("scope resolved")
 
 		// Get existing memory value for event publishing
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Getting existing memory value...")
+		logger.Logger.Debug().Str("operation", "get_existing").Str("key", req.Key).Msg("retrieving existing memory value")
 		var previousData json.RawMessage
 		if existingMemory, err := storageProvider.GetMemory(ctx, scope, scopeID, req.Key); err == nil {
 			previousData = existingMemory.Data
 		}
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Existing memory check completed")
+		logger.Logger.Debug().Str("operation", "get_existing").Bool("exists", previousData != nil).Msg("existing memory check completed")
 
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Marshaling data to JSON...")
+		logger.Logger.Debug().Str("operation", "marshal_data").Str("key", req.Key).Msg("marshaling data to JSON")
 		dataJSON, err := marshalDataWithLogging(req.Data, "memory_data")
 		if err != nil {
-			logger.Logger.Error().Err(err).Msg("❌ MEMORY_MARSHAL_ERROR: Failed to marshal memory data")
+			logger.Logger.Error().Err(err).Str("operation", "marshal").Str("key", req.Key).Msg("failed to marshal memory data")
 			c.JSON(http.StatusBadRequest, ErrorResponse{
 				Error:   "marshal_error",
 				Message: err.Error(),
@@ -97,7 +97,7 @@ func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 			})
 			return
 		}
-		logger.Logger.Debug().Msgf("🔍 MEMORY_HANDLER_DEBUG: JSON marshaling successful, length: %d", len(dataJSON))
+		logger.Logger.Debug().Str("operation", "marshal_data").Int("size_bytes", len(dataJSON)).Msg("data marshaled successfully")
 
 		now := time.Now()
 		memory := &types.Memory{
@@ -108,11 +108,11 @@ func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Memory object created")
+		logger.Logger.Debug().Str("operation", "create_memory_object").Str("key", req.Key).Msg("memory object created")
 
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Calling storageProvider.SetMemory...")
+		logger.Logger.Debug().Str("operation", "store_memory").Str("key", req.Key).Msg("storing memory to backend")
 		if err := storageProvider.SetMemory(ctx, memory); err != nil {
-			logger.Logger.Debug().Err(err).Msg("🔍 MEMORY_HANDLER_DEBUG: SetMemory failed")
+			logger.Logger.Debug().Err(err).Str("operation", "store_memory").Str("key", req.Key).Msg("failed to store memory")
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
 				Error:   "storage_error",
 				Message: err.Error(),
@@ -120,10 +120,10 @@ func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 			})
 			return
 		}
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: SetMemory completed successfully")
+		logger.Logger.Debug().Str("operation", "store_memory").Str("key", req.Key).Msg("memory stored successfully")
 
 		// Publish memory change event
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Creating memory change event...")
+		logger.Logger.Debug().Str("operation", "create_event").Str("action", "set").Str("key", req.Key).Msg("creating memory change event")
 		event := &types.MemoryChangeEvent{
 			Type:         "memory_change",
 			Scope:        scope,
@@ -140,18 +140,18 @@ func SetMemoryHandler(storageProvider MemoryStorage) gin.HandlerFunc {
 		}
 
 		// Store event (don't fail the request if event storage fails)
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Storing event...")
+		logger.Logger.Debug().Str("operation", "store_event").Str("key", req.Key).Msg("storing memory change event")
 		if err := storageProvider.StoreEvent(ctx, event); err != nil {
 			// Log error but continue
 			logger.Logger.Warn().Err(err).Msg("Warning: Failed to store memory change event")
 		} else if err := storageProvider.PublishMemoryChange(ctx, *event); err != nil {
 			logger.Logger.Warn().Err(err).Msg("Warning: Failed to publish memory change event")
 		}
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Event storage completed")
+		logger.Logger.Debug().Str("operation", "store_event").Str("key", req.Key).Msg("event storage completed")
 
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Sending response...")
+		logger.Logger.Debug().Str("operation", "send_response").Str("key", req.Key).Msg("sending response")
 		c.JSON(http.StatusOK, memory)
-		logger.Logger.Debug().Msg("🔍 MEMORY_HANDLER_DEBUG: Response sent successfully")
+		logger.Logger.Debug().Str("operation", "send_response").Str("key", req.Key).Msg("response sent")
 	}
 }
 
