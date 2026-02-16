@@ -10,20 +10,20 @@ import (
 // marshalDataWithLogging marshals data to JSON with proper error handling and logging
 func marshalDataWithLogging(data interface{}, fieldName string) ([]byte, error) {
 	if data == nil {
-		logger.Logger.Debug().Msgf("🔍 MARSHAL_DEBUG: %s is nil, returning null", fieldName)
+		logger.Logger.Debug().Str("operation", "marshal").Str("field_name", fieldName).Bool("is_nil", true).Msg("field is nil")
 		return []byte("null"), nil
 	}
 
 	// Log the type and content of data being marshaled
-	logger.Logger.Debug().Msgf("🔍 MARSHAL_DEBUG: Marshaling %s (type: %T)", fieldName, data)
+	logger.Logger.Debug().Str("operation", "marshal").Str("field_name", fieldName).Str("type", fmt.Sprintf("%T", data)).Msg("marshaling field")
 
 	// Attempt to marshal with detailed error reporting
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		logger.Logger.Error().Err(err).Msgf("❌ MARSHAL_ERROR: Failed to marshal %s (type: %T): %v", fieldName, data, data)
+		logger.Logger.Error().Err(err).Str("operation", "marshal").Str("field_name", fieldName).Str("type", fmt.Sprintf("%T", data)).Msg("failed to marshal field")
 		return nil, fmt.Errorf("failed to marshal %s: %w", fieldName, err)
 	}
 
-	logger.Logger.Debug().Msgf("✅ MARSHAL_SUCCESS: Successfully marshaled %s (%d bytes): %s", fieldName, len(jsonData), string(jsonData))
+	logger.Logger.Debug().Str("operation", "marshal").Str("field_name", fieldName).Int("size_bytes", len(jsonData)).Msg("field marshaled successfully")
 	return jsonData, nil
 }
