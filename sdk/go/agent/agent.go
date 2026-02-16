@@ -292,11 +292,13 @@ func New(cfg Config) (*Agent, error) {
 
 	// Initialize DID/VC if enabled
 	if cfg.VCEnabled && strings.TrimSpace(cfg.AgentFieldURL) != "" {
+		headers := make(map[string]string)
+		if cfg.Token != "" {
+			headers["Authorization"] = "Bearer " + cfg.Token
+		}
 		didClient, err := did.NewDIDClient(
 			cfg.AgentFieldURL,
-			map[string]string{
-				"Authorization": "Bearer " + cfg.Token,
-			},
+			headers,
 		)
 		if err != nil {
 			a.logger.Printf("warning: failed to create DID client: %v", err)

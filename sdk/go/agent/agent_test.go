@@ -1002,3 +1002,148 @@ func TestExecutionContextDIDFieldsDefault(t *testing.T) {
 	assert.Equal(t, "", ec.TargetDID)
 	assert.Equal(t, "", ec.AgentNodeDID)
 }
+
+// TestAgentVCEnabledWithMockServer verifies DID registration when VCEnabled=true with mock control plane endpoint.
+func TestAgentVCEnabledWithMockServer(t *testing.T) {
+	var capturedRequest bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/did/register" && r.Method == http.MethodPost {
+			capturedRequest = true
+
+			// Decode and verify request structure
+			var requestBody map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			// Verify required fields in payload
+			assert.NotNil(t, requestBody["agent_node_id"], "agent_node_id field required")
+			assert.NotNil(t, requestBody["reasoners"], "reasoners field required")
+			assert.NotNil(t, requestBody["skills"], "skills field required")
+
+			// Return success with valid DIDIdentityPackage structure
+			resp := map[string]any{
+				"agent_did": map[string]any{
+					"did":                "did:agent:node-1",
+					"private_key_jwk":    "pk_jwk_value",
+					"public_key_jwk":     "pub_jwk_value",
+					"derivation_path":    "m/44'/0'/0'/0/0",
+					"component_type":     "agent",
+					"function_name":      nil,
+				},
+				"reasoner_dids":        map[string]any{},
+				"skill_dids":           map[string]any{},
+				"agentfield_server_id": "server-1",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	cfg := Config{
+		NodeID:        "node-1",
+		Version:       "1.0.0",
+		AgentFieldURL: server.URL,
+		VCEnabled:     true,
+		Logger:        log.New(io.Discard, "", 0),
+	}
+
+	agent, err := New(cfg)
+	require.NoError(t, err)
+
+	// Verify agent was created and DID manager exists
+	assert.NotNil(t, agent)
+	assert.NotNil(t, agent.DID())
+
+	// Verify the mock endpoint was called (registration was attempted)
+	assert.True(t, capturedRequest, "DID registration endpoint should have been called")
+}
+
+// TestAgentVCEnabledWithRegistrationFailure verifies graceful degradation when DID registration fails.
+func TestAgentVCEnabledWithRegistrationFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/did/register" {
+			// Mock server returns 500 error
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`{"error": "internal server error"}`))
+		}
+	}))
+	defer server.Close()
+
+	// Capture warnings logged by agent
+	logBuffer := &bytes.Buffer{}
+	logger := log.New(logBuffer, "[agent] ", log.LstdFlags)
+
+	cfg := Config{
+		NodeID:        "node-1",
+		Version:       "1.0.0",
+		AgentFieldURL: server.URL,
+		VCEnabled:     true,
+		Logger:        logger,
+	}
+
+	agent, err := New(cfg)
+	require.NoError(t, err, "Agent.New() should not fail even when DID registration fails")
+
+	// Verify agent was created successfully despite DID registration failure
+	assert.NotNil(t, agent)
+	assert.Equal(t, "node-1", agent.cfg.NodeID)
+
+	// Verify warning was logged
+	logOutput := logBuffer.String()
+	assert.Contains(t, logOutput, "warning: DID registration failed", "Warning should be logged for failed registration")
+
+	// Verify DID manager exists but may be disabled due to failure
+	assert.NotNil(t, agent.DID())
+}
+
+// TestAgentVCEnabledWithoutToken verifies Authorization header is omitted when token is empty.
+func TestAgentVCEnabledWithoutToken(t *testing.T) {
+	var authHeaderReceived string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/did/register" {
+			// Capture Authorization header (should be empty)
+			authHeaderReceived = r.Header.Get("Authorization")
+
+			// Return valid DIDIdentityPackage response
+			resp := map[string]any{
+				"agent_did": map[string]any{
+					"did":                "did:agent:node-1",
+					"private_key_jwk":    "pk_jwk_value",
+					"public_key_jwk":     "pub_jwk_value",
+					"derivation_path":    "m/44'/0'/0'/0/0",
+					"component_type":     "agent",
+					"function_name":      nil,
+				},
+				"reasoner_dids":        map[string]any{},
+				"skill_dids":           map[string]any{},
+				"agentfield_server_id": "server-1",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	cfg := Config{
+		NodeID:        "node-1",
+		Version:       "1.0.0",
+		AgentFieldURL: server.URL,
+		VCEnabled:     true,
+		Token:         "", // Empty token
+		Logger:        log.New(io.Discard, "", 0),
+	}
+
+	agent, err := New(cfg)
+	require.NoError(t, err)
+
+	// Verify agent was created
+	assert.NotNil(t, agent)
+
+	// Verify Authorization header was NOT set when token is empty
+	assert.Equal(t, "", authHeaderReceived, "Authorization header should be empty when Token is empty")
+}
