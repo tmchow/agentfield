@@ -51,6 +51,9 @@ reports/
 # Typescript
 .env
 
+# Compiled Go example binaries
+examples/go_agent_nodes/go_agent_nodes
+
 # Pipeline artifacts and worktrees
 .artifacts/
 .worktrees/
