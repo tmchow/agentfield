@@ -57,6 +57,39 @@ func (h *TagApprovalHandlers) ListPendingAgents(c *gin.Context) {
 	})
 }
 
+// ListApprovedAgents returns all agents that have approved tags (not pending).
+// GET /api/v1/admin/agents/approved
+func (h *TagApprovalHandlers) ListApprovedAgents(c *gin.Context) {
+	agents, err := h.storage.ListAgents(c.Request.Context(), types.AgentFilters{})
+	if err != nil {
+		logger.Logger.Error().Err(err).Msg("Failed to list agents for approved tags")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "list_failed",
+			"message": "Failed to list approved agents",
+		})
+		return
+	}
+
+	responses := make([]types.PendingAgentResponse, 0)
+	for _, agent := range agents {
+		if agent.LifecycleStatus == types.AgentStatusPendingApproval || len(agent.ApprovedTags) == 0 {
+			continue
+		}
+		responses = append(responses, types.PendingAgentResponse{
+			AgentID:      agent.ID,
+			ProposedTags: agent.ProposedTags,
+			ApprovedTags: agent.ApprovedTags,
+			Status:       string(agent.LifecycleStatus),
+			RegisteredAt: agent.RegisteredAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"agents": responses,
+		"total":  len(responses),
+	})
+}
+
 // ApproveAgentTags approves an agent's proposed tags.
 // POST /api/v1/admin/agents/:agent_id/approve-tags
 func (h *TagApprovalHandlers) ApproveAgentTags(c *gin.Context) {
@@ -255,6 +288,7 @@ func (h *TagApprovalHandlers) RegisterRoutes(router *gin.RouterGroup) {
 		agentsGroup := adminGroup.Group("/agents")
 		{
 			agentsGroup.GET("/pending", h.ListPendingAgents)
+			agentsGroup.GET("/approved", h.ListApprovedAgents)
 			agentsGroup.POST("/:agent_id/approve-tags", h.ApproveAgentTags)
 			agentsGroup.POST("/:agent_id/reject-tags", h.RejectAgentTags)
 			agentsGroup.POST("/:agent_id/revoke-tags", h.RevokeAgentTags)

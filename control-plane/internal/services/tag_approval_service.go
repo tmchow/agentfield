@@ -376,11 +376,53 @@ func (s *TagApprovalService) ListPendingAgents(ctx context.Context) ([]*types.Ag
 
 // ProcessRegistrationTags evaluates tags at registration time and returns the result.
 // The caller should use this to decide whether to set the agent to pending or auto-approve.
+//
+// If the agent already carries ApprovedTags (preserved from a previous registration),
+// and the proposed tags haven't changed, the existing approval state is kept intact.
+// This prevents forcing re-approval after every CP restart or agent reconnect.
 func (s *TagApprovalService) ProcessRegistrationTags(agent *types.AgentNode) TagApprovalResult {
 	allProposed := CollectAllProposedTags(agent)
 	agent.ProposedTags = allProposed
 
 	result := s.EvaluateTags(allProposed)
+
+	// If the agent already has approved tags (re-registration), check whether the
+	// proposed tags are still covered by the existing approval. If so, keep the
+	// current approval state and don't force the agent back to pending_approval.
+	if len(agent.ApprovedTags) > 0 {
+		existingApproved := make(map[string]struct{})
+		for _, t := range agent.ApprovedTags {
+			existingApproved[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
+		}
+
+		// Check that every manual-review tag is already approved.
+		allCovered := true
+		for _, t := range result.ManualReview {
+			if _, ok := existingApproved[strings.ToLower(strings.TrimSpace(t))]; !ok {
+				allCovered = false
+				break
+			}
+		}
+
+		if allCovered {
+			// Existing approval still covers all proposed tags — keep it.
+			// Don't touch agent.ApprovedTags or agent.LifecycleStatus.
+			return result
+		}
+
+		// Some new tags need approval. Only require approval for the new ones;
+		// keep previously-approved tags in the approved set.
+		for _, t := range result.AutoApproved {
+			existingApproved[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
+		}
+		merged := make([]string, 0, len(existingApproved))
+		for t := range existingApproved {
+			merged = append(merged, t)
+		}
+		agent.ApprovedTags = merged
+		agent.LifecycleStatus = types.AgentStatusPendingApproval
+		return result
+	}
 
 	if result.AllAutoApproved {
 		// Auto-approve: set approved tags immediately

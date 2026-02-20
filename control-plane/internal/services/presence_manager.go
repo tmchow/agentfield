@@ -20,6 +20,7 @@ type presenceLease struct {
 	LastSeen      time.Time
 	LastExpired   time.Time
 	MarkedOffline bool
+	Version       string
 }
 
 type PresenceManager struct {
@@ -66,7 +67,7 @@ func (pm *PresenceManager) Stop() {
 	})
 }
 
-func (pm *PresenceManager) Touch(nodeID string, seenAt time.Time) {
+func (pm *PresenceManager) Touch(nodeID string, version string, seenAt time.Time) {
 	pm.mu.Lock()
 	lease, exists := pm.leases[nodeID]
 	if !exists {
@@ -75,6 +76,9 @@ func (pm *PresenceManager) Touch(nodeID string, seenAt time.Time) {
 	}
 	lease.LastSeen = seenAt
 	lease.MarkedOffline = false
+	if version != "" {
+		lease.Version = version
+	}
 	pm.mu.Unlock()
 }
 
@@ -125,6 +129,7 @@ func (pm *PresenceManager) RecoverFromDatabase(ctx context.Context, storageProvi
 		pm.leases[node.ID] = &presenceLease{
 			LastSeen:      node.LastHeartbeat,
 			MarkedOffline: time.Since(node.LastHeartbeat) > pm.config.HeartbeatTTL,
+			Version:       node.Version,
 		}
 	}
 
@@ -174,6 +179,14 @@ func (pm *PresenceManager) markInactive(nodeID string) {
 		return
 	}
 
+	// Read version from the lease while holding the lock.
+	pm.mu.RLock()
+	var version string
+	if lease, ok := pm.leases[nodeID]; ok {
+		version = lease.Version
+	}
+	pm.mu.RUnlock()
+
 	ctx := context.Background()
 	inactive := types.AgentStateInactive
 	zero := 0
@@ -182,6 +195,7 @@ func (pm *PresenceManager) markInactive(nodeID string) {
 		HealthScore: &zero,
 		Source:      types.StatusSourcePresence,
 		Reason:      "presence lease expired",
+		Version:     version,
 	}
 
 	if err := pm.statusManager.UpdateAgentStatus(ctx, nodeID, update); err != nil {

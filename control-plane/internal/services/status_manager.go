@@ -181,7 +181,8 @@ func (sm *StatusManager) GetAgentStatus(ctx context.Context, nodeID string) (*ty
 		// Preserve admin-controlled lifecycle status (e.g., pending_approval) from storage.
 		// Live health checks prove liveness but must not override admin decisions.
 		var preservedLifecycle types.AgentLifecycleStatus
-		if agent, agentErr := sm.storage.GetAgent(ctx, nodeID); agentErr == nil && agent != nil {
+		agent, agentErr := sm.storage.GetAgent(ctx, nodeID)
+		if agentErr == nil && agent != nil {
 			if agent.LifecycleStatus == types.AgentStatusPendingApproval {
 				preservedLifecycle = types.AgentStatusPendingApproval
 			}
@@ -425,7 +426,7 @@ func (sm *StatusManager) UpdateAgentStatus(ctx context.Context, nodeID string, u
 
 // UpdateFromHeartbeat updates status based on heartbeat data.
 // Uses snapshot (not live health check) to avoid overriding admin-controlled states.
-func (sm *StatusManager) UpdateFromHeartbeat(ctx context.Context, nodeID string, lifecycleStatus *types.AgentLifecycleStatus, mcpStatus *types.MCPStatusInfo) error {
+func (sm *StatusManager) UpdateFromHeartbeat(ctx context.Context, nodeID string, lifecycleStatus *types.AgentLifecycleStatus, mcpStatus *types.MCPStatusInfo, version string) error {
 	currentStatus, err := sm.GetAgentStatus(ctx, nodeID)
 	if err != nil {
 		// If agent doesn't exist, create new status
@@ -448,6 +449,7 @@ func (sm *StatusManager) UpdateFromHeartbeat(ctx context.Context, nodeID string,
 		MCPStatus:       mcpStatus,
 		Source:          types.StatusSourceHeartbeat,
 		Reason:          "heartbeat update",
+		Version:         version,
 	}
 	if lifecycleStatus != nil {
 		var derivedState types.AgentState
@@ -624,17 +626,8 @@ func (sm *StatusManager) notifyStatusChanged(nodeID string, oldStatus, newStatus
 
 // broadcastStatusEvents broadcasts status change events using enhanced event system
 func (sm *StatusManager) broadcastStatusEvents(nodeID string, oldStatus, newStatus *types.AgentStatus) {
-	// Get updated agent for events (supports multi-version agents)
 	ctx := context.Background()
 	agent, err := sm.storage.GetAgent(ctx, nodeID)
-	if err != nil || agent == nil {
-		// For versioned agents, GetAgent (version="") won't find them.
-		// Fall back to listing all versions and using the first match.
-		if versions, listErr := sm.storage.ListAgentVersions(ctx, nodeID); listErr == nil && len(versions) > 0 {
-			agent = versions[0]
-			err = nil
-		}
-	}
 	if err != nil || agent == nil {
 		logger.Logger.Error().Err(err).Str("node_id", nodeID).Msg("❌ Failed to get agent for event broadcasting")
 		return

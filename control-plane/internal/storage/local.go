@@ -4429,7 +4429,9 @@ func (ls *LocalStorage) GetAgent(ctx context.Context, id string) (*types.AgentNo
 			id, version, group_id, team_id, base_url, traffic_weight, deployment_type, invocation_url, reasoners, skills,
 			communication_config, health_status, lifecycle_status, last_heartbeat,
 			registered_at, features, metadata, proposed_tags, approved_tags
-		FROM agent_nodes WHERE id = ? AND version = ''`
+		FROM agent_nodes WHERE id = ?
+		ORDER BY CASE WHEN version = '' THEN 0 ELSE 1 END, version ASC
+		LIMIT 1`
 
 	row := ls.db.QueryRowContext(ctx, query, id)
 

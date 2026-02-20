@@ -111,7 +111,7 @@ func (hm *HealthMonitor) RegisterAgent(nodeID, baseURL string) {
 	}
 
 	if hm.presence != nil {
-		hm.presence.Touch(nodeID, seenAt)
+		hm.presence.Touch(nodeID, "", seenAt)
 	}
 
 	logger.Logger.Debug().Msgf("🏥 Registered agent %s for HTTP health monitoring", nodeID)
@@ -383,7 +383,7 @@ func (hm *HealthMonitor) markAgentActive(nodeID string) {
 		}
 
 		if hm.presence != nil {
-			hm.presence.Touch(nodeID, time.Now())
+			hm.presence.Touch(nodeID, "", time.Now())
 		}
 
 		// Check MCP health for active agents
@@ -400,7 +400,7 @@ func (hm *HealthMonitor) markAgentActive(nodeID string) {
 		if updatedAgent, err := hm.storage.GetAgent(ctx, nodeID); err == nil {
 			events.PublishNodeOnline(nodeID, updatedAgent)
 			if hm.presence != nil {
-				hm.presence.Touch(nodeID, time.Now())
+				hm.presence.Touch(nodeID, "", time.Now())
 			}
 			events.PublishNodeHealthChanged(nodeID, string(types.HealthStatusActive), updatedAgent)
 			if hm.uiService != nil {

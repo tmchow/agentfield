@@ -44,9 +44,12 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 			return
 		}
 
-		agent, err := storageProvider.GetAgent(ctx, nodeID)
-		if (err != nil || agent == nil) && payload.Version != "" {
+		var agent *types.AgentNode
+		var err error
+		if payload.Version != "" {
 			agent, err = storageProvider.GetAgentVersion(ctx, nodeID, payload.Version)
+		} else {
+			agent, err = storageProvider.GetAgent(ctx, nodeID)
 		}
 		if err != nil || agent == nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
@@ -60,7 +63,7 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 			now := time.Now().UTC()
 			_ = storageProvider.UpdateAgentHeartbeat(ctx, nodeID, agent.Version, now)
 			if presenceManager != nil {
-				presenceManager.Touch(nodeID, now)
+				presenceManager.Touch(nodeID, agent.Version, now)
 			}
 			c.JSON(http.StatusOK, gin.H{
 				"lease_seconds":      int(leaseTTL.Seconds()),
@@ -106,7 +109,7 @@ func NodeStatusLeaseHandler(storageProvider storage.StorageProvider, statusManag
 		}
 
 		if presenceManager != nil {
-			presenceManager.Touch(nodeID, now)
+			presenceManager.Touch(nodeID, agent.Version, now)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
@@ -150,7 +153,8 @@ func NodeActionAckHandler(storageProvider storage.StorageProvider, presenceManag
 			return
 		}
 
-		if _, err := storageProvider.GetAgent(ctx, nodeID); err != nil {
+		agent, err := storageProvider.GetAgent(ctx, nodeID)
+		if err != nil || agent == nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
@@ -163,11 +167,11 @@ func NodeActionAckHandler(storageProvider storage.StorageProvider, presenceManag
 			Msg("action acknowledgement received")
 
 		now := time.Now().UTC()
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, "", now); err != nil {
+		if err := storageProvider.UpdateAgentHeartbeat(ctx, nodeID, agent.Version, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", nodeID).Msg("failed to persist heartbeat during action ack")
 		}
 		if presenceManager != nil {
-			presenceManager.Touch(nodeID, now)
+			presenceManager.Touch(nodeID, agent.Version, now)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
@@ -207,17 +211,18 @@ func ClaimActionsHandler(storageProvider storage.StorageProvider, presenceManage
 			payload.MaxItems = 1
 		}
 
-		if _, err := storageProvider.GetAgent(ctx, payload.NodeID); err != nil {
+		agent, err := storageProvider.GetAgent(ctx, payload.NodeID)
+		if err != nil || agent == nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
 			return
 		}
 
 		now := time.Now().UTC()
-		if err := storageProvider.UpdateAgentHeartbeat(ctx, payload.NodeID, "", now); err != nil {
+		if err := storageProvider.UpdateAgentHeartbeat(ctx, payload.NodeID, agent.Version, now); err != nil {
 			logger.Logger.Warn().Err(err).Str("node_id", payload.NodeID).Msg("failed to persist heartbeat during claim")
 		}
 		if presenceManager != nil {
-			presenceManager.Touch(payload.NodeID, now)
+			presenceManager.Touch(payload.NodeID, agent.Version, now)
 		}
 
 		nextPoll := payload.WaitSeconds
@@ -251,18 +256,16 @@ func NodeShutdownHandler(storageProvider storage.StorageProvider, statusManager 
 		}
 		_ = c.ShouldBindJSON(&payload) // best-effort parse; optional fields
 
-		agent, err := storageProvider.GetAgent(ctx, nodeID)
-		if (err != nil || agent == nil) && payload.Version != "" {
+		var agent *types.AgentNode
+		var err error
+		if payload.Version != "" {
 			agent, err = storageProvider.GetAgentVersion(ctx, nodeID, payload.Version)
+		} else {
+			agent, err = storageProvider.GetAgent(ctx, nodeID)
 		}
 		if err != nil || agent == nil {
-			// Try any version as last resort
-			versions, listErr := storageProvider.ListAgentVersions(ctx, nodeID)
-			if listErr != nil || len(versions) == 0 {
-				c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
-				return
-			}
-			agent = versions[0]
+			c.JSON(http.StatusNotFound, gin.H{"error": "node not found"})
+			return
 		}
 
 		now := time.Now().UTC()

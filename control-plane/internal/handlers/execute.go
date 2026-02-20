@@ -290,6 +290,9 @@ func (c *executionController) handleSync(ctx *gin.Context) {
 		}
 		ctx.Header("X-Execution-ID", exec.ExecutionID)
 		ctx.Header("X-Run-ID", exec.RunID)
+		if plan.routedVersion != "" {
+			ctx.Header("X-Routed-Version", plan.routedVersion)
+		}
 		ctx.JSON(http.StatusOK, response)
 		return
 	}
@@ -728,6 +731,18 @@ func (c *executionController) waitForExecutionCompletion(ctx context.Context, ex
 		Str("execution_id", executionID).
 		Dur("timeout", timeout).
 		Msg("waiting for execution completion via event bus")
+
+	// Check if execution already completed before we subscribed (race condition:
+	// fast agents may POST the callback before we subscribe to the event bus).
+	if existing, err := c.store.GetExecutionRecord(ctx, executionID); err == nil && existing != nil {
+		if types.IsTerminalExecutionStatus(existing.Status) {
+			logger.Logger.Debug().
+				Str("execution_id", executionID).
+				Str("status", existing.Status).
+				Msg("execution already completed before event subscription")
+			return existing, nil
+		}
+	}
 
 	for {
 		select {

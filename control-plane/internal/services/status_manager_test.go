@@ -522,7 +522,7 @@ func TestStatusManager_UpdateFromHeartbeat_NeverDropped(t *testing.T) {
 	// Now send a heartbeat IMMEDIATELY (within what used to be the 10s drop window).
 	// Previously this heartbeat would be silently ignored. Now it MUST be processed.
 	readyStatus := types.AgentStatusReady
-	err = sm.UpdateFromHeartbeat(ctx, "node-heartbeat-priority", &readyStatus, nil)
+	err = sm.UpdateFromHeartbeat(ctx, "node-heartbeat-priority", &readyStatus, nil, "")
 	require.NoError(t, err, "Heartbeat should never be dropped")
 
 	// Verify the heartbeat was processed — agent should no longer be inactive

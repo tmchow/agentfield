@@ -37,6 +37,11 @@ func (m *mockTagApprovalStorage) GetAgent(_ context.Context, id string) (*types.
 	return agent, nil
 }
 
+func (m *mockTagApprovalStorage) ListAgentVersions(_ context.Context, id string) ([]*types.AgentNode, error) {
+	// Mock returns nothing; tests use unversioned agents stored via GetAgent key
+	return nil, nil
+}
+
 func (m *mockTagApprovalStorage) RegisterAgent(_ context.Context, node *types.AgentNode) error {
 	if m.registerErr != nil {
 		return m.registerErr

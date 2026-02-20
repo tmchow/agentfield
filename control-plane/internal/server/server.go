@@ -424,15 +424,14 @@ func (s *AgentFieldServer) Start() error {
 	go s.statusManager.Start()
 
 	if s.presenceManager != nil {
-		go s.presenceManager.Start()
+		// Recover presence leases BEFORE starting the sweep loop so the first
+		// sweep sees all previously-registered agents instead of an empty map.
+		ctx := context.Background()
+		if err := s.presenceManager.RecoverFromDatabase(ctx, s.storage); err != nil {
+			logger.Logger.Error().Err(err).Msg("Failed to recover presence leases from database")
+		}
 
-		// Recover presence leases from database
-		go func() {
-			ctx := context.Background()
-			if err := s.presenceManager.RecoverFromDatabase(ctx, s.storage); err != nil {
-				logger.Logger.Error().Err(err).Msg("Failed to recover presence leases from database")
-			}
-		}()
+		go s.presenceManager.Start()
 	}
 
 	// Start health monitor service in background
