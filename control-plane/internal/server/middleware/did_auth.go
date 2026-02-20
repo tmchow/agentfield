@@ -51,6 +51,8 @@ const (
 )
 
 // signatureCache provides replay protection by tracking recently seen signatures.
+// A single global instance is shared across all middleware instances to prevent
+// replay attacks that target different route groups.
 type signatureCache struct {
 	mu      sync.Mutex
 	entries map[string]time.Time
@@ -58,15 +60,23 @@ type signatureCache struct {
 	stop    chan struct{}
 }
 
-func newSignatureCache(ttl time.Duration) *signatureCache {
-	sc := &signatureCache{
-		entries: make(map[string]time.Time),
-		ttl:     ttl,
-		stop:    make(chan struct{}),
-	}
-	// Start background cleanup goroutine
-	go sc.cleanup()
-	return sc
+var (
+	globalReplayCache     *signatureCache
+	globalReplayCacheOnce sync.Once
+)
+
+// getGlobalReplayCache returns the shared replay cache singleton.
+// The TTL is set by the first caller; subsequent calls reuse the same instance.
+func getGlobalReplayCache(ttl time.Duration) *signatureCache {
+	globalReplayCacheOnce.Do(func() {
+		globalReplayCache = &signatureCache{
+			entries: make(map[string]time.Time),
+			ttl:     ttl,
+			stop:    make(chan struct{}),
+		}
+		go globalReplayCache.cleanup()
+	})
+	return globalReplayCache
 }
 
 // Close stops the background cleanup goroutine.
@@ -140,8 +150,8 @@ func DIDAuthMiddleware(didService DIDWebServiceInterface, config DIDAuthConfig) 
 		skipPathSet[p] = struct{}{}
 	}
 
-	// Create signature replay cache with TTL matching the timestamp window
-	replayCache := newSignatureCache(time.Duration(config.TimestampWindowSeconds) * time.Second)
+	// Use the global replay cache shared across all middleware instances
+	replayCache := getGlobalReplayCache(time.Duration(config.TimestampWindowSeconds) * time.Second)
 
 	return func(c *gin.Context) {
 		// Skip if DID auth is disabled

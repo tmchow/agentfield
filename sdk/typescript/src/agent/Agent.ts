@@ -449,12 +449,21 @@ export class Agent {
       const verifier = this.localVerifier;
       const realtimeFunctions = this.realtimeValidationFunctions;
 
-      // Rate limiter for auth endpoints: max 30 attempts per IP per 60s window
+      // Rate limiter for auth endpoints: max 30 attempts per identity per 60s window.
+      // Uses X-Caller-DID when present so agents behind shared NAT/gateway don't
+      // exhaust each other's quota. Falls back to IP when no DID is claimed.
       const authRateLimiter = rateLimit({
         windowMs: 60_000,
         max: 30,
         standardHeaders: true,
         legacyHeaders: false,
+        keyGenerator: (req) => {
+          const callerDID = req.headers['x-caller-did'];
+          if (typeof callerDID === 'string' && callerDID.length > 0) {
+            return callerDID;
+          }
+          return req.ip ?? 'unknown';
+        },
         message: { error: 'rate_limit_exceeded', message: 'Too many authentication attempts. Try again later.' },
         skip: (req) => {
           const path = req.path;

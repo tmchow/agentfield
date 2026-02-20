@@ -47,7 +47,6 @@ func (ls *LocalStorage) autoMigrateSchema(ctx context.Context) error {
 		&ObservabilityDeadLetterQueueModel{},
 		// VC Authorization models
 		&DIDDocumentModel{},
-		&ProtectedAgentConfigModel{},
 		&AccessPolicyModel{},
 		&AgentTagVCModel{},
 	}
