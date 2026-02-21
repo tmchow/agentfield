@@ -254,6 +254,7 @@ Real-world patterns built on AgentField:
 
 | Example | Description | Links |
 |---------|-------------|-------|
+| **SWE-AF** | Autonomous software engineering factory. One API call spins up a full engineering fleet — PM, architect, coders, QA, reviewers, merger — that plans, builds, tests, and ships complex software end-to-end. Scored **95/100** with haiku, outperforming Claude Code sonnet (73) and Codex (62) on the same benchmark. Ships real PRs: [PR #179](https://github.com/Agent-Field/agentfield/pull/179) was built entirely by SWE-AF (10 issues, 217 tests passing, $19.23 total cost). | [GitHub](https://github.com/Agent-Field/SWE-AF) |
 | **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/Agent-Field/af-deep-research) • [Docs](https://agentfield.ai/examples) |
 | **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://agentfield.ai/examples/complete-agents/rag-evaluator) |
 

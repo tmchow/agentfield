@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.42-rc.1] - 2026-02-18
+
+
+### Added
+
+- Feat(sdk/go): add support for image inputs in ai calls (#164)
+
+* feat: add support for image and audio inputs in ai calls
+
+* fix tests
+
+* fix with image calls
+
+* mend
+
+* mend
+
+* fix: correct image serialization format and remove debug code
+
+- Use OpenAI-standard image_url format with nested {url} struct instead
+  of non-standard input_image type with flat string
+- Add MarshalJSON to Message for backward-compatible serialization
+  (single text parts serialize as plain string)
+- Remove transformForOpenRouter that was dropping Temperature, MaxTokens,
+  Stream, ResponseFormat and other request fields
+- Remove debug fmt.Printf left in production code
+- Fix case-sensitive MIME type detection (now handles .PNG, .JPG, etc.)
+- Fix typo in test ("Reponse" -> "Response")
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Abir Abbas <abirabbas1998@gmail.com>
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (ce9ef63)
+
+## [0.1.41] - 2026-02-17
+
+## [0.1.41-rc.4] - 2026-02-17
+
+
+### Other
+
+- Fix async execution polling missing auth headers (#180)
+
+The _poll_single_execution and _batch_poll_executions methods did not
+include authentication headers when polling execution status, causing
+401 Unauthorized errors when the control plane requires API key auth.
+
+Add auth_headers parameter to AsyncExecutionManager and pass it through
+from both AgentFieldClient and Agent when creating the manager.
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (26692de)
+
+- Add SWE-AF as first production example in README
+
+SWE-AF is an autonomous software engineering factory built on AgentField —
+one API call spins up a full engineering fleet that plans, codes, tests,
+and ships complex software end-to-end.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com> (56a9ffa)
+
 ## [0.1.41-rc.3] - 2026-02-10
 
 

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 
@@ -11,16 +12,30 @@ import (
 func TestWithSystem(t *testing.T) {
 	req := &Request{
 		Messages: []Message{
-			{Role: "user", Content: "Hello"},
+			{
+				Role: "user",
+				Content: []ContentPart{
+					{Type: "text", Text: "Hello"},
+				},
+			},
 		},
 	}
 
 	err := WithSystem("You are a helpful assistant")(req)
 	assert.NoError(t, err)
 	assert.Len(t, req.Messages, 2)
-	assert.Equal(t, "system", req.Messages[0].Role)
-	assert.Equal(t, "You are a helpful assistant", req.Messages[0].Content)
-	assert.Equal(t, "user", req.Messages[1].Role)
+
+	systemMsg := req.Messages[0]
+	assert.Equal(t, "system", systemMsg.Role)
+	assert.Len(t, systemMsg.Content, 1)
+	assert.Equal(t, "text", systemMsg.Content[0].Type)
+	assert.Equal(t, "You are a helpful assistant", systemMsg.Content[0].Text)
+
+	userMsg := req.Messages[1]
+	assert.Equal(t, "user", userMsg.Role)
+	assert.Len(t, userMsg.Content, 1)
+	assert.Equal(t, "text", userMsg.Content[0].Type)
+	assert.Equal(t, "Hello", userMsg.Content[0].Text)
 }
 
 func TestWithModel(t *testing.T) {
@@ -143,6 +158,129 @@ func TestWithSchema_InvalidType(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestWithImageFile(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
+	assert.NoError(t, err)
+	tempFile.Close()
+
+	req := &Request{}
+	err = WithImageFile(tempFile.Name())(req)
+
+	assert.NoError(t, err)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Contains(t, part.ImageURL.URL, "data:image/jpeg;base64,")
+}
+
+func TestWithImageURL(t *testing.T) {
+	req := &Request{}
+	testURL := "https://example.com/image.jpg"
+
+	err := WithImageURL(testURL)(req)
+
+	assert.NoError(t, err)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Equal(t, testURL, part.ImageURL.URL)
+}
+
+func TestWithImageBytes(t *testing.T) {
+	req := &Request{}
+	testBytes := []byte{0xFF, 0xD8, 0xFF}
+	testMIMEType := "image/jpeg"
+
+	err := WithImageBytes(testBytes, testMIMEType)(req)
+
+	assert.NoError(t, err)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 1)
+
+	part := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part.Type)
+	assert.NotNil(t, part.ImageURL)
+	assert.Contains(t, part.ImageURL.URL, "data:image/jpeg;base64,")
+}
+
+func TestWithImageFile_Error(t *testing.T) {
+	req := &Request{}
+
+	err := WithImageFile("non_existent_file.jpg")(req)
+
+	assert.Error(t, err)
+	assert.Len(t, req.Messages, 0)
+}
+
+func TestWithImageBytes_EmptyInput(t *testing.T) {
+	req := &Request{}
+
+	err := WithImageBytes(nil, "")(req)
+
+	assert.NoError(t, err)
+	assert.Len(t, req.Messages, 0)
+}
+
+func TestMultipleImages(t *testing.T) {
+	req := &Request{}
+
+	req.Messages = append(req.Messages, Message{
+		Role:    "user",
+		Content: []ContentPart{},
+	})
+
+	// Image via URL
+	err := WithImageURL("https://example.com/image1.jpg")(req)
+	assert.NoError(t, err)
+
+	// Image via file
+	tempFile, err := os.CreateTemp("", "test_image_*.jpg")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write([]byte{0xFF, 0xD8, 0xFF})
+	assert.NoError(t, err)
+	tempFile.Close()
+
+	err = WithImageFile(tempFile.Name())(req)
+	assert.NoError(t, err)
+
+	testBytes := []byte{0x89, 0x50, 0x4E, 0x47}
+	err = WithImageBytes(testBytes, "image/png")(req)
+	assert.NoError(t, err)
+
+	assert.Len(t, req.Messages, 1)
+	assert.Len(t, req.Messages[0].Content, 3)
+
+	part1 := req.Messages[0].Content[0]
+	assert.Equal(t, "image_url", part1.Type)
+	assert.NotNil(t, part1.ImageURL)
+	assert.Equal(t, "https://example.com/image1.jpg", part1.ImageURL.URL)
+
+	part2 := req.Messages[0].Content[1]
+	assert.Equal(t, "image_url", part2.Type)
+	assert.NotNil(t, part2.ImageURL)
+	assert.Contains(t, part2.ImageURL.URL, "data:image/jpeg;base64,")
+
+	part3 := req.Messages[0].Content[2]
+	assert.Equal(t, "image_url", part3.Type)
+	assert.NotNil(t, part3.ImageURL)
+	assert.Contains(t, part3.ImageURL.URL, "data:image/png;base64,")
+}
+
 func TestStructToJSONSchema(t *testing.T) {
 	type User struct {
 		ID       int    `json:"id"`
@@ -249,7 +387,12 @@ func TestGoTypeToJSONType_WithPointer(t *testing.T) {
 func TestMultipleOptions(t *testing.T) {
 	req := &Request{
 		Messages: []Message{
-			{Role: "user", Content: "Hello"},
+			{
+				Role: "user",
+				Content: []ContentPart{
+					{Type: "text", Text: "Hello"},
+				},
+			},
 		},
 	}
 
