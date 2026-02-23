@@ -163,16 +163,22 @@ func PermissionCheckMiddleware(
 
 			if callerAgentID != "" {
 				// Try to get VC-verified tags first (cryptographic proof of approved tags)
+				vcChecked := false
 				if tagVCVerifier != nil {
 					tagVC, vcErr := tagVCVerifier.VerifyAgentTagVC(ctx, callerAgentID)
 					if vcErr == nil && tagVC != nil {
 						callerTags = tagVC.CredentialSubject.Permissions.Tags
+						vcChecked = true
+					} else if vcErr != nil {
+						// VC exists but verification failed (revoked, expired, invalid signature).
+						// Fail closed: use empty tags so policies requiring caller tags won't match.
+						logger.Logger.Warn().Err(vcErr).Str("caller_agent_id", callerAgentID).Msg("Caller tag VC verification failed, using empty tags (fail-closed)")
+						vcChecked = true
 					}
-					// If VC verification failed or no VC found, fall through to registration tags
 				}
-				// Fall back to registration tags if VC tags not available.
+				// Fall back to registration tags only when no VC was found at all.
 				// This covers auto-approved agents that haven't received a Tag VC yet.
-				if len(callerTags) == 0 {
+				if !vcChecked && len(callerTags) == 0 {
 					if callerAgent, agentErr := agentResolver.GetAgent(ctx, callerAgentID); agentErr == nil && callerAgent != nil {
 						callerTags = services.CanonicalAgentTags(callerAgent)
 					}

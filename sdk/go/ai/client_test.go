@@ -73,7 +73,9 @@ func TestComplete(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, req.Messages, 1)
 		assert.Equal(t, "user", req.Messages[0].Role)
-		assert.Equal(t, "Hello", req.Messages[0].Content)
+		assert.Len(t, req.Messages[0].Content, 1)
+		assert.Equal(t, "text", req.Messages[0].Content[0].Type)
+		assert.Equal(t, "Hello", req.Messages[0].Content[0].Text)
 
 		// Send response
 		resp := Response{
@@ -85,8 +87,13 @@ func TestComplete(t *testing.T) {
 				{
 					Index: 0,
 					Message: Message{
-						Role:    "assistant",
-						Content: "Hello! How can I help you?",
+						Role: "assistant",
+						Content: []ContentPart{
+							{
+								Type: "text",
+								Text: "Hello! How can I help you?",
+							},
+						},
 					},
 					FinishReason: "stop",
 				},
@@ -97,6 +104,7 @@ func TestComplete(t *testing.T) {
 				TotalTokens:      15,
 			},
 		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	}))
@@ -124,7 +132,17 @@ func TestComplete_WithAPIKeyOverride(t *testing.T) {
 
 		resp := Response{
 			Choices: []Choice{
-				{Message: Message{Content: "ok"}},
+				{
+					Message: Message{
+						Role: "assistant",
+						Content: []ContentPart{
+							{
+								Type: "text",
+								Text: "ok",
+							},
+						},
+					},
+				},
 			},
 		}
 		w.WriteHeader(http.StatusOK)
@@ -162,9 +180,20 @@ func TestComplete_WithOptions(t *testing.T) {
 
 		resp := Response{
 			Choices: []Choice{
-				{Message: Message{Content: "Response"}},
+				{
+					Message: Message{
+						Role: "assistant",
+						Content: []ContentPart{
+							{
+								Type: "text",
+								Text: "Response",
+							},
+						},
+					},
+				},
 			},
 		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	}))
@@ -197,9 +226,20 @@ func TestComplete_WithOpenRouterHeaders(t *testing.T) {
 		receivedHeaders = r.Header
 		resp := Response{
 			Choices: []Choice{
-				{Message: Message{Content: "Response"}},
+				{
+					Message: Message{
+						Role: "assistant",
+						Content: []ContentPart{
+							{
+								Type: "text",
+								Text: "Response",
+							},
+						},
+					},
+				},
 			},
 		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	}))
@@ -325,9 +365,20 @@ func TestCompleteWithMessages(t *testing.T) {
 
 		resp := Response{
 			Choices: []Choice{
-				{Message: Message{Content: "Response"}},
+				{
+					Message: Message{
+						Role: "assistant", // optional but recommended
+						Content: []ContentPart{
+							{
+								Type: "text",
+								Text: "Response",
+							},
+						},
+					},
+				},
 			},
 		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	}))
@@ -343,8 +394,18 @@ func TestCompleteWithMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	messages := []Message{
-		{Role: "system", Content: "You are helpful"},
-		{Role: "user", Content: "Hello"},
+		{
+			Role: "system",
+			Content: []ContentPart{
+				{Type: "text", Text: "You are helpful"},
+			},
+		},
+		{
+			Role: "user",
+			Content: []ContentPart{
+				{Type: "text", Text: "Hello"},
+			},
+		},
 	}
 
 	resp, err := client.CompleteWithMessages(context.Background(), messages)

@@ -1229,6 +1229,7 @@ class AgentFieldClient:
             self._async_execution_manager = AsyncExecutionManager(
                 base_url=self.base_url,
                 config=self.async_config,
+                auth_headers=self._get_auth_headers(),
                 did_authenticator=self._did_authenticator,
             )
             await self._async_execution_manager.start()

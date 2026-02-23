@@ -493,13 +493,7 @@ func (s *VCService) SignAgentTagVC(vc *types.AgentTagVCDocument) (*types.VCProof
 	// Resolve the issuer's identity (control plane DID)
 	issuerIdentity, err := s.didService.ResolveDID(vc.Issuer)
 	if err != nil {
-		logger.Logger.Warn().Err(err).Str("issuer", vc.Issuer).Msg("Cannot resolve issuer DID for agent tag VC signing, falling back to unsigned")
-		return &types.VCProof{
-			Type:         "UnsignedAuditRecord",
-			Created:      time.Now().Format(time.RFC3339),
-			ProofPurpose: "assertionMethod",
-			ProofValue:   "",
-		}, nil
+		return nil, fmt.Errorf("cannot resolve issuer DID %s for agent tag VC signing: %w", vc.Issuer, err)
 	}
 
 	// Create canonical representation (without proof) for signing

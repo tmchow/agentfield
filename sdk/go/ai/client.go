@@ -39,7 +39,12 @@ func (c *Client) Complete(ctx context.Context, prompt string, opts ...Option) (*
 	// Build base request
 	req := &Request{
 		Messages: []Message{
-			{Role: "user", Content: prompt},
+			{
+				Role: "user",
+				Content: []ContentPart{
+					{Type: "text", Text: prompt},
+				},
+			},
 		},
 		Model:       c.config.Model,
 		Temperature: &c.config.Temperature,
@@ -155,7 +160,12 @@ func (c *Client) StreamComplete(ctx context.Context, prompt string, opts ...Opti
 		opts = append(opts, WithStream())
 		req := &Request{
 			Messages: []Message{
-				{Role: "user", Content: prompt},
+				{
+					Role: "user",
+					Content: []ContentPart{
+						{Type: "text", Text: prompt},
+					},
+				},
 			},
 			Model:       c.config.Model,
 			Temperature: &c.config.Temperature,

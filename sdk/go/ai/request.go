@@ -1,16 +1,14 @@
 package ai
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 )
 
 // Message represents a chat message.
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
 
 // Request represents an AI completion request.
 type Request struct {
@@ -37,6 +35,63 @@ type Request struct {
 	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
 }
 
+type Message struct {
+	Role    string        `json:"role"`
+	Content []ContentPart `json:"content"`
+}
+
+type ContentPart struct {
+	Type     string        `json:"type"` // "text" or "image_url"
+	Text     string        `json:"text,omitempty"`
+	ImageURL *ImageURLData `json:"image_url,omitempty"`
+}
+
+// ImageURLData holds the URL and optional detail level for image content parts.
+type ImageURLData struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// MarshalJSON serializes a Message. If the content is a single text part,
+// it serializes content as a plain string for maximum API compatibility.
+func (m Message) MarshalJSON() ([]byte, error) {
+	if len(m.Content) == 1 && m.Content[0].Type == "text" && m.Content[0].ImageURL == nil {
+		return json.Marshal(struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{Role: m.Role, Content: m.Content[0].Text})
+	}
+	type Alias Message
+	return json.Marshal((Alias)(m))
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	type Alias Message
+	aux := &struct {
+		Content json.RawMessage `json:"content"`
+		*Alias
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	var s string
+	if err := json.Unmarshal(aux.Content, &s); err == nil {
+		m.Content = []ContentPart{{Type: "text", Text: s}}
+		return nil
+	}
+
+	var arr []ContentPart
+	if err := json.Unmarshal(aux.Content, &arr); err != nil {
+		return err
+	}
+	m.Content = arr
+	return nil
+}
+
 // ResponseFormat specifies the desired output format.
 type ResponseFormat struct {
 	Type       string      `json:"type"` // "json_object" or "json_schema"
@@ -56,7 +111,14 @@ type Option func(*Request) error
 // WithSystem adds a system message to the request.
 func WithSystem(content string) Option {
 	return func(r *Request) error {
-		r.Messages = append([]Message{{Role: "system", Content: content}}, r.Messages...)
+		r.Messages = append([]Message{
+			{
+				Role: "system",
+				Content: []ContentPart{
+					{Type: "text", Text: content},
+				},
+			},
+		}, r.Messages...)
 		return nil
 	}
 }
@@ -149,6 +211,86 @@ func WithSchema(schema interface{}) Option {
 				Schema: schemaBytes,
 			},
 		}
+		return nil
+	}
+}
+
+// Image options
+func WithImageFile(path string) Option {
+	return func(r *Request) error {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read image file: %w", err)
+		}
+
+		mimeType := detectMIMEType(path)
+		encoded := base64.StdEncoding.EncodeToString(data)
+
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
+		}
+
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageURLData{
+				URL: "data:" + mimeType + ";base64," + encoded,
+			},
+		})
+
+		return nil
+	}
+}
+
+// WithImageURL attaches an image from a remote URL.
+func WithImageURL(url string) Option {
+	return func(r *Request) error {
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
+		}
+
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageURLData{
+				URL: url,
+			},
+		})
+
+		return nil
+	}
+}
+
+// WithImageBytes attaches an image from raw bytes (SDK encodes automatically).
+func WithImageBytes(data []byte, mimeType string) Option {
+	return func(r *Request) error {
+		if len(data) == 0 {
+			return nil
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(data)
+
+		if len(r.Messages) == 0 {
+			r.Messages = append(r.Messages, Message{
+				Role:    "user",
+				Content: []ContentPart{},
+			})
+		}
+
+		last := &r.Messages[len(r.Messages)-1]
+		last.Content = append(last.Content, ContentPart{
+			Type: "image_url",
+			ImageURL: &ImageURLData{
+				URL: "data:" + mimeType + ";base64," + encoded,
+			},
+		})
+
 		return nil
 	}
 }

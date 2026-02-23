@@ -428,20 +428,6 @@ type DIDDocumentModel struct {
 
 func (DIDDocumentModel) TableName() string { return "did_documents" }
 
-// ProtectedAgentConfigModel represents a protected agent rule configuration.
-// Defines which agents require permission to call based on patterns.
-type ProtectedAgentConfigModel struct {
-	ID          int64     `gorm:"column:id;primaryKey;autoIncrement"`
-	PatternType string    `gorm:"column:pattern_type;not null;uniqueIndex:idx_protected_pattern,priority:1"` // 'tag', 'tag_pattern', 'agent_id'
-	Pattern     string    `gorm:"column:pattern;not null;uniqueIndex:idx_protected_pattern,priority:2"`
-	Description *string   `gorm:"column:description"`
-	Enabled     bool      `gorm:"column:enabled;not null;default:true;index"`
-	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
-}
-
-func (ProtectedAgentConfigModel) TableName() string { return "protected_agents_config" }
-
 // AccessPolicyModel represents a tag-based access policy for cross-agent calls.
 type AccessPolicyModel struct {
 	ID             int64     `gorm:"column:id;primaryKey;autoIncrement"`

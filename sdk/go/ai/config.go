@@ -89,3 +89,4 @@ func (c *Config) IsOpenRouter() bool {
 	return c.BaseURL == "https://openrouter.ai/api/v1" ||
 		c.BaseURL == "https://openrouter.ai/api/v1/"
 }
+

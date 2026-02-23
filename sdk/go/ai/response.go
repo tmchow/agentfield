@@ -3,6 +3,7 @@ package ai
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Response represents the API response from OpenAI/OpenRouter.
@@ -65,10 +66,18 @@ type ErrorDetail struct {
 
 // Text returns the text content from the first choice.
 func (r *Response) Text() string {
-	if len(r.Choices) == 0 {
+	if len(r.Choices) == 0 || len(r.Choices[0].Message.Content) == 0 {
 		return ""
 	}
-	return r.Choices[0].Message.Content
+
+	var sb strings.Builder
+	for _, part := range r.Choices[0].Message.Content {
+		if part.Type == "text" {
+			sb.WriteString(part.Text)
+		}
+	}
+
+	return sb.String()
 }
 
 // JSON parses the response content as JSON into the provided destination.

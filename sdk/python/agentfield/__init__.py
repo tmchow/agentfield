@@ -93,4 +93,4 @@ __all__ = [
     "HEADER_DID_TIMESTAMP",
 ]
 
-__version__ = "0.1.41-rc.3"
+__version__ = "0.1.42-rc.1"
