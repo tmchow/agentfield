@@ -216,6 +216,9 @@ func (s *stubStorage) UpdateAgentLifecycleStatus(ctx context.Context, id string,
 func (s *stubStorage) UpdateAgentVersion(ctx context.Context, id string, version string) error {
 	return nil
 }
+func (s *stubStorage) DeleteAgentVersion(ctx context.Context, id string, version string) error {
+	return nil
+}
 func (s *stubStorage) UpdateAgentTrafficWeight(ctx context.Context, id string, version string, weight int) error {
 	return nil
 }

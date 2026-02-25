@@ -110,12 +110,21 @@ func (ls *LocalStorage) migrateAgentNodesCompositePK(ctx context.Context) error 
 
 // migrateAgentNodesCompositePKPostgres handles the composite PK migration for PostgreSQL.
 func (ls *LocalStorage) migrateAgentNodesCompositePKPostgres(ctx context.Context) error {
+	// Check if the table exists at all — on a fresh database GORM will create it
+	// with the composite PK already in place, so we skip this migration entirely.
+	var tableExists int
+	if err := ls.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'agent_nodes'`,
+	).Scan(&tableExists); err != nil || tableExists == 0 {
+		return nil // Fresh install, GORM will create the table
+	}
+
 	var count int
 	err := ls.db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'agent_nodes' AND column_name = 'traffic_weight'`,
 	).Scan(&count)
 	if err != nil {
-		return nil // Table might not exist yet
+		return nil // Unexpected error querying schema
 	}
 	if count > 0 {
 		return nil // Already migrated
