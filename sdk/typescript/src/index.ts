@@ -22,3 +22,5 @@ export * from './types/reasoner.js';
 export * from './types/skill.js';
 export * from './types/mcp.js';
 export * from './harness/index.js';
+export * from './status/ExecutionStatus.js';
+export * from './approval/ApprovalClient.js';
