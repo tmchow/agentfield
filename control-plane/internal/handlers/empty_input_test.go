@@ -70,7 +70,7 @@ func TestExecuteHandler_EmptyInput(t *testing.T) {
 	payloads := services.NewFilePayloadStore(t.TempDir())
 
 	router := gin.New()
-	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second))
+	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second, ""))
 
 	// Empty input object — should be accepted for parameterless skills
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.ping",
@@ -113,7 +113,7 @@ func TestExecuteHandler_NilInput(t *testing.T) {
 	payloads := services.NewFilePayloadStore(t.TempDir())
 
 	router := gin.New()
-	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second))
+	router.POST("/api/v1/execute/:target", ExecuteHandler(store, payloads, nil, 90*time.Second, ""))
 
 	// No input field at all — should default to empty map
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/execute/node-1.ping",
