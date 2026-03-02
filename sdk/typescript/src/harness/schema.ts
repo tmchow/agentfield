@@ -60,7 +60,12 @@ function estimateTokens(text: string): number {
 function writeSchemaFile(schemaJson: string, cwd: string): string {
   const filePath = getSchemaPath(cwd);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, schemaJson, 'utf8');
+  const fd = fs.openSync(filePath, 'w', 0o600);
+  try {
+    fs.writeFileSync(fd, schemaJson, 'utf8');
+  } finally {
+    fs.closeSync(fd);
+  }
   return filePath;
 }
 

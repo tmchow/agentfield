@@ -93,7 +93,7 @@ export class HarnessRunner {
       ] as const) {
         const value = config[key];
         if (value !== undefined && value !== null) {
-          out[key] = value;
+          (out as Record<string, unknown>)[key] = value;
         }
       }
     }
@@ -182,7 +182,8 @@ export class HarnessRunner {
   }
 
   private buildProvider(providerName: string, options: RunnerOptions): HarnessProvider {
-    return buildProvider({ provider: providerName as HarnessConfig['provider'], ...options });
+    const { provider: _, ...rest } = options;
+    return buildProvider({ provider: providerName as HarnessConfig['provider'], ...rest });
   }
 
   private computeBackoffDelay(

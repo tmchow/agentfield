@@ -101,8 +101,13 @@ def write_schema_file(schema_json: str, cwd: str) -> str:
     """Write schema JSON to the schema file. Returns the file path."""
     path = get_schema_path(cwd)
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as file_obj:
-        file_obj.write(schema_json)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as file_obj:
+            file_obj.write(schema_json)
+    except Exception:
+        os.close(fd)
+        raise
     return path
 
 
