@@ -3,6 +3,7 @@ import type { ReasonerDefinition } from './reasoner.js';
 import type { SkillDefinition } from './skill.js';
 import type { MemoryChangeEvent, MemoryWatchHandler } from '../memory/MemoryInterface.js';
 import type { ExecutionMetadata } from '../context/ExecutionContext.js';
+import type { HarnessConfig } from '../harness/types.js';
 
 export type DeploymentType = 'long_running' | 'serverless';
 
@@ -15,6 +16,7 @@ export interface AgentConfig {
   host?: string;
   publicUrl?: string;
   aiConfig?: AIConfig;
+  harnessConfig?: HarnessConfig;
   memoryConfig?: MemoryConfig;
   didEnabled?: boolean;
   devMode?: boolean;

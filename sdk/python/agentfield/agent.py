@@ -14,6 +14,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    TYPE_CHECKING,
     List,
     Optional,
     Set,
@@ -39,6 +40,7 @@ from agentfield.execution_context import (
     set_execution_context,
 )
 from agentfield.execution_state import ExecuteError
+from agentfield.harness._runner import HarnessRunner
 from agentfield.did_manager import DIDManager
 from agentfield.vc_generator import VCGenerator
 from agentfield.mcp_client import MCPClientRegistry
@@ -52,6 +54,7 @@ from agentfield.types import (
     AgentStatus,
     AIConfig,
     DiscoveryResult,
+    HarnessConfig,
     MemoryConfig,
 )
 from agentfield.multimodal_response import MultimodalResponse
@@ -65,6 +68,9 @@ from pydantic import BaseModel, ValidationError
 from dataclasses import dataclass, field
 import weakref
 
+if TYPE_CHECKING:
+    from agentfield.harness._result import HarnessResult
+
 # Use slots=True for memory efficiency on Python 3.10+, fallback for older versions
 _dataclass_kwargs = {"slots": True} if sys.version_info >= (3, 10) else {}
 
@@ -76,6 +82,7 @@ class ReasonerEntry:
 
     Stores only essential data; schemas generated on-demand to reduce memory.
     """
+
     id: str
     func: Callable
     input_types: Dict[str, tuple]  # (type, default) tuples - not Pydantic model
@@ -88,6 +95,7 @@ class ReasonerEntry:
 @dataclass(**_dataclass_kwargs)
 class SkillEntry:
     """Minimal skill metadata - uses __slots__ for memory efficiency."""
+
     id: str
     func: Callable
     input_types: Dict[str, tuple]  # (type, default) tuples
@@ -397,6 +405,7 @@ class Agent(FastAPI):
         tags: Optional[List[str]] = None,
         author: Optional[Dict[str, str]] = None,
         ai_config: Optional[AIConfig] = None,
+        harness_config: Optional["HarnessConfig"] = None,
         memory_config: Optional[MemoryConfig] = None,
         dev_mode: bool = False,
         async_config: Optional[AsyncConfig] = None,
@@ -542,6 +551,7 @@ class Agent(FastAPI):
 
         # Initialize AI and Memory configurations
         self.ai_config = ai_config if ai_config else AIConfig.from_env()
+        self.harness_config = harness_config
         self.memory_config = (
             memory_config
             if memory_config
@@ -571,6 +581,7 @@ class Agent(FastAPI):
         # Initialize handlers (some are lazy-loaded for performance)
         # Lazy handlers - created on first access to reduce memory footprint
         self._ai_handler: Optional[AgentAI] = None
+        self._harness_runner: Optional[HarnessRunner] = None
         self._cli_handler: Optional[AgentCLI] = None
         # Eager handlers - required for core agent functionality
         self.mcp_handler = AgentMCP(self)
@@ -593,7 +604,9 @@ class Agent(FastAPI):
 
                 # Initialize Dynamic Skill Manager when both MCP components are available
                 if self.mcp_manager and self.mcp_client_registry:
-                    self.dynamic_skill_manager = DynamicMCPSkillManager(self, self.dev_mode)
+                    self.dynamic_skill_manager = DynamicMCPSkillManager(
+                        self, self.dev_mode
+                    )
                     if self.dev_mode:
                         log_debug("Dynamic MCP skill manager initialized")
 
@@ -614,6 +627,7 @@ class Agent(FastAPI):
         self._realtime_validation_functions: Set[str] = set()
         if local_verification:
             from agentfield.verification import LocalVerifier
+
             self._local_verifier = LocalVerifier(
                 agentfield_url=agentfield_server,
                 refresh_interval=verification_refresh_interval,
@@ -658,6 +672,13 @@ class Agent(FastAPI):
         return self._ai_handler
 
     @property
+    def harness_runner(self) -> HarnessRunner:
+        """Lazy-loaded harness runner - only initialized when harness features are used."""
+        if self._harness_runner is None:
+            self._harness_runner = HarnessRunner(self.harness_config)
+        return self._harness_runner
+
+    @property
     def cli_handler(self) -> AgentCLI:
         """Lazy-loaded CLI handler - only initialized when CLI is invoked."""
         if self._cli_handler is None:
@@ -694,7 +715,9 @@ class Agent(FastAPI):
         """Allow setting skills for backward compatibility (deprecated)."""
         self._skills_legacy = value
 
-    def _entry_to_metadata(self, entry: Union[ReasonerEntry, SkillEntry], kind: str) -> Dict:
+    def _entry_to_metadata(
+        self, entry: Union[ReasonerEntry, SkillEntry], kind: str
+    ) -> Dict:
         """Convert a registry entry to legacy metadata dict format with on-demand schema generation."""
         # Generate input schema from stored types
         input_schema = self._types_to_json_schema(entry.input_types)
@@ -707,10 +730,14 @@ class Agent(FastAPI):
             "input_schema": input_schema,
             "output_schema": output_schema,
             "memory_config": self.memory_config.to_dict(),
-            "return_type_hint": getattr(entry.output_type, "__name__", str(entry.output_type)),
+            "return_type_hint": getattr(
+                entry.output_type, "__name__", str(entry.output_type)
+            ),
             "tags": entry.tags,
             "proposed_tags": entry.tags,
-            "vc_enabled": entry.vc_enabled if entry.vc_enabled is not None else self._agent_vc_enabled,
+            "vc_enabled": entry.vc_enabled
+            if entry.vc_enabled is not None
+            else self._agent_vc_enabled,
         }
         return metadata
 
@@ -760,7 +787,10 @@ class Agent(FastAPI):
         origin = getattr(typ, "__origin__", None)
         if origin is list:
             args = getattr(typ, "__args__", (Any,))
-            return {"type": "array", "items": self._type_to_json_schema(args[0]) if args else {}}
+            return {
+                "type": "array",
+                "items": self._type_to_json_schema(args[0]) if args else {},
+            }
         if origin is dict:
             return {"type": "object", "additionalProperties": True}
         if origin is Union:
@@ -774,7 +804,9 @@ class Agent(FastAPI):
         # Default fallback
         return {"type": "object"}
 
-    def _validate_handler_input(self, data: dict, input_types: Dict[str, tuple]) -> dict:
+    def _validate_handler_input(
+        self, data: dict, input_types: Dict[str, tuple]
+    ) -> dict:
         """
         Validate input data against expected types at runtime.
 
@@ -843,11 +875,17 @@ class Agent(FastAPI):
                         result[name] = value.lower() in ("true", "1", "yes")
                     else:
                         result[name] = bool(value)
-                elif actual_type is dict or getattr(actual_type, "__origin__", None) is dict:
+                elif (
+                    actual_type is dict
+                    or getattr(actual_type, "__origin__", None) is dict
+                ):
                     if not isinstance(value, dict):
                         raise ValueError(f"Field '{name}' must be a dict")
                     result[name] = dict(value)
-                elif actual_type is list or getattr(actual_type, "__origin__", None) is list:
+                elif (
+                    actual_type is list
+                    or getattr(actual_type, "__origin__", None) is list
+                ):
                     if not isinstance(value, list):
                         raise ValueError(f"Field '{name}' must be a list")
                     result[name] = list(value)
@@ -862,7 +900,9 @@ class Agent(FastAPI):
 
         return result
 
-    def handle_serverless(self, event: dict, adapter: Optional[Callable] = None) -> dict:
+    def handle_serverless(
+        self, event: dict, adapter: Optional[Callable] = None
+    ) -> dict:
         """
         Universal serverless handler for executing reasoners and skills.
 
@@ -1079,12 +1119,15 @@ class Agent(FastAPI):
         """Scans for methods decorated with @on_change and registers them as listeners."""
         if not self.memory_event_client:
             self.memory_event_client = MemoryEventClient(
-                self.agentfield_server, self._get_current_execution_context(), self.api_key
+                self.agentfield_server,
+                self._get_current_execution_context(),
+                self.api_key,
             )
 
-        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
-            if hasattr(method, "_memory_event_listener"):
-                patterns = getattr(method, "_memory_event_patterns", [])
+        for name, fn in inspect.getmembers(type(self), predicate=inspect.isfunction):
+            if hasattr(fn, "_memory_event_listener"):
+                method = getattr(self, name)
+                patterns = getattr(fn, "_memory_event_patterns", [])
 
                 async def listener(event):
                     # This is a simplified listener, a more robust implementation
@@ -1198,7 +1241,9 @@ class Agent(FastAPI):
         )
         if not self.memory_event_client:
             self.memory_event_client = MemoryEventClient(
-                self.agentfield_server, self._get_current_execution_context(), self.api_key
+                self.agentfield_server,
+                self._get_current_execution_context(),
+                self.api_key,
             )
         return MemoryInterface(memory_client, self.memory_event_client)
 
@@ -1241,7 +1286,10 @@ class Agent(FastAPI):
             return thread_local_ctx
         # Only return agent-level context if it was set during an actual execution
         # (i.e., has registered=True), not the default context created at init time
-        if self._current_execution_context and self._current_execution_context.registered:
+        if (
+            self._current_execution_context
+            and self._current_execution_context.registered
+        ):
             return self._current_execution_context
         return None
 
@@ -1483,7 +1531,9 @@ class Agent(FastAPI):
                 agent_did = self.did_manager.get_agent_did()
                 agent_private_key = None
                 if self.did_manager.identity_package:
-                    agent_private_key = self.did_manager.identity_package.agent_did.private_key_jwk
+                    agent_private_key = (
+                        self.did_manager.identity_package.agent_did.private_key_jwk
+                    )
                 if agent_did and agent_private_key:
                     self.client.set_did_credentials(agent_did, agent_private_key)
 
@@ -1599,7 +1649,9 @@ class Agent(FastAPI):
 
                 # Validate input at runtime (replaces Pydantic validation)
                 try:
-                    validated_input = self._validate_handler_input(body, handler_input_fields)
+                    validated_input = self._validate_handler_input(
+                        body, handler_input_fields
+                    )
                 except ValueError as e:
                     return JSONResponse(
                         status_code=422,
@@ -1637,7 +1689,9 @@ class Agent(FastAPI):
             # 🔥 ENHANCED: Comprehensive function replacement for unified tracking
             # Use weakref to avoid circular reference: Agent → tracked_func → Agent
             original_func = func
-            workflow_ref = weakref.ref(self.workflow_handler) if self.workflow_handler else None
+            workflow_ref = (
+                weakref.ref(self.workflow_handler) if self.workflow_handler else None
+            )
 
             async def tracked_func(*args, **kwargs):
                 """Enhanced tracked function with unified execution pipeline and context inheritance.
@@ -2210,7 +2264,9 @@ class Agent(FastAPI):
 
                 # Validate input at runtime (replaces Pydantic validation)
                 try:
-                    validated_input = self._validate_handler_input(body, handler_input_fields)
+                    validated_input = self._validate_handler_input(
+                        body, handler_input_fields
+                    )
                 except ValueError as e:
                     return JSONResponse(
                         status_code=422,
@@ -2775,6 +2831,60 @@ class Agent(FastAPI):
             response_format=response_format,
             context=context,
             memory_scope=memory_scope,
+            **kwargs,
+        )
+
+    async def harness(
+        self,
+        prompt: str,
+        *,
+        schema: Any = None,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        max_turns: Optional[int] = None,
+        max_budget_usd: Optional[float] = None,
+        tools: Optional[List[str]] = None,
+        permission_mode: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        cwd: Optional[str] = None,
+        **kwargs,
+    ) -> "HarnessResult":
+        """
+        Dispatch a task to an external coding agent and return structured results.
+
+        Works like `.ai()` but delegates to a coding agent that can read, write, and edit
+        files with optional schema-constrained output.
+
+        Args:
+            prompt: Task description for the coding agent.
+            schema: Pydantic BaseModel class for structured output validation.
+            provider: Override provider ("claude-code", "codex", "gemini", "opencode").
+            model: Override model identifier.
+            max_turns: Maximum agent iterations.
+            max_budget_usd: Cost cap in USD.
+            tools: Allowed tools list.
+            permission_mode: Permission mode ("plan", "auto", None).
+            system_prompt: System prompt for the agent.
+            env: Environment variables for the agent.
+            cwd: Working directory for the agent.
+            **kwargs: Additional provider-specific options.
+
+        Returns:
+            HarnessResult with .result (text), .parsed (validated schema), .text property.
+        """
+        return await self.harness_runner.run(
+            prompt,
+            schema=schema,
+            provider=provider,
+            model=model,
+            max_turns=max_turns,
+            max_budget_usd=max_budget_usd,
+            tools=tools,
+            permission_mode=permission_mode,
+            system_prompt=system_prompt,
+            env=env,
+            cwd=cwd,
             **kwargs,
         )
 
@@ -4037,8 +4147,12 @@ class Agent(FastAPI):
                 # that require specific caller tags will not match, which is correct
                 # fail-open behavior. The control plane remains the primary policy
                 # enforcement point with full caller context.
-                agent_tags = getattr(agent, 'agent_tags', []) or []
-                func_name = request.url.path.rstrip('/').split('/')[-1] if request.url.path else ''
+                agent_tags = getattr(agent, "agent_tags", []) or []
+                func_name = (
+                    request.url.path.rstrip("/").split("/")[-1]
+                    if request.url.path
+                    else ""
+                )
                 if not verifier.evaluate_policy([], agent_tags, func_name, {}):
                     return StarletteJSONResponse(
                         status_code=403,

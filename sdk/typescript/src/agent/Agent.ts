@@ -21,6 +21,8 @@ import { ReasonerContext } from '../context/ReasonerContext.js';
 import { SkillContext } from '../context/SkillContext.js';
 import { AIClient } from '../ai/AIClient.js';
 import { AgentFieldClient } from '../client/AgentFieldClient.js';
+import { HarnessRunner } from '../harness/runner.js';
+import type { HarnessOptions, HarnessResult } from '../harness/types.js';
 import { MemoryClient } from '../memory/MemoryClient.js';
 import { MemoryEventClient } from '../memory/MemoryEventClient.js';
 import {
@@ -50,6 +52,7 @@ export class Agent {
   private server?: http.Server;
   private heartbeatTimer?: NodeJS.Timeout;
   private readonly aiClient: AIClient;
+  private _harnessRunner?: HarnessRunner;
   private readonly agentFieldClient: AgentFieldClient;
   private readonly memoryClient: MemoryClient;
   private readonly memoryEventClient: MemoryEventClient;
@@ -174,6 +177,17 @@ export class Agent {
 
   getAIClient() {
     return this.aiClient;
+  }
+
+  getHarnessRunner(): HarnessRunner {
+    if (!this._harnessRunner) {
+      this._harnessRunner = new HarnessRunner(this.config.harnessConfig);
+    }
+    return this._harnessRunner;
+  }
+
+  async harness(prompt: string, options?: HarnessOptions): Promise<HarnessResult> {
+    return this.getHarnessRunner().run(prompt, options ?? {});
   }
 
   getMemoryInterface(metadata?: ExecutionMetadata) {
