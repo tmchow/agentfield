@@ -41,7 +41,7 @@ type ExecutionStore interface {
 
 // ExecuteRequest represents an execution request from an agent client.
 type ExecuteRequest struct {
-	Input   map[string]interface{} `json:"input" binding:"required"`
+	Input   map[string]interface{} `json:"input"`
 	Context map[string]interface{} `json:"context,omitempty"`
 	Webhook *WebhookRequest        `json:"webhook,omitempty"`
 }
@@ -781,8 +781,9 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 	if err := ginCtx.ShouldBindJSON(&req); err != nil {
 		return nil, fmt.Errorf("invalid request body: %w", err)
 	}
-	if len(req.Input) == 0 {
-		return nil, errors.New("input is required")
+	// Allow empty input for skills/reasoners that take no parameters (issue #196).
+	if req.Input == nil {
+		req.Input = map[string]interface{}{}
 	}
 
 	var (

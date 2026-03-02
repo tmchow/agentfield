@@ -20,7 +20,7 @@ import (
 
 // ExecuteReasonerRequest represents a request to execute a reasoner
 type ExecuteReasonerRequest struct {
-	Input   map[string]interface{} `json:"input" binding:"required"`
+	Input   map[string]interface{} `json:"input"`
 	Context map[string]interface{} `json:"context,omitempty"`
 }
 
@@ -101,6 +101,10 @@ func ExecuteReasonerHandler(storageProvider storage.StorageProvider) gin.Handler
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
+		}
+		// Allow empty input for reasoners that take no parameters.
+		if req.Input == nil {
+			req.Input = map[string]interface{}{}
 		}
 
 		// Find the agent node
@@ -450,6 +454,10 @@ func ExecuteSkillHandler(storageProvider storage.StorageProvider) gin.HandlerFun
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
+		}
+		// Allow empty input for skills that take no parameters.
+		if req.Input == nil {
+			req.Input = map[string]interface{}{}
 		}
 
 		// Find the agent node
