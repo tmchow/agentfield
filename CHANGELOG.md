@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.45-rc.1] - 2026-03-02
+
+
+### Fixed
+
+- Fix: allow empty input for parameterless skills/reasoners (#198)
+
+* fix: allow empty input for parameterless skills/reasoners (#196)
+
+Remove binding:"required" constraint on Input field in ExecuteRequest and
+ExecuteReasonerRequest structs. Gin interprets required on maps as
+"must be present AND non-empty", which rejects the valid {"input":{}}
+payload that SDKs send for parameterless calls.
+
+Also remove the explicit len(req.Input)==0 check in prepareExecution and
+add nil-input guards in the reasoner and skill handlers to match the
+existing pattern in execute.go.
+
+Closes #196
+
+* test: strengthen empty-input handler coverage
+
+* fix: update empty_input_test.go for ExecuteHandler signature change
+
+Main added an internalToken parameter to ExecuteHandler in PR #197.
+Update the two test call sites to pass empty string for the new param.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Abir Abbas <abirabbas1998@gmail.com>
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com> (cbdc23a)
+
 ## [0.1.44] - 2026-03-02
 
 ## [0.1.44-rc.3] - 2026-03-02
