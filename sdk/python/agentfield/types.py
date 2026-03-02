@@ -230,8 +230,7 @@ class DiscoveryResponse:
             total_skills=int(data.get("total_skills", 0)),
             pagination=DiscoveryPagination.from_dict(data.get("pagination") or {}),
             capabilities=[
-                AgentCapability.from_dict(cap)
-                for cap in data.get("capabilities") or []
+                AgentCapability.from_dict(cap) for cap in data.get("capabilities") or []
             ],
         )
 
@@ -277,6 +276,47 @@ class DiscoveryResult:
     json: Optional[DiscoveryResponse] = None
     compact: Optional[CompactDiscoveryResponse] = None
     xml: Optional[str] = None
+
+
+class HarnessConfig(BaseModel):
+    provider: str = Field(
+        ...,
+        description='Coding agent provider: "claude-code" | "codex" | "gemini" | "opencode"',
+    )
+    model: str = Field(default="sonnet", description="Default model identifier.")
+    max_turns: int = Field(default=30, description="Maximum agent iterations.")
+    max_budget_usd: Optional[float] = Field(
+        default=None, description="Cost cap in USD."
+    )
+    max_retries: int = Field(
+        default=3, description="Maximum retry attempts for transient errors."
+    )
+    initial_delay: float = Field(
+        default=1.0, description="Initial retry delay in seconds."
+    )
+    max_delay: float = Field(
+        default=30.0, description="Maximum retry delay in seconds."
+    )
+    backoff_factor: float = Field(default=2.0, description="Retry backoff multiplier.")
+    tools: List[str] = Field(
+        default_factory=lambda: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+        description="Default allowed tools.",
+    )
+    permission_mode: Optional[str] = Field(
+        default=None, description='Permission mode: "plan" | "auto" | None'
+    )
+    system_prompt: Optional[str] = Field(
+        default=None, description="Default system prompt."
+    )
+    env: Dict[str, str] = Field(
+        default_factory=dict, description="Environment variables for the agent."
+    )
+    cwd: Optional[str] = Field(default=None, description="Default working directory.")
+    codex_bin: str = Field(default="codex", description="Path to codex binary.")
+    gemini_bin: str = Field(default="gemini", description="Path to gemini binary.")
+    opencode_bin: str = Field(
+        default="opencode", description="Path to opencode binary."
+    )
 
 
 class AIConfig(BaseModel):
