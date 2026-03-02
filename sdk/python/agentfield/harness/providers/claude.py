@@ -25,6 +25,12 @@ def _get_claude_sdk() -> Any:
         ) from exc
 
 
+_PERMISSION_MAP = {
+    "auto": "bypassPermissions",
+    "plan": "plan",
+}
+
+
 class ClaudeCodeProvider:
     """Claude Code provider using the native claude_agent_sdk."""
 
@@ -46,7 +52,8 @@ class ClaudeCodeProvider:
         if options.get("max_budget_usd") is not None:
             agent_options["max_budget_usd"] = options["max_budget_usd"]
         if options.get("permission_mode") is not None:
-            agent_options["permission_mode"] = options["permission_mode"]
+            raw_mode = str(options["permission_mode"])
+            agent_options["permission_mode"] = _PERMISSION_MAP.get(raw_mode, raw_mode)
         if options.get("env") is not None:
             agent_options["env"] = options["env"]
 

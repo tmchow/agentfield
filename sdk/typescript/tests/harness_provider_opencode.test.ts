@@ -22,7 +22,7 @@ describe('opencode provider', () => {
       env: { A: '1' },
     });
 
-    expect(cli.runCli).toHaveBeenCalledWith(['/usr/local/bin/opencode', '--non-interactive', 'hello'], {
+    expect(cli.runCli).toHaveBeenCalledWith(['/usr/local/bin/opencode', 'run', 'hello'], {
       cwd: '/tmp/work',
       env: { A: '1' },
     });
@@ -69,7 +69,7 @@ describe('opencode provider', () => {
     const result = await provider.execute('hello', { model: 'openai/gpt-5' });
 
     expect(cli.runCli).toHaveBeenCalledWith(
-      ['opencode', '--non-interactive', '--model', 'openai/gpt-5', 'hello'],
+      ['opencode', 'run', '--model', 'openai/gpt-5', 'hello'],
       {
         cwd: undefined,
         env: undefined,

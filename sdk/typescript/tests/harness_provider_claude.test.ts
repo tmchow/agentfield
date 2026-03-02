@@ -46,7 +46,7 @@ describe('ClaudeCodeProvider', () => {
       allowed_tools: ['Read', 'Write'],
       system_prompt: 'system',
       max_budget_usd: 3,
-      permission_mode: 'auto',
+      permission_mode: 'bypassPermissions',
       env: { A: '1' },
     });
     expect(raw.isError).toBe(false);

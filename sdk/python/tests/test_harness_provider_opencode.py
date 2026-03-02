@@ -35,7 +35,7 @@ async def test_opencode_provider_constructs_command_and_maps_result(
         },
     )
 
-    assert captured["cmd"] == ["/usr/local/bin/opencode", "--non-interactive", "hello"]
+    assert captured["cmd"] == ["/usr/local/bin/opencode", "run", "hello"]
     assert captured["env"] == {"A": "1"}
     assert captured["cwd"] == "/tmp/work"
     assert raw.is_error is False
@@ -105,7 +105,7 @@ async def test_opencode_passes_model_flag(monkeypatch: pytest.MonkeyPatch):
 
     assert captured["cmd"] == [
         "opencode",
-        "--non-interactive",
+        "run",
         "--model",
         "openai/gpt-5",
         "hello",

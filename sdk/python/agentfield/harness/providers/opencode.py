@@ -16,8 +16,7 @@ class OpenCodeProvider:
         self._bin = bin_path
 
     async def execute(self, prompt: str, options: dict[str, object]) -> RawResult:
-        cmd = [self._bin]
-        cmd.extend(["--non-interactive"])
+        cmd = [self._bin, "run"]
 
         if options.get("model"):
             cmd.extend(["--model", str(options["model"])])

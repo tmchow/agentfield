@@ -11,7 +11,7 @@ export class OpenCodeProvider implements HarnessProvider {
   }
 
   async execute(prompt: string, options: Record<string, unknown>): Promise<RawResult> {
-    const cmd = [this.bin, '--non-interactive'];
+    const cmd = [this.bin, 'run'];
 
     if (options.model) {
       cmd.push('--model', String(options.model));
