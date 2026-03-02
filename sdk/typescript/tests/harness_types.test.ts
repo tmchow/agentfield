@@ -57,16 +57,16 @@ describe('harness types', () => {
     expect(result.errorMessage).toBe('boom');
   });
 
-  it('buildProvider throws for unknown provider', () => {
+  it('buildProvider throws for unknown provider', async () => {
     const badConfig = { provider: 'unknown-provider' } as unknown as HarnessConfig;
 
-    expect(() => buildProvider(badConfig)).toThrow(/Unknown harness provider/);
+    await expect(buildProvider(badConfig)).rejects.toThrow(/Unknown harness provider/);
   });
 
-  it('buildProvider returns codex provider', () => {
+  it('buildProvider returns codex provider', async () => {
     const config: HarnessConfig = { provider: 'codex' };
 
-    const provider = buildProvider(config);
+    const provider = await buildProvider(config);
     expect(provider).toBeInstanceOf(CodexProvider);
   });
 });

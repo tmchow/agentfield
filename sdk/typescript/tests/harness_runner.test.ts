@@ -107,7 +107,7 @@ describe('harness runner', () => {
         metrics: createMetrics({ numTurns: 2, totalCostUsd: 0.42, sessionId: 'sess-1' }),
       }),
     ]);
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner();
     const result = await runner.run('hello', { provider: 'codex', cwd });
@@ -124,7 +124,7 @@ describe('harness runner', () => {
     const cwd = makeTempDir();
     const schema = z.object({ name: z.string(), count: z.number() });
     const provider = new FileWritingProvider(JSON.stringify({ name: 'ok', count: 1 }));
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner();
     const result = await runner.run('produce json', { provider: 'codex', schema, cwd });
@@ -146,7 +146,7 @@ describe('harness runner', () => {
       createRawResult({ isError: true, errorMessage: 'rate limit exceeded' }),
       createRawResult({ result: 'ok', metrics: createMetrics({ numTurns: 2 }) }),
     ]);
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const sleepSpy = vi.spyOn(globalThis, 'setTimeout');
     const runner = new HarnessRunner();
@@ -171,7 +171,7 @@ describe('harness runner', () => {
       createRawResult({ isError: true, errorMessage: 'validation failed' }),
       createRawResult({ result: 'should not happen' }),
     ]);
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner();
     const result = await runner.run('hello', { provider: 'codex', cwd, maxRetries: 3 });
@@ -185,7 +185,7 @@ describe('harness runner', () => {
     const cwd = makeTempDir();
     const schema = z.object({ name: z.string(), count: z.number() });
     const provider = new FileWritingProvider(JSON.stringify({ name: 'ok' }));
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner();
     const result = await runner.run('produce bad json', { provider: 'codex', schema, cwd });
@@ -212,7 +212,7 @@ describe('harness runner', () => {
         throw new Error('boom');
       },
     };
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner();
     await expect(runner.run('trigger failure', { provider: 'codex', schema: largeSchema, cwd })).rejects.toThrow(
@@ -237,7 +237,7 @@ describe('harness runner', () => {
       cwd,
     };
     const provider = new MockProvider([createRawResult({ result: 'ok' })]);
-    vi.spyOn(factory, 'buildProvider').mockImplementation(() => provider);
+    vi.spyOn(factory, 'buildProvider').mockResolvedValue(provider);
 
     const runner = new HarnessRunner(cfg);
     await runner.run('hello', {

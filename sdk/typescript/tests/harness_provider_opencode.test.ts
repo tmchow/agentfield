@@ -80,8 +80,8 @@ describe('opencode provider', () => {
 });
 
 describe('provider factory', () => {
-  it('routes opencode to OpenCodeProvider and passes opencodeBin', () => {
-    const provider = buildProvider({ provider: 'opencode', opencodeBin: '/opt/opencode' });
+  it('routes opencode to OpenCodeProvider and passes opencodeBin', async () => {
+    const provider = await buildProvider({ provider: 'opencode', opencodeBin: '/opt/opencode' });
 
     expect(provider).toBeInstanceOf(OpenCodeProvider);
   });

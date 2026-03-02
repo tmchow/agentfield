@@ -19,16 +19,16 @@ describe('Agent harness wiring', () => {
     expect(agent.config.harnessConfig).toBeUndefined();
   });
 
-  it('getHarnessRunner returns lazy-initialized HarnessRunner', () => {
+  it('getHarnessRunner returns lazy-initialized HarnessRunner', async () => {
     const agent = makeAgent({ provider: 'codex' });
-    const runner = agent.getHarnessRunner();
+    const runner = await agent.getHarnessRunner();
     expect(runner).toBeInstanceOf(HarnessRunner);
-    expect(agent.getHarnessRunner()).toBe(runner);
+    expect(await agent.getHarnessRunner()).toBe(runner);
   });
 
-  it('getHarnessRunner works without harnessConfig', () => {
+  it('getHarnessRunner works without harnessConfig', async () => {
     const agent = makeAgent();
-    const runner = agent.getHarnessRunner();
+    const runner = await agent.getHarnessRunner();
     expect(runner).toBeInstanceOf(HarnessRunner);
   });
 

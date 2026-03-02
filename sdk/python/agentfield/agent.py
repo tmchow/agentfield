@@ -40,7 +40,6 @@ from agentfield.execution_context import (
     set_execution_context,
 )
 from agentfield.execution_state import ExecuteError
-from agentfield.harness._runner import HarnessRunner
 from agentfield.did_manager import DIDManager
 from agentfield.vc_generator import VCGenerator
 from agentfield.mcp_client import MCPClientRegistry
@@ -70,6 +69,7 @@ import weakref
 
 if TYPE_CHECKING:
     from agentfield.harness._result import HarnessResult
+    from agentfield.harness._runner import HarnessRunner
 
 # Use slots=True for memory efficiency on Python 3.10+, fallback for older versions
 _dataclass_kwargs = {"slots": True} if sys.version_info >= (3, 10) else {}
@@ -581,7 +581,7 @@ class Agent(FastAPI):
         # Initialize handlers (some are lazy-loaded for performance)
         # Lazy handlers - created on first access to reduce memory footprint
         self._ai_handler: Optional[AgentAI] = None
-        self._harness_runner: Optional[HarnessRunner] = None
+        self._harness_runner: Optional["HarnessRunner"] = None
         self._cli_handler: Optional[AgentCLI] = None
         # Eager handlers - required for core agent functionality
         self.mcp_handler = AgentMCP(self)
@@ -672,9 +672,10 @@ class Agent(FastAPI):
         return self._ai_handler
 
     @property
-    def harness_runner(self) -> HarnessRunner:
-        """Lazy-loaded harness runner - only initialized when harness features are used."""
+    def harness_runner(self) -> "HarnessRunner":
         if self._harness_runner is None:
+            from agentfield.harness._runner import HarnessRunner
+
             self._harness_runner = HarnessRunner(self.harness_config)
         return self._harness_runner
 

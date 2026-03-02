@@ -78,8 +78,8 @@ describe('gemini provider', () => {
 });
 
 describe('provider factory', () => {
-  it('routes gemini to GeminiProvider and passes geminiBin', () => {
-    const provider = buildProvider({ provider: 'gemini', geminiBin: '/opt/gemini' });
+  it('routes gemini to GeminiProvider and passes geminiBin', async () => {
+    const provider = await buildProvider({ provider: 'gemini', geminiBin: '/opt/gemini' });
 
     expect(provider).toBeInstanceOf(GeminiProvider);
   });

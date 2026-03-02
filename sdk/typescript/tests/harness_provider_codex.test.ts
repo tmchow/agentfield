@@ -92,8 +92,8 @@ describe('codex provider', () => {
 });
 
 describe('provider factory', () => {
-  it('routes codex to CodexProvider and passes codexBin', () => {
-    const provider = buildProvider({ provider: 'codex', codexBin: '/opt/codex' });
+  it('routes codex to CodexProvider and passes codexBin', async () => {
+    const provider = await buildProvider({ provider: 'codex', codexBin: '/opt/codex' });
 
     expect(provider).toBeInstanceOf(CodexProvider);
   });

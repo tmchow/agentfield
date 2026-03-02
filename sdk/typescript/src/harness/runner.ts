@@ -42,7 +42,7 @@ export class HarnessRunner {
     }
 
     const cwd = resolved.cwd ?? '.';
-    const provider = this.buildProvider(resolved.provider, resolved);
+    const provider = await this.buildProvider(resolved.provider, resolved);
     const effectivePrompt = schema === undefined ? prompt : `${prompt}${buildPromptSuffix(schema, cwd)}`;
     const startTime = Date.now();
 
@@ -181,7 +181,7 @@ export class HarnessRunner {
     });
   }
 
-  private buildProvider(providerName: string, options: RunnerOptions): HarnessProvider {
+  private async buildProvider(providerName: string, options: RunnerOptions): Promise<HarnessProvider> {
     const { provider: _, ...rest } = options;
     return buildProvider({ provider: providerName as HarnessConfig['provider'], ...rest });
   }

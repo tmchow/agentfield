@@ -104,7 +104,7 @@ describe('buildProvider', () => {
     const { buildProvider } = await import('../src/harness/providers/factory.js');
     const { ClaudeCodeProvider } = await import('../src/harness/providers/claude.js');
 
-    const provider = buildProvider({ provider: 'claude-code' });
+    const provider = await buildProvider({ provider: 'claude-code' });
     expect(provider).toBeInstanceOf(ClaudeCodeProvider);
   });
 });
