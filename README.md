@@ -43,6 +43,50 @@ Write [Python](https://agentfield.ai/api/python-sdk/overview), [Go](https://agen
 
 ---
 
+## Built With AgentField
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://github.com/Agent-Field/SWE-AF">
+        <img src="assets/examples/autonomous-engineering-team.png" alt="Autonomous Engineering Team" />
+      </a>
+      <br/>
+      <b>Autonomous Engineering Team</b>
+      <br/>
+      <sub>One API call spins up PM, architect, coders, QA, reviewers — hundreds of coordinated agents that plan, build, test, and ship.</sub>
+      <br/><br/>
+      <a href="https://github.com/Agent-Field/SWE-AF">GitHub →</a>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://github.com/Agent-Field/af-deep-research">
+        <img src="assets/examples/deep-research-engine.png" alt="Deep Research Engine" />
+      </a>
+      <br/>
+      <b>Deep Research Engine</b>
+      <br/>
+      <sub>Recursive research backend. Spawns parallel agents, evaluates quality, generates deeper agents, and recurses — 10,000+ agents per query.</sub>
+      <br/><br/>
+      <a href="https://github.com/Agent-Field/af-deep-research">GitHub →</a>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://github.com/Agent-Field/af-reactive-atlas-mongodb">
+        <img src="assets/examples/reactive-database-layer.png" alt="Reactive MongoDB Intelligence" />
+      </a>
+      <br/>
+      <b>Reactive MongoDB Intelligence</b>
+      <br/>
+      <sub>Atlas Triggers + agent reasoning. Documents arrive raw and leave enriched — risk scores, pattern detection, evidence chains. No application code.</sub>
+      <br/><br/>
+      <a href="https://github.com/Agent-Field/af-reactive-atlas-mongodb">GitHub →</a>
+    </td>
+  </tr>
+</table>
+
+[See all examples →](https://agentfield.ai/examples)
+
+---
+
 ## The AI Backend
 
 Software keeps adding layers when complexity demands it. Frontend/backend separation. Data lakes and pipelines. Now: a **reasoning layer** that sits alongside your services, making decisions that used to be hardcoded.
@@ -245,20 +289,6 @@ export AGENT_PUBLIC_URL="http://host.docker.internal:8001"
 </details>
 
 **Next Steps:** [Build Your First Agent](https://agentfield.ai/guides/getting-started/build-your-first-agent) | [Deploy to Production](https://agentfield.ai/guides/deployment/overview) | [Examples](https://agentfield.ai/examples)
-
----
-
-## Production Examples
-
-Real-world patterns built on AgentField:
-
-| Example | Description | Links |
-|---------|-------------|-------|
-| **SWE-AF** | Autonomous software engineering factory. One API call spins up a full engineering fleet — PM, architect, coders, QA, reviewers, merger — that plans, builds, tests, and ships complex software end-to-end. Scored **95/100** with haiku, outperforming Claude Code sonnet (73) and Codex (62) on the same benchmark. Ships real PRs: [PR #179](https://github.com/Agent-Field/agentfield/pull/179) was built entirely by SWE-AF (10 issues, 217 tests passing, $19.23 total cost). | [GitHub](https://github.com/Agent-Field/SWE-AF) |
-| **Deep Research API** | Massively parallel research backend. Fans out to 10k+ agents, synthesizing verifiable strategies with deep citation chains. | [GitHub](https://github.com/Agent-Field/af-deep-research) • [Docs](https://agentfield.ai/examples) |
-| **RAG Evaluator** | Production monitoring for LLM responses. Scores across 4 dimensions to identify reliability issues. | [Architecture](https://agentfield.ai/examples/complete-agents/rag-evaluator) |
-
-[See all examples →](https://agentfield.ai/examples)
 
 ---
 
