@@ -51,11 +51,18 @@ func parseWebhookPayload(bodyBytes []byte) (*ApprovalWebhookPayload, error) {
 		}
 		payload.Timestamp = envelope.CreatedAt
 
-		// Extract decision from data.response.decision (plan-review template format)
+		// Extract decision from data.response (supports multiple field names across templates)
 		if respRaw, ok := envelope.Data["response"]; ok {
 			if respMap, ok := respRaw.(map[string]interface{}); ok {
+				// Check "decision" first (text-approval, data-table-review, side-by-side, code-changes, terminal-output)
 				if dec, ok := respMap["decision"].(string); ok {
 					payload.Decision = dec
+				}
+				// Fall back to "action" (rich-text-editor, confirm-action)
+				if payload.Decision == "" {
+					if act, ok := respMap["action"].(string); ok {
+						payload.Decision = act
+					}
 				}
 				if fb, ok := respMap["feedback"].(string); ok {
 					payload.Feedback = fb
@@ -72,6 +79,12 @@ func parseWebhookPayload(bodyBytes []byte) (*ApprovalWebhookPayload, error) {
 			payload.Decision = "expired"
 		}
 
+		// If envelope type is "completed" but no decision/action field was found
+		// (e.g. signature-capture, rich-text-editor submit), default to "approved"
+		if payload.Decision == "" && envelope.Type == "completed" {
+			payload.Decision = "approved"
+		}
+
 		if payload.RequestID != "" && payload.Decision != "" {
 			return payload, nil
 		}
@@ -84,6 +97,21 @@ func parseWebhookPayload(bodyBytes []byte) (*ApprovalWebhookPayload, error) {
 		return nil, fmt.Errorf("could not parse webhook payload: %w", err)
 	}
 	return &flat, nil
+}
+
+// normalizeDecision maps the various decision values used by hax-sdk
+// templates into the canonical set the control plane understands.
+func normalizeDecision(raw string) string {
+	switch raw {
+	case "approve", "continue", "confirm":
+		return "approved"
+	case "reject", "deny", "abort", "cancel":
+		return "rejected"
+	case "approved", "rejected", "request_changes", "expired":
+		return raw
+	default:
+		return raw
+	}
 }
 
 // webhookApprovalController handles the approval webhook callback.
@@ -139,14 +167,15 @@ func (c *webhookApprovalController) handleApprovalWebhook(ctx *gin.Context) {
 		return
 	}
 
-	// Validate decision
-	decision := payload.Decision
+	// Normalize decision values from various hax-sdk template formats
+	// into the canonical set the control plane understands.
+	decision := normalizeDecision(payload.Decision)
 	switch decision {
 	case "approved", "rejected", "request_changes", "expired":
 		// valid
 	default:
-		logger.Logger.Warn().Str("decision", decision).Str("raw_body", string(bodyBytes)).Msg("webhook payload has invalid decision")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid decision '%s'; must be approved, rejected, request_changes, or expired", decision)})
+		logger.Logger.Warn().Str("decision", payload.Decision).Str("raw_body", string(bodyBytes)).Msg("webhook payload has invalid decision")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid decision '%s'; must be approved, rejected, request_changes, or expired", payload.Decision)})
 		return
 	}
 
@@ -246,6 +275,14 @@ func (c *webhookApprovalController) handleApprovalWebhook(ctx *gin.Context) {
 		recordSyncFailed = true
 	}
 
+	// Capture callback URL before the update closure may clear it.  The
+	// wfExec pointer may alias the same object the store mutates in-place
+	// (e.g. in-memory stores), so read it now for the post-response callback.
+	var savedCallbackURL string
+	if wfExec.ApprovalCallbackURL != nil {
+		savedCallbackURL = *wfExec.ApprovalCallbackURL
+	}
+
 	// Update the workflow execution with approval resolution (authoritative — must not lose the decision)
 	err = c.store.UpdateWorkflowExecution(reqCtx, executionID, func(current *types.WorkflowExecution) (*types.WorkflowExecution, error) {
 		if current == nil {
@@ -261,9 +298,20 @@ func (c *webhookApprovalController) handleApprovalWebhook(ctx *gin.Context) {
 			dur := now.Sub(current.StartedAt).Milliseconds()
 			current.DurationMS = &dur
 		}
-		// Clear approval fields so the agent can issue a new approval request
+		// Clear approval request fields so the agent can issue subsequent
+		// approval requests within the same execution (multi-pause workflows).
+		// The decision/response/respondedAt are preserved for audit.
+		//
+		// For "request_changes": clear everything so the agent can start fresh.
+		// For "approved": keep ApprovalRequestID (needed for idempotent webhook
+		// retries and approval-status lookups) but clear the URL fields.  The
+		// request-approval handler allows new requests when ApprovalStatus is
+		// no longer "pending", enabling multi-pause workflows.
 		if decision == "request_changes" {
 			current.ApprovalRequestID = nil
+			current.ApprovalRequestURL = nil
+			current.ApprovalCallbackURL = nil
+		} else if decision == "approved" {
 			current.ApprovalRequestURL = nil
 			current.ApprovalCallbackURL = nil
 		}
@@ -333,8 +381,8 @@ func (c *webhookApprovalController) handleApprovalWebhook(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 
 	// Notify the agent's callback URL if one was registered
-	if wfExec.ApprovalCallbackURL != nil && *wfExec.ApprovalCallbackURL != "" {
-		go c.notifyApprovalCallback(*wfExec.ApprovalCallbackURL, executionID, decision, newStatus, payload.Feedback, responseStr, payload.RequestID)
+	if savedCallbackURL != "" {
+		go c.notifyApprovalCallback(savedCallbackURL, executionID, decision, newStatus, payload.Feedback, responseStr, payload.RequestID)
 	}
 }
 
