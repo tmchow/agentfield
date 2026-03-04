@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 import time
 from typing import Any, Dict, Optional
@@ -215,6 +216,24 @@ class HarnessRunner:
                 result=raw.result,
                 parsed=validated,
                 is_error=False,
+                cost_usd=raw.metrics.total_cost_usd,
+                num_turns=raw.metrics.num_turns,
+                duration_ms=elapsed,
+                session_id=raw.metrics.session_id,
+                messages=raw.messages,
+            )
+
+        if raw.is_error:
+            provider_error = raw.error_message or "Harness provider execution failed."
+            if not os.path.exists(output_path):
+                provider_error = (
+                    f"{provider_error} Output file was not created at {output_path}."
+                )
+            return HarnessResult(
+                result=raw.result,
+                parsed=None,
+                is_error=True,
+                error_message=provider_error,
                 cost_usd=raw.metrics.total_cost_usd,
                 num_turns=raw.metrics.num_turns,
                 duration_ms=elapsed,
