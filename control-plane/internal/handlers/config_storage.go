@@ -8,14 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ConfigReloadFunc is called to reload configuration from the database.
+type ConfigReloadFunc func() error
+
 // ConfigStorageHandlers provides HTTP handlers for database-backed configuration.
 type ConfigStorageHandlers struct {
-	storage storage.StorageProvider
+	storage  storage.StorageProvider
+	reloadFn ConfigReloadFunc
 }
 
 // NewConfigStorageHandlers creates a new ConfigStorageHandlers instance.
-func NewConfigStorageHandlers(store storage.StorageProvider) *ConfigStorageHandlers {
-	return &ConfigStorageHandlers{storage: store}
+func NewConfigStorageHandlers(store storage.StorageProvider, reloadFn ConfigReloadFunc) *ConfigStorageHandlers {
+	return &ConfigStorageHandlers{storage: store, reloadFn: reloadFn}
 }
 
 // RegisterRoutes registers config storage routes on the given router group.
@@ -24,6 +28,7 @@ func (h *ConfigStorageHandlers) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/configs/:key", h.GetConfig)
 	group.PUT("/configs/:key", h.SetConfig)
 	group.DELETE("/configs/:key", h.DeleteConfig)
+	group.POST("/configs/reload", h.ReloadConfig)
 }
 
 // ListConfigs returns all stored configuration entries.
@@ -103,4 +108,22 @@ func (h *ConfigStorageHandlers) DeleteConfig(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "config deleted", "key": key})
+}
+
+// ReloadConfig triggers a hot-reload of configuration from the database.
+func (h *ConfigStorageHandlers) ReloadConfig(c *gin.Context) {
+	if h.reloadFn == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "config reload not available (AGENTFIELD_CONFIG_SOURCE != db)",
+		})
+		return
+	}
+	if err := h.reloadFn(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "config reload failed",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "config reloaded from database"})
 }

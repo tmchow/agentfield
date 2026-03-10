@@ -430,6 +430,17 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 	}, nil
 }
 
+// configReloadFn returns a function that reloads config from the database,
+// or nil if AGENTFIELD_CONFIG_SOURCE is not set to "db".
+func (s *AgentFieldServer) configReloadFn() handlers.ConfigReloadFunc {
+	if src := os.Getenv("AGENTFIELD_CONFIG_SOURCE"); src != "db" {
+		return nil
+	}
+	return func() error {
+		return overlayDBConfig(s.config, s.storage)
+	}
+}
+
 // Start initializes and starts the AgentFieldServer.
 func (s *AgentFieldServer) Start() error {
 	// Setup routes
@@ -1538,7 +1549,7 @@ func (s *AgentFieldServer) setupRoutes() {
 
 		// Config storage routes (admin-authenticated)
 		{
-			configHandlers := handlers.NewConfigStorageHandlers(s.storage)
+			configHandlers := handlers.NewConfigStorageHandlers(s.storage, s.configReloadFn())
 			configHandlers.RegisterRoutes(agentAPI)
 			logger.Logger.Info().Msg("Config storage routes registered")
 		}
@@ -1562,7 +1573,7 @@ func (s *AgentFieldServer) setupRoutes() {
 			configGroup := connectorGroup.Group("")
 			configGroup.Use(middleware.ConnectorCapabilityCheck("config_management", s.config.Features.Connector.Capabilities))
 			{
-				configHandlers := handlers.NewConfigStorageHandlers(s.storage)
+				configHandlers := handlers.NewConfigStorageHandlers(s.storage, s.configReloadFn())
 				configHandlers.RegisterRoutes(configGroup)
 			}
 
