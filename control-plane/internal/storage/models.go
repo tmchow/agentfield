@@ -472,3 +472,19 @@ type AgentTagVCModel struct {
 }
 
 func (AgentTagVCModel) TableName() string { return "agent_tag_vcs" }
+
+// ConfigStorageModel stores configuration files in the database.
+// Each record represents a named configuration (e.g. "agentfield.yaml")
+// with versioning for audit trail.
+type ConfigStorageModel struct {
+	ID        int64     `gorm:"column:id;primaryKey;autoIncrement"`
+	Key       string    `gorm:"column:key;not null;uniqueIndex"`
+	Value     string    `gorm:"column:value;type:text;not null"`
+	Version   int       `gorm:"column:version;not null;default:1"`
+	CreatedBy *string   `gorm:"column:created_by"`
+	UpdatedBy *string   `gorm:"column:updated_by"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (ConfigStorageModel) TableName() string { return "config_storage" }

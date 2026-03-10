@@ -5124,26 +5124,124 @@ func (ls *LocalStorage) UpdateAgentTrafficWeight(ctx context.Context, id string,
 	return nil
 }
 
-// SetConfig stores a configuration key-value pair in SQLite.
-func (ls *LocalStorage) SetConfig(ctx context.Context, key string, value interface{}) error {
-	// Fast-fail if context is already cancelled
+// SetConfig upserts a configuration entry in the database.
+// On conflict (duplicate key), it increments the version and updates the value.
+func (ls *LocalStorage) SetConfig(ctx context.Context, key string, value string, updatedBy string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	// TODO: Implement configuration storage in SQLite
-	return fmt.Errorf("SetConfig not yet implemented for LocalStorage")
+	db := ls.requireSQLDB()
+	now := time.Now().UTC()
+
+	if ls.mode == "postgres" {
+		_, err := db.ExecContext(ctx, `
+			INSERT INTO config_storage (key, value, version, created_by, updated_by, created_at, updated_at)
+			VALUES ($1, $2, 1, $3, $3, $4, $4)
+			ON CONFLICT (key) DO UPDATE SET
+				value = EXCLUDED.value,
+				version = config_storage.version + 1,
+				updated_by = EXCLUDED.updated_by,
+				updated_at = EXCLUDED.updated_at`,
+			key, value, updatedBy, now)
+		return err
+	}
+
+	// SQLite
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO config_storage (key, value, version, created_by, updated_by, created_at, updated_at)
+		VALUES (?, ?, 1, ?, ?, ?, ?)
+		ON CONFLICT (key) DO UPDATE SET
+			value = excluded.value,
+			version = config_storage.version + 1,
+			updated_by = excluded.updated_by,
+			updated_at = excluded.updated_at`,
+		key, value, updatedBy, updatedBy, now, now)
+	return err
 }
 
-// GetConfig retrieves a configuration value from SQLite by key.
-func (ls *LocalStorage) GetConfig(ctx context.Context, key string) (interface{}, error) {
-	// Fast-fail if context is already cancelled
+// GetConfig retrieves a configuration entry by key.
+func (ls *LocalStorage) GetConfig(ctx context.Context, key string) (*ConfigEntry, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	// TODO: Implement configuration retrieval from SQLite
-	return nil, fmt.Errorf("GetConfig not yet implemented for LocalStorage")
+	db := ls.requireSQLDB()
+	var entry ConfigEntry
+
+	var placeholder string
+	if ls.mode == "postgres" {
+		placeholder = "$1"
+	} else {
+		placeholder = "?"
+	}
+
+	row := db.QueryRowContext(ctx,
+		fmt.Sprintf(`SELECT key, value, version, COALESCE(created_by, ''), COALESCE(updated_by, ''), created_at, updated_at
+		FROM config_storage WHERE key = %s`, placeholder), key)
+
+	err := row.Scan(&entry.Key, &entry.Value, &entry.Version,
+		&entry.CreatedBy, &entry.UpdatedBy, &entry.CreatedAt, &entry.UpdatedAt)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get config %q: %w", key, err)
+	}
+	return &entry, nil
+}
+
+// ListConfigs returns all stored configuration entries.
+func (ls *LocalStorage) ListConfigs(ctx context.Context) ([]*ConfigEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	db := ls.requireSQLDB()
+	rows, err := db.QueryContext(ctx,
+		`SELECT key, value, version, COALESCE(created_by, ''), COALESCE(updated_by, ''), created_at, updated_at
+		FROM config_storage ORDER BY key`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list configs: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []*ConfigEntry
+	for rows.Next() {
+		var entry ConfigEntry
+		if err := rows.Scan(&entry.Key, &entry.Value, &entry.Version,
+			&entry.CreatedBy, &entry.UpdatedBy, &entry.CreatedAt, &entry.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan config row: %w", err)
+		}
+		entries = append(entries, &entry)
+	}
+	return entries, rows.Err()
+}
+
+// DeleteConfig removes a configuration entry by key.
+func (ls *LocalStorage) DeleteConfig(ctx context.Context, key string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	db := ls.requireSQLDB()
+	var placeholder string
+	if ls.mode == "postgres" {
+		placeholder = "$1"
+	} else {
+		placeholder = "?"
+	}
+
+	result, err := db.ExecContext(ctx,
+		fmt.Sprintf(`DELETE FROM config_storage WHERE key = %s`, placeholder), key)
+	if err != nil {
+		return fmt.Errorf("failed to delete config %q: %w", key, err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("config %q not found", key)
+	}
+	return nil
 }
 
 // SubscribeToMemoryChanges implements the StorageProvider SubscribeToMemoryChanges method using local pub/sub.

@@ -104,6 +104,13 @@ func NewAgentFieldServer(cfg *config.Config) (*AgentFieldServer, error) {
 		return nil, err
 	}
 
+	// Overlay database-stored config if AGENTFIELD_CONFIG_SOURCE=db
+	if src := os.Getenv("AGENTFIELD_CONFIG_SOURCE"); src == "db" {
+		if err := overlayDBConfig(cfg, storageProvider); err != nil {
+			fmt.Printf("Warning: failed to load config from database: %v\n", err)
+		}
+	}
+
 	Router := gin.Default()
 
 	// Sync installed.yaml to database for package visibility
@@ -1529,6 +1536,13 @@ func (s *AgentFieldServer) setupRoutes() {
 			logger.Logger.Info().Msg("📋 Authorization admin routes registered")
 		}
 
+		// Config storage routes (admin-authenticated)
+		{
+			configHandlers := handlers.NewConfigStorageHandlers(s.storage)
+			configHandlers.RegisterRoutes(agentAPI)
+			logger.Logger.Info().Msg("Config storage routes registered")
+		}
+
 		// Connector routes (authenticated with separate connector token)
 		if s.config.Features.Connector.Enabled && s.config.Features.Connector.Token != "" {
 			connectorGroup := agentAPI.Group("/connector")
@@ -1543,6 +1557,14 @@ func (s *AgentFieldServer) setupRoutes() {
 				s.didService,
 			)
 			connectorHandlers.RegisterRoutes(connectorGroup)
+
+			// Config management routes for connector
+			configGroup := connectorGroup.Group("")
+			configGroup.Use(middleware.ConnectorCapabilityCheck("config_management", s.config.Features.Connector.Capabilities))
+			{
+				configHandlers := handlers.NewConfigStorageHandlers(s.storage)
+				configHandlers.RegisterRoutes(configGroup)
+			}
 
 			logger.Logger.Info().Msg("🔌 Connector routes registered")
 		}

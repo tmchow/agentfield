@@ -26,6 +26,17 @@ type RunSummaryAggregation struct {
 	ActiveExecutions int
 }
 
+// ConfigEntry represents a database-stored configuration file.
+type ConfigEntry struct {
+	Key       string    `json:"key"`
+	Value     string    `json:"value"`
+	Version   int       `json:"version"`
+	CreatedBy string    `json:"created_by,omitempty"`
+	UpdatedBy string    `json:"updated_by,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // StorageProvider is the interface for the primary data storage backend.
 type StorageProvider interface {
 	// Lifecycle
@@ -118,9 +129,11 @@ type StorageProvider interface {
 	UpdateAgentVersion(ctx context.Context, id string, version string) error
 	UpdateAgentTrafficWeight(ctx context.Context, id string, version string, weight int) error
 
-	// Configuration
-	SetConfig(ctx context.Context, key string, value interface{}) error
-	GetConfig(ctx context.Context, key string) (interface{}, error)
+	// Configuration Storage (database-backed config files)
+	SetConfig(ctx context.Context, key string, value string, updatedBy string) error
+	GetConfig(ctx context.Context, key string) (*ConfigEntry, error)
+	ListConfigs(ctx context.Context) ([]*ConfigEntry, error)
+	DeleteConfig(ctx context.Context, key string) error
 
 	// Reasoner Performance and History
 	GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error)

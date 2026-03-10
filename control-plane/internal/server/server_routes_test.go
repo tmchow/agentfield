@@ -230,10 +230,16 @@ func (s *stubStorage) ListAgentGroups(ctx context.Context, teamID string) ([]typ
 }
 
 // Configuration
-func (s *stubStorage) SetConfig(ctx context.Context, key string, value interface{}) error { return nil }
-func (s *stubStorage) GetConfig(ctx context.Context, key string) (interface{}, error) {
+func (s *stubStorage) SetConfig(ctx context.Context, key string, value string, updatedBy string) error {
+	return nil
+}
+func (s *stubStorage) GetConfig(ctx context.Context, key string) (*storage.ConfigEntry, error) {
 	return nil, nil
 }
+func (s *stubStorage) ListConfigs(ctx context.Context) ([]*storage.ConfigEntry, error) {
+	return nil, nil
+}
+func (s *stubStorage) DeleteConfig(ctx context.Context, key string) error { return nil }
 
 // Reasoner Performance and History
 func (s *stubStorage) GetReasonerPerformanceMetrics(ctx context.Context, reasonerID string) (*types.ReasonerPerformanceMetrics, error) {
