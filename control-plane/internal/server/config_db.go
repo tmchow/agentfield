@@ -59,8 +59,25 @@ func mergeDBConfig(target, dbCfg *config.Config) {
 	if dbCfg.AgentField.NodeHealth.CheckInterval != 0 {
 		target.AgentField.NodeHealth = dbCfg.AgentField.NodeHealth
 	}
+	// Merge execution cleanup field-by-field to avoid zeroing out unset fields
 	if dbCfg.AgentField.ExecutionCleanup.RetentionPeriod != 0 {
-		target.AgentField.ExecutionCleanup = dbCfg.AgentField.ExecutionCleanup
+		target.AgentField.ExecutionCleanup.RetentionPeriod = dbCfg.AgentField.ExecutionCleanup.RetentionPeriod
+	}
+	if dbCfg.AgentField.ExecutionCleanup.CleanupInterval != 0 {
+		target.AgentField.ExecutionCleanup.CleanupInterval = dbCfg.AgentField.ExecutionCleanup.CleanupInterval
+	}
+	if dbCfg.AgentField.ExecutionCleanup.BatchSize != 0 {
+		target.AgentField.ExecutionCleanup.BatchSize = dbCfg.AgentField.ExecutionCleanup.BatchSize
+	}
+	if dbCfg.AgentField.ExecutionCleanup.PreserveRecentDuration != 0 {
+		target.AgentField.ExecutionCleanup.PreserveRecentDuration = dbCfg.AgentField.ExecutionCleanup.PreserveRecentDuration
+	}
+	if dbCfg.AgentField.ExecutionCleanup.StaleExecutionTimeout != 0 {
+		target.AgentField.ExecutionCleanup.StaleExecutionTimeout = dbCfg.AgentField.ExecutionCleanup.StaleExecutionTimeout
+	}
+	// Enabled is a bool — only override if cleanup config is present in DB at all
+	if dbCfg.AgentField.ExecutionCleanup.RetentionPeriod != 0 || dbCfg.AgentField.ExecutionCleanup.CleanupInterval != 0 {
+		target.AgentField.ExecutionCleanup.Enabled = dbCfg.AgentField.ExecutionCleanup.Enabled
 	}
 	if dbCfg.AgentField.Approval.WebhookSecret != "" || dbCfg.AgentField.Approval.DefaultExpiryHours != 0 {
 		target.AgentField.Approval = dbCfg.AgentField.Approval
@@ -70,9 +87,9 @@ func mergeDBConfig(target, dbCfg *config.Config) {
 	if dbCfg.Features.DID.Method != "" {
 		target.Features.DID = dbCfg.Features.DID
 	}
-	if dbCfg.Features.Connector.Enabled || len(dbCfg.Features.Connector.Capabilities) > 0 {
-		target.Features.Connector = dbCfg.Features.Connector
-	}
+	// NOTE: Connector config (token, capabilities) is intentionally NOT merged
+	// from DB. These are security-sensitive and must come from file/env config,
+	// similar to how storage config is protected from the bootstrap problem.
 
 	// API settings (but never override API key from DB for security)
 	if len(dbCfg.API.CORS.AllowedOrigins) > 0 {
