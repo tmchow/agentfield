@@ -932,6 +932,10 @@ func parseTimeString(value string) (time.Time, error) {
 // MarkStaleExecutions updates executions stuck in non-terminal states beyond the provided timeout.
 // Staleness is determined by updated_at (last activity) rather than started_at, so legitimately
 // long-running executions that are still making progress are not incorrectly timed out.
+//
+// INVARIANT: callers must ensure updated_at is bumped on every meaningful execution activity.
+// If updated_at is not maintained, active executions may be incorrectly reaped.
+// Uses COALESCE(updated_at, created_at, started_at) to handle rows where updated_at may be NULL.
 func (ls *LocalStorage) MarkStaleExecutions(ctx context.Context, staleAfter time.Duration, limit int) (int, error) {
 	if limit <= 0 {
 		return 0, nil
@@ -947,8 +951,8 @@ func (ls *LocalStorage) MarkStaleExecutions(ctx context.Context, staleAfter time
 		SELECT execution_id, started_at
 		FROM executions
 		WHERE status IN ('running', 'pending', 'queued')
-		  AND updated_at <= ?
-		ORDER BY updated_at ASC
+		  AND COALESCE(updated_at, created_at, started_at) <= ?
+		ORDER BY COALESCE(updated_at, created_at, started_at) ASC
 		LIMIT ?`, cutoff, limit)
 	if err != nil {
 		return 0, fmt.Errorf("query stale executions: %w", err)
@@ -1037,6 +1041,8 @@ func (ls *LocalStorage) MarkStaleExecutions(ctx context.Context, staleAfter time
 // MarkStaleWorkflowExecutions updates workflow executions stuck in non-terminal states
 // when their updated_at timestamp exceeds the staleAfter threshold. This catches orphaned
 // child executions whose parent failed without cascading cancellation.
+//
+// See MarkStaleExecutions for the updated_at invariant and COALESCE fallback rationale.
 func (ls *LocalStorage) MarkStaleWorkflowExecutions(ctx context.Context, staleAfter time.Duration, limit int) (int, error) {
 	if limit <= 0 {
 		return 0, nil
@@ -1052,8 +1058,8 @@ func (ls *LocalStorage) MarkStaleWorkflowExecutions(ctx context.Context, staleAf
 		SELECT execution_id, started_at
 		FROM workflow_executions
 		WHERE status IN ('running', 'pending', 'queued', 'waiting')
-		  AND updated_at <= ?
-		ORDER BY updated_at ASC
+		  AND COALESCE(updated_at, created_at, started_at) <= ?
+		ORDER BY COALESCE(updated_at, created_at, started_at) ASC
 		LIMIT ?`, cutoff, limit)
 	if err != nil {
 		return 0, fmt.Errorf("query stale workflow executions: %w", err)

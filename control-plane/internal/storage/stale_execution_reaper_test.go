@@ -299,6 +299,78 @@ func TestMarkStaleWorkflowExecutions_MultipleStuckExecutions(t *testing.T) {
 	require.Equal(t, 0, reaped3, "all stuck executions should already be reaped")
 }
 
+func TestMarkStaleExecutions_ReapsWhenUpdatedAtIsNULL(t *testing.T) {
+	ls, ctx := setupTestLocalStorage(t)
+	now := time.Now().UTC()
+
+	// Insert a stuck execution, then NULL out updated_at to simulate a legacy row
+	// where updated_at was never populated.
+	stuck := &types.Execution{
+		ExecutionID: "exec-null-updated",
+		RunID:       "run-null",
+		AgentNodeID: "agent-1",
+		ReasonerID:  "reasoner-1",
+		NodeID:      "node-1",
+		Status:      "running",
+		StartedAt:   now.Add(-2 * time.Hour),
+	}
+	require.NoError(t, ls.CreateExecutionRecord(ctx, stuck))
+
+	// NULL out updated_at and backdate created_at to simulate a legacy row
+	// COALESCE(updated_at, created_at, started_at) should fall back to created_at
+	db := ls.requireSQLDB()
+	_, err := db.Exec(
+		"UPDATE executions SET updated_at = NULL, created_at = ? WHERE execution_id = ?",
+		now.Add(-2*time.Hour), "exec-null-updated",
+	)
+	require.NoError(t, err)
+
+	reaped, err := ls.MarkStaleExecutions(ctx, 30*time.Minute, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, reaped, "should reap execution with NULL updated_at via COALESCE fallback")
+
+	record, err := ls.GetExecutionRecord(ctx, "exec-null-updated")
+	require.NoError(t, err)
+	require.Equal(t, "timeout", record.Status)
+	require.Contains(t, *record.ErrorMessage, "no activity")
+}
+
+func TestMarkStaleWorkflowExecutions_ReapsWhenUpdatedAtIsNULL(t *testing.T) {
+	ls, ctx := setupTestLocalStorage(t)
+	now := time.Now().UTC()
+
+	// Insert a stuck workflow execution, then NULL out updated_at
+	stuck := &types.WorkflowExecution{
+		WorkflowID:          "wf-null-updated",
+		ExecutionID:         "wfexec-null-updated",
+		AgentFieldRequestID: "req-null",
+		AgentNodeID:         "agent-1",
+		ReasonerID:          "reasoner-1",
+		Status:              "running",
+		StartedAt:           now.Add(-2 * time.Hour),
+		CreatedAt:           now.Add(-2 * time.Hour),
+		UpdatedAt:           now.Add(-2 * time.Hour),
+		WorkflowTags:        []string{},
+		InputData:           json.RawMessage("{}"),
+		OutputData:          json.RawMessage("{}"),
+	}
+	require.NoError(t, ls.StoreWorkflowExecution(ctx, stuck))
+
+	// NULL out updated_at — COALESCE should fall back to created_at or started_at
+	db := ls.requireSQLDB()
+	_, err := db.Exec("UPDATE workflow_executions SET updated_at = NULL WHERE execution_id = ?", "wfexec-null-updated")
+	require.NoError(t, err)
+
+	reaped, err := ls.MarkStaleWorkflowExecutions(ctx, 30*time.Minute, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, reaped, "should reap workflow execution with NULL updated_at via COALESCE fallback")
+
+	record, err := ls.GetWorkflowExecution(ctx, "wfexec-null-updated")
+	require.NoError(t, err)
+	require.Equal(t, "timeout", record.Status)
+	require.Contains(t, *record.ErrorMessage, "no activity")
+}
+
 func TestStaleReaper_EndToEnd_WithCleanupService(t *testing.T) {
 	ls, ctx := setupTestLocalStorage(t)
 	now := time.Now().UTC()
