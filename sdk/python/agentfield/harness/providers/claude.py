@@ -69,11 +69,21 @@ class ClaudeCodeProvider:
         start_api = time.monotonic()
 
         try:
+            # Capture stderr so CLI failures can be diagnosed
+            stderr_lines: list[str] = []
+
+            def _on_stderr(line: str) -> None:
+                stderr_lines.append(line)
+
             opts = (
                 sdk.ClaudeAgentOptions(**agent_options)
                 if hasattr(sdk, "ClaudeAgentOptions")
                 else agent_options
             )
+            # Set stderr callback after construction to avoid polluting
+            # agent_options dict (which tests may assert on).
+            if hasattr(opts, "stderr"):
+                opts.stderr = _on_stderr
 
             msg_count = 0
             async for msg in sdk.query(prompt=prompt, options=opts):
@@ -136,14 +146,20 @@ class ClaudeCodeProvider:
         except Exception as exc:
             import logging as _logging
 
+            stderr_output = "\n".join(stderr_lines).strip()
             _logging.getLogger("agentfield.harness.claude").error(
-                "ClaudeCodeProvider error: %s", exc
+                "ClaudeCodeProvider error: %s\nStderr output:\n%s",
+                exc,
+                stderr_output or "(no stderr captured)",
             )
             api_ms = int((time.monotonic() - start_api) * 1000)
+            error_detail = str(exc)
+            if stderr_output:
+                error_detail = f"{error_detail}\nStderr output:\n{stderr_output}"
             return RawResult(
                 result=None,
                 messages=messages,
                 metrics=Metrics(duration_api_ms=api_ms, session_id=session_id),
                 is_error=True,
-                error_message=str(exc),
+                error_message=error_detail,
             )
