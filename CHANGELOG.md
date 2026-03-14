@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.57-rc.1] - 2026-03-14
+
+
+### Fixed
+
+- Fix: capture stderr from Claude Code CLI for error diagnosis (#268)
+
+* fix: capture stderr from Claude Code CLI for error diagnosis
+
+The ClaudeCodeProvider was not passing a stderr callback to
+ClaudeAgentOptions, so when the claude CLI exited with code 1,
+the actual error message was lost. Logs only showed "Command
+failed with exit code 1" with no actionable details.
+
+Now passes a stderr callback that collects output and includes
+it in both the error log and the RawResult.error_message field.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix: set stderr callback on opts object, not agent_options dict
+
+Avoids test assertion failures caused by unexpected 'stderr' key
+in the agent_options dictionary.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (afcbeee)
+
 ## [0.1.56] - 2026-03-13
 
 ## [0.1.56-rc.1] - 2026-03-13
