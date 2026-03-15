@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.57-rc.2] - 2026-03-15
+
+
+### Added
+
+- Feat(harness): parse real cost from opencode JSON output (#269)
+
+* fix: capture stderr from Claude Code CLI for error diagnosis
+
+The ClaudeCodeProvider was not passing a stderr callback to
+ClaudeAgentOptions, so when the claude CLI exited with code 1,
+the actual error message was lost. Logs only showed "Command
+failed with exit code 1" with no actionable details.
+
+Now passes a stderr callback that collects output and includes
+it in both the error log and the RawResult.error_message field.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix: set stderr callback on opts object, not agent_options dict
+
+Avoids test assertion failures caused by unexpected 'stderr' key
+in the agent_options dictionary.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* feat(harness): parse real cost from opencode JSON output
+
+Use -f json flag when invoking opencode CLI and parse cost,
+prompt_tokens, and completion_tokens from the response. Falls back
+to estimate_cli_cost() for older opencode versions that don't
+include metrics in their JSON output.
+
+Depends on: opencode-ai/opencode#TBD
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (b1a023d)
+
 ## [0.1.57-rc.1] - 2026-03-14
 
 
