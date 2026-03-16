@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.58-rc.1] - 2026-03-16
+
+
+### Performance
+
+- Perf(dashboard): skip fetching input/result payloads in dashboard queries (#273)
+
+Dashboard API endpoints (summary and enhanced) call QueryExecutionRecords
+with limits up to 50,000 rows but never use the input_payload or
+result_payload columns in any of their processing functions. In deployments
+with large execution payloads (e.g. ~1.1 MB average per row), this caused
+dashboard API responses of 9-11 seconds due to fetching ~1 GB of TOAST
+data per request.
+
+Add ExcludePayloads bool to ExecutionFilter. When set, the query substitutes
+NULL AS input_payload, NULL AS result_payload so the column count stays
+identical and scanExecution requires no changes. Set ExcludePayloads: true on
+all six dashboard QueryExecutionRecords call sites.
+
+Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com> (5558f40)
+
 ## [0.1.57] - 2026-03-16
 
 ## [0.1.57-rc.4] - 2026-03-16
