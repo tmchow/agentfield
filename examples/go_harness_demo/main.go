@@ -29,6 +29,9 @@ type ReviewResult struct {
 	Severity string   `json:"severity"`
 }
 
+// loadEnv is a simplified .env loader for this demo. For production use,
+// consider github.com/joho/godotenv which handles quoting, export prefix,
+// multi-line values, and other edge cases.
 func loadEnv(path string) {
 	f, err := os.Open(path)
 	if err != nil {

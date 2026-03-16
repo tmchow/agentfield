@@ -2,6 +2,13 @@ package harness
 
 import "context"
 
+const (
+	// ProviderOpenCode is the provider name for OpenCode CLI.
+	ProviderOpenCode = "opencode"
+	// ProviderClaudeCode is the provider name for Claude Code CLI.
+	ProviderClaudeCode = "claude-code"
+)
+
 // Provider is the interface that CLI-based harness providers implement.
 // Each provider knows how to invoke a specific coding agent (opencode,
 // claude-code, etc.) and return a RawResult.
@@ -10,7 +17,7 @@ type Provider interface {
 }
 
 // Options control a single harness invocation. Fields are optional;
-// zero values mean "use provider defaults".
+// zero values mean "use default".
 type Options struct {
 	// Provider name: "opencode", "claude-code".
 	Provider string
@@ -28,6 +35,7 @@ type Options struct {
 	SystemPrompt string
 
 	// Env is additional environment variables for the subprocess.
+	// Empty string values unset variables in the subprocess environment.
 	Env map[string]string
 
 	// Cwd is the working directory for the subprocess.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -101,17 +100,14 @@ func (p *ClaudeCodeProvider) Execute(ctx context.Context, prompt string, options
 		}
 		if strings.Contains(err.Error(), "timed out") {
 			return &RawResult{
-				IsError:     true,
+				IsError:      true,
 				ErrorMessage: err.Error(),
-				FailureType: FailureTimeout,
-				Metrics:     Metrics{DurationAPIMS: apiMS},
+				FailureType:  FailureTimeout,
+				Metrics:      Metrics{DurationAPIMS: apiMS},
 			}, nil
 		}
 		return nil, err
 	}
-
-	log.Printf("claude-code finished: returncode=%d stdout=%d chars elapsed=%ds",
-		cliResult.ReturnCode, len(cliResult.Stdout), apiMS/1000)
 
 	// Parse JSON output from Claude Code's --output-format json
 	raw := &RawResult{

@@ -2,12 +2,14 @@ package harness
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"math/rand"
 	"os"
+	"reflect"
+	"slices"
 	"strings"
 	"time"
 )
@@ -17,11 +19,15 @@ import (
 type Runner struct {
 	// DefaultOptions are merged with per-call options (per-call wins).
 	DefaultOptions Options
+	Logger         *log.Logger
 }
 
 // NewRunner creates a harness runner with default options.
 func NewRunner(defaults Options) *Runner {
-	return &Runner{DefaultOptions: defaults}
+	return &Runner{
+		DefaultOptions: defaults,
+		Logger:         log.New(io.Discard, "[harness] ", log.LstdFlags),
+	}
 }
 
 // Run dispatches a prompt to a coding agent and returns the result.
@@ -92,23 +98,31 @@ func (r *Runner) Run(ctx context.Context, prompt string, schema map[string]any, 
 
 func (r *Runner) buildProvider(opts Options) (Provider, error) {
 	switch opts.Provider {
-	case "opencode":
+	case ProviderOpenCode:
 		binPath := opts.BinPath
 		if binPath == "" {
 			binPath = r.DefaultOptions.BinPath
 		}
 		return NewOpenCodeProvider(binPath, ""), nil
-	case "claude-code":
+	case ProviderClaudeCode:
 		binPath := opts.BinPath
 		if binPath == "" {
 			binPath = r.DefaultOptions.BinPath
 		}
 		return NewClaudeCodeProvider(binPath), nil
 	default:
-		return nil, fmt.Errorf("unknown harness provider: %q (supported: opencode, claude-code)", opts.Provider)
+		return nil, fmt.Errorf(
+			"unknown harness provider: %q (supported: %s, %s)",
+			opts.Provider,
+			ProviderOpenCode,
+			ProviderClaudeCode,
+		)
 	}
 }
 
+// mergeOptions combines default and per-call options. Per-call values take
+// precedence. Zero values in overrides are treated as "use default" — callers
+// cannot explicitly set numeric fields to zero to override a non-zero default.
 func (r *Runner) mergeOptions(overrides Options) Options {
 	merged := r.DefaultOptions
 
@@ -229,6 +243,8 @@ func (r *Runner) executeWithRetry(ctx context.Context, provider Provider, prompt
 	return &RawResult{IsError: true, ErrorMessage: "max retries exceeded"}, nil
 }
 
+// sleepWithJitter pauses for an exponentially increasing delay with ±25% jitter.
+// Uses math/rand global source, which auto-seeds since Go 1.20.
 func sleepWithJitter(ctx context.Context, initialDelay, maxDelay, backoff float64, attempt int) {
 	delay := math.Min(initialDelay*math.Pow(backoff, float64(attempt)), maxDelay)
 	jitter := delay * 0.25
@@ -261,10 +277,10 @@ func (r *Runner) handleSchemaWithRetry(
 	// Try to parse the output file
 	data, err := ParseAndValidate(outputPath, dest)
 	if err != nil && initialRaw.Result != "" {
-		log.Printf("Output file missing/invalid at %s — trying stdout fallback", outputPath)
+		r.Logger.Printf("Output file missing/invalid at %s - trying stdout fallback", outputPath)
 		data, err = TryParseFromText(initialRaw.Result, dest)
 		if err == nil {
-			log.Println("Stdout fallback succeeded")
+			r.Logger.Println("Stdout fallback succeeded")
 		}
 	}
 
@@ -316,6 +332,17 @@ func (r *Runner) handleSchemaWithRetry(
 			case <-timer.C:
 			case <-ctx.Done():
 				timer.Stop()
+				elapsed := int(time.Since(startTime).Milliseconds())
+				turns, sid, msgs := accumulateMetrics(allRaws)
+				return &Result{
+					IsError:      true,
+					ErrorMessage: "context cancelled during schema retry",
+					FailureType:  FailureTimeout,
+					NumTurns:     turns,
+					DurationMS:   elapsed,
+					SessionID:    sid,
+					Messages:     msgs,
+				}
 			}
 		}
 
@@ -328,7 +355,7 @@ func (r *Runner) handleSchemaWithRetry(
 			retryPrompt = BuildFollowupPrompt(errorDetail, outputDir, schema)
 		}
 
-		log.Printf("Schema validation retry %d/%d: %s",
+		r.Logger.Printf("Schema validation retry %d/%d: %s",
 			retryNum+1, maxRetries,
 			truncate(DiagnoseOutputFailure(outputPath, schema), 200))
 
@@ -339,7 +366,7 @@ func (r *Runner) handleSchemaWithRetry(
 
 		retryRaw, retryErr := r.executeWithRetry(ctx, provider, retryPrompt, retryOpts)
 		if retryErr != nil {
-			log.Printf("Schema retry %d execute error: %v", retryNum+1, retryErr)
+			r.Logger.Printf("Schema retry %d execute error: %v", retryNum+1, retryErr)
 			continue
 		}
 		allRaws = append(allRaws, retryRaw)
@@ -349,7 +376,7 @@ func (r *Runner) handleSchemaWithRetry(
 		}
 
 		if retryRaw.IsError {
-			log.Printf("Schema retry %d provider error: %s", retryNum+1, retryRaw.ErrorMessage)
+			r.Logger.Printf("Schema retry %d provider error: %s", retryNum+1, retryRaw.ErrorMessage)
 			continue
 		}
 
@@ -358,14 +385,14 @@ func (r *Runner) handleSchemaWithRetry(
 		if err != nil && retryRaw.Result != "" {
 			data, err = TryParseFromText(retryRaw.Result, dest)
 			if err == nil {
-				log.Printf("Schema retry %d succeeded via stdout fallback", retryNum+1)
+				r.Logger.Printf("Schema retry %d succeeded via stdout fallback", retryNum+1)
 			}
 		}
 
 		if err == nil && data != nil {
 			elapsed := int(time.Since(startTime).Milliseconds())
 			turns, sid, msgs := accumulateMetrics(allRaws)
-			log.Printf("Schema validation succeeded on retry %d", retryNum+1)
+			r.Logger.Printf("Schema validation succeeded on retry %d", retryNum+1)
 			return &Result{
 				Result:     retryRaw.Result,
 				Parsed:     dest,
@@ -381,7 +408,7 @@ func (r *Runner) handleSchemaWithRetry(
 	turns, sid, msgs := accumulateMetrics(allRaws)
 	finalDiagnosis := DiagnoseOutputFailure(outputPath, schema)
 	return &Result{
-		Result: allRaws[len(allRaws)-1].Result,
+		Result:  allRaws[len(allRaws)-1].Result,
 		IsError: true,
 		ErrorMessage: fmt.Sprintf(
 			"Schema validation failed after %d retry attempt(s). Last error: %s",
@@ -417,21 +444,68 @@ func fileExists(path string) bool {
 //
 // For production use, consider using a dedicated JSON Schema library.
 func StructToJSONSchema(v any) (map[string]any, error) {
-	// Marshal to JSON and back to get the field names
-	b, err := json.Marshal(v)
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal struct: %w", err)
+	t := reflect.TypeOf(v)
+	if t == nil {
+		return nil, fmt.Errorf("cannot build schema from nil value")
 	}
-	var m map[string]any
-	if err := json.Unmarshal(b, &m); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal struct: %w", err)
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("StructToJSONSchema expects a struct or pointer to struct, got %s", t.Kind())
 	}
 
-	properties := make(map[string]any)
-	required := make([]string, 0, len(m))
-	for key := range m {
-		properties[key] = map[string]any{"type": "string"}
-		required = append(required, key)
+	properties := make(map[string]any, t.NumField())
+	required := make([]string, 0, t.NumField())
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" {
+			continue
+		}
+
+		name := field.Name
+		isRequired := true
+		tag := field.Tag.Get("json")
+		if tag != "" {
+			parts := strings.Split(tag, ",")
+			if parts[0] == "-" {
+				continue
+			}
+			if parts[0] != "" {
+				name = parts[0]
+			}
+			if slices.Contains(parts[1:], "omitempty") {
+				isRequired = false
+			}
+		}
+
+		fieldType := field.Type
+		for fieldType.Kind() == reflect.Pointer {
+			fieldType = fieldType.Elem()
+		}
+
+		propType := "object"
+		switch fieldType.Kind() {
+		case reflect.String:
+			propType = "string"
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			propType = "integer"
+		case reflect.Float32, reflect.Float64:
+			propType = "number"
+		case reflect.Bool:
+			propType = "boolean"
+		case reflect.Slice, reflect.Array:
+			propType = "array"
+		case reflect.Struct:
+			propType = "object"
+		}
+
+		properties[name] = map[string]any{"type": propType}
+		if isRequired {
+			required = append(required, name)
+		}
 	}
 
 	return map[string]any{

@@ -184,9 +184,8 @@ func TestRunner_HandleSchemaWithRetry_RetrySuccess(t *testing.T) {
 	os.Remove(outputPath)
 
 	// Actually for this test, let's have the mock "create" the file
-	origExecute := mock.Execute
 	mock2 := &writerMockProvider{
-		inner:      origExecute,
+		inner:      mock.Execute,
 		outputPath: outputPath,
 		content:    content,
 		results: []*RawResult{

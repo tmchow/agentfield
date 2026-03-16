@@ -27,6 +27,10 @@ type CLIResult struct {
 
 // RunCLI runs a CLI command and returns its output. The context controls
 // cancellation; timeout is in seconds (0 means no timeout beyond ctx).
+//
+// Environment merging: entries in env are merged with os.Environ(). An empty
+// string value ("") causes that variable to be removed from the environment
+// rather than set to empty — use this to unset inherited variables.
 func RunCLI(ctx context.Context, cmd []string, env map[string]string, cwd string, timeout int) (*CLIResult, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -49,12 +53,11 @@ func RunCLI(ctx context.Context, cmd []string, env map[string]string, cwd string
 	}
 	var mergedEnv []string
 	for _, entry := range os.Environ() {
-		idx := strings.IndexByte(entry, '=')
-		if idx < 0 {
+		key, _, found := strings.Cut(entry, "=")
+		if !found {
 			mergedEnv = append(mergedEnv, entry)
 			continue
 		}
-		key := entry[:idx]
 		if unset[key] {
 			continue
 		}
@@ -94,4 +97,22 @@ func RunCLI(ctx context.Context, cmd []string, env map[string]string, cwd string
 	}
 
 	return result, nil
+}
+
+// isExecNotFound checks if an error indicates the binary was not found.
+func isExecNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "executable file not found") ||
+		strings.Contains(msg, "no such file or directory")
+}
+
+// truncate returns the first maxLen characters of s, or s if shorter.
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
 }

@@ -3,7 +3,6 @@ package harness
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -85,10 +84,10 @@ func (p *OpenCodeProvider) Execute(ctx context.Context, prompt string, options O
 		// Timeout
 		if strings.Contains(err.Error(), "timed out") {
 			return &RawResult{
-				IsError:     true,
+				IsError:      true,
 				ErrorMessage: err.Error(),
-				FailureType: FailureTimeout,
-				Metrics:     Metrics{DurationAPIMS: apiMS},
+				FailureType:  FailureTimeout,
+				Metrics:      Metrics{DurationAPIMS: apiMS},
 			}, nil
 		}
 		return nil, err
@@ -96,13 +95,6 @@ func (p *OpenCodeProvider) Execute(ctx context.Context, prompt string, options O
 
 	resultText := strings.TrimSpace(cliResult.Stdout)
 	cleanStderr := StripANSI(strings.TrimSpace(cliResult.Stderr))
-
-	log.Printf("opencode finished: returncode=%d stdout=%d chars elapsed=%ds",
-		cliResult.ReturnCode, len(cliResult.Stdout), apiMS/1000)
-
-	if resultText == "" && cleanStderr != "" {
-		log.Printf("opencode no stdout. stderr: %.800s", cleanStderr)
-	}
 
 	raw := &RawResult{
 		Result:   resultText,
@@ -139,20 +131,4 @@ func (p *OpenCodeProvider) Execute(ctx context.Context, prompt string, options O
 	}
 
 	return raw, nil
-}
-
-func isExecNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	return strings.Contains(msg, "executable file not found") ||
-		strings.Contains(msg, "no such file or directory")
-}
-
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen]
 }

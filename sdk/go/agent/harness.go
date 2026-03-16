@@ -2,11 +2,12 @@ package agent
 
 import (
 	"context"
-	"sync"
 
 	"github.com/Agent-Field/agentfield/sdk/go/harness"
 )
 
+// harness.go integrates the harness package with the Agent struct,
+// providing lazy initialization and a convenience Harness() method.
 // HarnessConfig configures the default harness runner for the agent.
 type HarnessConfig struct {
 	// Provider is the default provider: "opencode" or "claude-code".
@@ -36,11 +37,6 @@ type HarnessConfig struct {
 	// SchemaMaxRetries for schema validation failures. Default 2.
 	SchemaMaxRetries int
 }
-
-var (
-	harnessOnce   sync.Once
-	harnessRunner *harness.Runner
-)
 
 // HarnessRunner returns the agent's lazily-initialized harness runner.
 func (a *Agent) HarnessRunner() *harness.Runner {

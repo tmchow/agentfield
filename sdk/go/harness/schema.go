@@ -6,12 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
 const (
-	outputFilename          = ".agentfield_output.json"
-	schemaFilename          = ".agentfield_schema.json"
+	outputFilename            = ".agentfield_output.json"
+	schemaFilename            = ".agentfield_schema.json"
 	largeSchemaTokenThreshold = 4000
 )
 
@@ -33,8 +34,18 @@ func estimateTokens(text string) int {
 // BuildPromptSuffix constructs the OUTPUT REQUIREMENTS instruction that tells
 // the coding agent to write JSON to a deterministic file path.
 func BuildPromptSuffix(jsonSchema map[string]any, dir string) string {
-	schemaJSON, _ := json.MarshalIndent(jsonSchema, "", "  ")
 	outputPath := OutputPath(dir)
+	schemaJSON, err := json.MarshalIndent(jsonSchema, "", "  ")
+	if err != nil {
+		return fmt.Sprintf(
+			"\n\n---\n"+
+				"CRITICAL OUTPUT REQUIREMENTS:\n"+
+				"You MUST use your Write tool to create this file: %s\n"+
+				"The file MUST contain ONLY valid JSON.\n"+
+				"Do NOT output the JSON in your response text — write it to the file.",
+			outputPath,
+		)
+	}
 
 	if estimateTokens(string(schemaJSON)) > largeSchemaTokenThreshold {
 		schemaPath := SchemaPath(dir)
@@ -65,7 +76,7 @@ func BuildPromptSuffix(jsonSchema map[string]any, dir string) string {
 // writeSchemaFile writes the schema JSON to the schema file.
 func writeSchemaFile(schemaJSON string, dir string) error {
 	path := SchemaPath(dir)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 	return os.WriteFile(path, []byte(schemaJSON), 0o600)
@@ -89,6 +100,9 @@ func ReadAndParse(filePath string) (map[string]any, error) {
 }
 
 // cosmeticRepair attempts to fix common JSON formatting issues.
+//
+// Limitations: brace/bracket balancing is naive and does not understand JSON
+// strings, so braces inside quoted strings can be miscounted.
 func cosmeticRepair(raw string) string {
 	text := strings.TrimSpace(raw)
 
@@ -217,12 +231,13 @@ func extractJSONBlocks(text string) []string {
 	depth := 0
 	start := -1
 	for i, ch := range text {
-		if ch == '{' {
+		switch ch {
+		case '{':
 			if depth == 0 {
 				start = i
 			}
 			depth++
-		} else if ch == '}' {
+		case '}':
 			depth--
 			if depth == 0 && start >= 0 {
 				candidates = append(candidates, text[start:i+1])
@@ -231,13 +246,9 @@ func extractJSONBlocks(text string) []string {
 		}
 	}
 	// Sort by length descending (largest first)
-	for i := 0; i < len(candidates); i++ {
-		for j := i + 1; j < len(candidates); j++ {
-			if len(candidates[j]) > len(candidates[i]) {
-				candidates[i], candidates[j] = candidates[j], candidates[i]
-			}
-		}
-	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return len(candidates[i]) > len(candidates[j])
+	})
 	return candidates
 }
 
@@ -251,7 +262,12 @@ func unmarshalInto(data map[string]any, dest any) error {
 }
 
 // CleanupTempFiles removes harness temp files.
+//
+// For safety, this is a no-op when dir is empty or ".".
 func CleanupTempFiles(dir string) {
+	if dir == "" || dir == "." {
+		return
+	}
 	for _, name := range []string{outputFilename, schemaFilename} {
 		os.Remove(filepath.Join(dir, name))
 	}
@@ -312,8 +328,11 @@ func BuildFollowupPrompt(errorMessage string, dir string, jsonSchema map[string]
 	fmt.Fprintf(&b, "Error: %s\n\n", errorMessage)
 
 	if jsonSchema != nil {
-		schemaJSON, _ := json.MarshalIndent(jsonSchema, "", "  ")
-		if estimateTokens(string(schemaJSON)) > largeSchemaTokenThreshold {
+		schemaJSON, err := json.MarshalIndent(jsonSchema, "", "  ")
+		if err != nil {
+			fmt.Fprintf(&b, "The schema could not be serialized (%v).\n", err)
+			fmt.Fprintf(&b, "Write valid JSON to %s and include all expected top-level fields.\n\n", outputPath)
+		} else if estimateTokens(string(schemaJSON)) > largeSchemaTokenThreshold {
 			if _, err := os.Stat(schemaPath); err == nil {
 				fmt.Fprintf(&b, "The required JSON Schema is at: %s\nRe-read the schema file carefully.\n", schemaPath)
 			} else {
