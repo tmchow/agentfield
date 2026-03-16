@@ -28,16 +28,15 @@ func NewOpenCodeProvider(binPath, serverURL string) *OpenCodeProvider {
 }
 
 func (p *OpenCodeProvider) Execute(ctx context.Context, prompt string, options Options) (*RawResult, error) {
-	cmd := []string{p.BinPath, "run"}
+	cmd := []string{p.BinPath}
 
-	if options.Model != "" {
-		cmd = append(cmd, "--model", options.Model)
-	}
-
-	// --dir sets the project root the coding agent explores.
+	// OpenCode uses -c for working directory.
 	if options.ProjectDir != "" {
-		cmd = append(cmd, "--dir", options.ProjectDir)
+		cmd = append(cmd, "-c", options.ProjectDir)
 	}
+
+	// Quiet mode suppresses spinner (avoids TTY errors in subprocess).
+	cmd = append(cmd, "-q")
 
 	// Prepend system prompt if provided.
 	effectivePrompt := prompt
@@ -47,7 +46,9 @@ func (p *OpenCodeProvider) Execute(ctx context.Context, prompt string, options O
 			strings.TrimSpace(options.SystemPrompt), prompt,
 		)
 	}
-	cmd = append(cmd, effectivePrompt)
+
+	// Non-interactive prompt mode with -p flag.
+	cmd = append(cmd, "-p", effectivePrompt)
 
 	// Build environment
 	env := make(map[string]string)

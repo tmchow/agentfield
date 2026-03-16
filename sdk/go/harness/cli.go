@@ -40,10 +40,30 @@ func RunCLI(ctx context.Context, cmd []string, env map[string]string, cwd string
 
 	c := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
 
-	// Merge environment
-	mergedEnv := os.Environ()
+	// Merge environment: empty values unset the variable.
+	unset := make(map[string]bool)
 	for k, v := range env {
-		mergedEnv = append(mergedEnv, k+"="+v)
+		if v == "" {
+			unset[k] = true
+		}
+	}
+	var mergedEnv []string
+	for _, entry := range os.Environ() {
+		idx := strings.IndexByte(entry, '=')
+		if idx < 0 {
+			mergedEnv = append(mergedEnv, entry)
+			continue
+		}
+		key := entry[:idx]
+		if unset[key] {
+			continue
+		}
+		mergedEnv = append(mergedEnv, entry)
+	}
+	for k, v := range env {
+		if v != "" {
+			mergedEnv = append(mergedEnv, k+"="+v)
+		}
 	}
 	c.Env = mergedEnv
 

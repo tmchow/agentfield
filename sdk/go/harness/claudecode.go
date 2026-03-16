@@ -73,6 +73,10 @@ func (p *ClaudeCodeProvider) Execute(ctx context.Context, prompt string, options
 		env[k] = v
 	}
 
+	// Unset CLAUDECODE to allow spawning Claude Code from within a Claude
+	// Code session (the CLI refuses to start when this var is present).
+	env["CLAUDECODE"] = ""
+
 	cwd := options.Cwd
 	if cwd == "" {
 		cwd = options.ProjectDir
