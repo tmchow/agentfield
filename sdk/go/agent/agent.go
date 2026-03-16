@@ -22,6 +22,7 @@ import (
 	"github.com/Agent-Field/agentfield/sdk/go/ai"
 	"github.com/Agent-Field/agentfield/sdk/go/client"
 	"github.com/Agent-Field/agentfield/sdk/go/did"
+	"github.com/Agent-Field/agentfield/sdk/go/harness"
 	"github.com/Agent-Field/agentfield/sdk/go/types"
 )
 
@@ -286,6 +287,11 @@ type Config struct {
 	// refreshes its caches from the control plane.
 	// Optional. Default: 5 minutes.
 	VerificationRefreshInterval time.Duration
+
+	// HarnessConfig configures the default harness runner for dispatching
+	// tasks to external coding agents (opencode, claude-code).
+	// Optional. If nil, Harness() calls require per-call provider options.
+	HarnessConfig *HarnessConfig
 }
 
 // CLIConfig controls CLI behaviour and presentation.
@@ -316,6 +322,8 @@ type Agent struct {
 	// Local verification (decentralized mode)
 	localVerifier               *LocalVerifier
 	realtimeValidationFunctions map[string]struct{}
+
+	harnessRunner *harness.Runner
 
 	serverMu sync.RWMutex
 	server   *http.Server
