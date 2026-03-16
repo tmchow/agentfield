@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.57-rc.4] - 2026-03-16
+
+
+### Fixed
+
+- Fix(storage): apply default idle connections when MaxIdleConns is unconfigured (#272)
+
+The guard `maxIdle < 0` never triggers for the zero-value of int (0),
+so `SetMaxIdleConns(0)` is called — telling database/sql to keep no
+idle connections. Every query opens and closes a fresh TCP connection
+to Postgres, adding ~30-150 ms of overhead per request and causing
+connection churn (~5 new backend PIDs/sec).
+
+Changing to `<= 0` ensures the default of 5 idle connections is applied
+when the setting is omitted, matching the existing `maxOpen <= 0` guard
+on the line above.
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (5b3e08c)
+
 ## [0.1.57-rc.3] - 2026-03-15
 
 
