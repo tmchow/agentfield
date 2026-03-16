@@ -6,6 +6,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.59-rc.1] - 2026-03-16
+
+
+### Added
+
+- Feat(sdk-go): add harness package for CLI-based coding agent dispatch (#271)
+
+* feat(sdk-go): add harness package for CLI-based coding agent dispatch
+
+Implements the Go equivalent of the Python SDK's harness subsystem,
+enabling structured output extraction from external coding agents
+(opencode, claude-code) via subprocess execution.
+
+New harness/ package:
+- Provider interface with OpenCode and ClaudeCode implementations
+- Runner with schema validation, retry logic, and transient error handling
+- Schema utilities: prompt suffix generation, cosmetic JSON repair,
+  stdout fallback extraction, follow-up prompt construction
+- CLI subprocess execution with timeout and environment management
+
+Agent integration:
+- HarnessConfig on agent.Config for default provider settings
+- agent.Harness() method mirrors Python SDK's .harness() API
+- Lazy-initialized runner with per-call option overrides
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix(harness): correct CLI flags for opencode/claude-code and add demo
+
+Provider fixes validated through end-to-end testing:
+- opencode: use -p flag (not "run" subcommand), -c for cwd, -q for
+  quiet mode; model is config/env-based not a CLI flag
+- claude-code: unset CLAUDECODE env var to allow spawning from within
+  a Claude Code session
+- cli: support unsetting env vars (empty value = remove from env)
+
+Add examples/go_harness_demo with structured output extraction test
+for both providers.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix(sdk-go/harness): address code review findings — security, quality, SDK conventions
+
+- Remove dead package-level sync.Once/Runner variables (cross-agent contamination risk)
+- Guard CleanupTempFiles against '.' directory (destructive file deletion)
+- Replace bare log.Printf with configurable Runner.Logger (matches SDK convention)
+- Fix context cancellation leak in schema retry loop
+- Fix StructToJSONSchema to use reflect for proper type inference
+- Replace bubble sort with sort.Slice in extractJSONBlocks
+- Handle json.MarshalIndent errors in BuildPromptSuffix/BuildFollowupPrompt
+- Move isExecNotFound/truncate helpers from opencode.go to cli.go
+- Add provider name constants (ProviderOpenCode, ProviderClaudeCode)
+- Document env empty-string-means-unset convention
+- Document mergeOptions zero-value override semantics
+- Document cosmeticRepair brace-counting limitations
+- Tighten writeSchemaFile directory permissions (0o755 → 0o700)
+- Remove unused variable in runner_test.go
+- Update .env.example to use generic placeholders
+- Add loadEnv production-use note in demo
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+Co-authored-by: Santosh <santosh@agentfield.ai> (eaaed38)
+
 ## [0.1.58] - 2026-03-16
 
 ## [0.1.58-rc.1] - 2026-03-16
