@@ -36,6 +36,10 @@ func DiscoverHandler(catalog *apicatalog.Catalog) gin.HandlerFunc {
 				"group":  group,
 				"method": method,
 			},
+			"see_also": gin.H{
+				"live_agents": "GET /api/v1/discovery/capabilities — lists running agents, their reasoners, skills, and invocation targets",
+				"kb":          "GET /api/v1/agentic/kb/topics — knowledge base with SDK patterns, architecture guides, and examples",
+			},
 		})
 	}
 }
@@ -85,8 +89,12 @@ func Smart404Handler(catalog *apicatalog.Catalog, uiNoRouteHandler gin.HandlerFu
 			"error":       "endpoint_not_found",
 			"message":     method + " " + path + " does not exist",
 			"suggestions": sugResp,
-			"discover":    "GET /api/v1/agentic/discover?q=<keyword>",
-			"docs":        "GET /api/v1/agentic/kb/topics",
+			"help": gin.H{
+				"api_search":      "GET /api/v1/agentic/discover?q=<keyword> — search all API endpoints",
+				"live_agents":     "GET /api/v1/discovery/capabilities — list running agents and their reasoners/skills",
+				"kb":              "GET /api/v1/agentic/kb/topics — knowledge base (public, no auth)",
+				"guide":           "GET /api/v1/agentic/kb/guide?goal=<description> — goal-oriented learning path (public)",
+			},
 		})
 	}
 }

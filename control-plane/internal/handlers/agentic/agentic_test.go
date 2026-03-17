@@ -146,8 +146,13 @@ func TestSmart404Handler_NonUIPath(t *testing.T) {
 	assert.Equal(t, "endpoint_not_found", body["error"])
 	assert.Contains(t, body["message"], "/api/v1/nonexistent")
 	assert.Contains(t, body, "suggestions")
-	assert.Contains(t, body, "discover")
-	assert.Contains(t, body, "docs")
+	assert.Contains(t, body, "help")
+
+	// help should reference both API search and live agent discovery
+	help := body["help"].(map[string]interface{})
+	assert.Contains(t, help, "api_search")
+	assert.Contains(t, help, "live_agents")
+	assert.Contains(t, help, "kb")
 }
 
 func TestSmart404Handler_UIPath_DelegatesToHandler(t *testing.T) {

@@ -91,7 +91,13 @@ func APIKeyAuth(config AuthConfig) gin.HandlerFunc {
 			c.Set("auth_level", "public")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "unauthorized",
-				"message": "invalid or missing API key",
+				"message": "invalid or missing API key. Provide via X-API-Key header, Authorization: Bearer <token>, or ?api_key= query param",
+				"help": map[string]string{
+					"kb":             "GET /api/v1/agentic/kb/topics (public, no auth required)",
+					"guide":          "GET /api/v1/agentic/kb/guide?goal=<your goal> (public)",
+					"api_discovery":  "GET /api/v1/agentic/discover (requires auth)",
+					"agent_discovery": "GET /api/v1/discovery/capabilities (requires auth — lists live agents, reasoners, skills)",
+				},
 			})
 			return
 		}
