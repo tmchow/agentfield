@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="assets/github hero.png" alt="AgentField - Kubernetes, for AI Agents" width="100%" />
+<img src="assets/github hero.png" alt="AgentField - The AI Backend" width="100%" />
 
-# Kubernetes for AI Agents
+# The AI Backend
 
-### **Deploy, Scale, Observe, and Prove.**
+### **Build and scale AI agents like APIs. Deploy, observe, and prove.**
 
-*When AI moves from chatbots into backends, making decisions, not just answering questions, it needs infrastructure, not frameworks.*
+*AI has outgrown chatbots and prompt orchestrators. Backend agents need backend infrastructure.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-7c3aed.svg?style=flat&labelColor=1e1e2e)](LICENSE)
 [![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fsantoshkumarradha%2Fd98e2ad73502b4075f6a5f0ae4f5cae5%2Fraw%2Fbadge.json&style=flat&logo=download&logoColor=white&labelColor=1e1e2e&cacheSeconds=3600)](https://github.com/Agent-Field/agentfield)
