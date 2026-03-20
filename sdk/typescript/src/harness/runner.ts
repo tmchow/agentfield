@@ -29,7 +29,7 @@ type RunnerOptions = Omit<HarnessOptions, 'schema'> & {
   geminiBin?: string;
   opencodeBin?: string;
   opencodeServer?: string;
-  cursorBin?: string;
+  cursorCliBin?: string;
   cursorServer?: string;
 };
 
@@ -94,7 +94,7 @@ export class HarnessRunner {
         'geminiBin',
         'opencodeBin',
         'opencodeServer',
-        'cursorBin',
+        'cursorCliBin',
         'cursorServer',
       ] as const) {
         const value = config[key];

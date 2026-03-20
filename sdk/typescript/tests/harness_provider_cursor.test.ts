@@ -59,10 +59,10 @@ describe('cursor provider', () => {
 });
 
 describe('provider factory', () => {
-  it('routes cursor to CursorProvider and passes cursorBin and cursorServer', async () => {
+  it('routes cursor-cli to CursorProvider and passes cursorCliBin and cursorServer', async () => {
     const provider = await buildProvider({ 
-      provider: 'cursor', 
-      cursorBin: '/opt/cursor',
+      provider: 'cursor-cli', 
+      cursorCliBin: '/opt/cursor',
       cursorServer: 'http://localhost:1234'
     });
 
