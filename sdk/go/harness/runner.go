@@ -45,7 +45,7 @@ func (r *Runner) Run(ctx context.Context, prompt string, schema map[string]any, 
 		)
 	}
 
-	provider, err := r.buildProvider(opts)
+	provider, err := BuildProvider(opts, r.DefaultOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -96,29 +96,7 @@ func (r *Runner) Run(ctx context.Context, prompt string, schema map[string]any, 
 	}, nil
 }
 
-func (r *Runner) buildProvider(opts Options) (Provider, error) {
-	switch opts.Provider {
-	case ProviderOpenCode:
-		binPath := opts.BinPath
-		if binPath == "" {
-			binPath = r.DefaultOptions.BinPath
-		}
-		return NewOpenCodeProvider(binPath, ""), nil
-	case ProviderClaudeCode:
-		binPath := opts.BinPath
-		if binPath == "" {
-			binPath = r.DefaultOptions.BinPath
-		}
-		return NewClaudeCodeProvider(binPath), nil
-	default:
-		return nil, fmt.Errorf(
-			"unknown harness provider: %q (supported: %s, %s)",
-			opts.Provider,
-			ProviderOpenCode,
-			ProviderClaudeCode,
-		)
-	}
-}
+
 
 // mergeOptions combines default and per-call options. Per-call values take
 // precedence. Zero values in overrides are treated as "use default" — callers

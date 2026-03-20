@@ -31,7 +31,7 @@ type CLIResult struct {
 // Environment merging: entries in env are merged with os.Environ(). An empty
 // string value ("") causes that variable to be removed from the environment
 // rather than set to empty — use this to unset inherited variables.
-func RunCLI(ctx context.Context, cmd []string, env map[string]string, cwd string, timeout int) (*CLIResult, error) {
+var RunCLI = func(ctx context.Context, cmd []string, env map[string]string, cwd string, timeout int) (*CLIResult, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
