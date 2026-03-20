@@ -22,7 +22,7 @@ describe('opencode provider', () => {
       env: { A: '1' },
     });
 
-    expect(cli.runCli).toHaveBeenCalledWith(['/usr/local/bin/opencode', 'run', 'hello'], {
+    expect(cli.runCli).toHaveBeenCalledWith(['/usr/local/bin/opencode', 'run', '--dir', '/tmp/work', 'hello'], {
       cwd: '/tmp/work',
       env: { A: '1' },
     });
@@ -76,6 +76,20 @@ describe('opencode provider', () => {
       }
     );
     expect(result.isError).toBe(false);
+  });
+
+  it('calculates cost when model is provided', async () => {
+    vi.spyOn(cli, 'runCli').mockResolvedValue({
+      stdout: 'response',
+      stderr: '',
+      exitCode: 0,
+    });
+
+    const provider = new OpenCodeProvider();
+    const result = await provider.execute('hello world', { model: 'openai/gpt-4o' });
+
+    expect(result.isError).toBe(false);
+    expect(result.metrics.totalCostUsd).toBeGreaterThan(0);
   });
 });
 

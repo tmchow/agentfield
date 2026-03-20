@@ -1,7 +1,7 @@
 import type { HarnessProvider } from './base.js';
 import type { RawResult } from '../types.js';
 import { createRawResult, createMetrics } from '../types.js';
-import { runCli } from '../cli.js';
+import { runCli, estimateCliCost } from '../cli.js';
 
 export class GeminiProvider implements HarnessProvider {
   private readonly bin: string;
@@ -34,6 +34,12 @@ export class GeminiProvider implements HarnessProvider {
       const resultText = stdout.trim() || undefined;
       const isError = exitCode !== 0 && !resultText;
 
+      const totalCostUsd = estimateCliCost(
+        typeof options.model === 'string' ? options.model : undefined,
+        prompt,
+        resultText
+      );
+
       return createRawResult({
         result: resultText,
         messages: [],
@@ -41,6 +47,7 @@ export class GeminiProvider implements HarnessProvider {
           durationApiMs: Date.now() - startApi,
           numTurns: resultText ? 1 : 0,
           sessionId: '',
+          totalCostUsd,
         }),
         isError,
         errorMessage: isError ? stderr.trim() : undefined,
