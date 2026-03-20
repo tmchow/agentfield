@@ -57,3 +57,7 @@ reports/
 
 # Typescript
 .env
+
+# AgentField specific
+.worktrees/
+.artifacts/
