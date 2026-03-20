@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from agentfield.harness.providers._base import HarnessProvider
     from agentfield.types import HarnessConfig
 
-SUPPORTED_PROVIDERS = {"claude-code", "codex", "gemini", "opencode", "cursor"}
+SUPPORTED_PROVIDERS = {"claude-code", "codex", "gemini", "opencode", "cursor-cli"}
 
 
 def build_provider(config: "HarnessConfig") -> "HarnessProvider":
@@ -35,7 +35,7 @@ def build_provider(config: "HarnessConfig") -> "HarnessProvider":
             bin_path=getattr(config, "opencode_bin", "opencode"),
             server_url=getattr(config, "opencode_server", None),
         )
-    if provider_name == "cursor":
+    if provider_name == "cursor-cli":
         from agentfield.harness.providers.cursor import CursorProvider
 
         return CursorProvider(
