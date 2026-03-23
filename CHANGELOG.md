@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.61-rc.2] - 2026-03-23
+
+
+### Fixed
+
+- Fix: resolve PR #284 review issues — logging, flag scoping, dead code, docstring (#290)
+
+- Remove empty PersistentPreRun on agent command that silently
+  overrode root PersistentPreRunE, preventing logger initialization
+  for all af agent subcommands
+- Move --output and --timeout flags from root PersistentFlags to
+  agent command scope (avoid polluting af dev, af server, etc.)
+- Remove redundant server URL fallback in agentHTTP() (GetServerURL
+  already handles the default)
+- Fix Python SDK split docstring: merge orphaned string literal back
+  into __init__ docstring, place resolution code after docstring
+- Add doc comment to packages/server_url.go for parity with
+  services/server_url.go (28beee5)
+
 ## [0.1.61-rc.1] - 2026-03-23
 
 
