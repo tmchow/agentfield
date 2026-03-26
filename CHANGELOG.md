@@ -6,6 +6,73 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.63-rc.2] - 2026-03-26
+
+
+### Added
+
+- Feat(sdk/go): add Codex and Gemini harness providers (#305)
+
+* feat(sdk/go): add Codex and Gemini harness providers with BuildProvider factory
+
+Implements the remaining two CLI-based harness providers for the Go SDK,
+completing the feature parity with Python/TS implementations.
+
+- codex.go: Codex provider using `codex exec --json` with JSONL event parsing
+- gemini.go: Gemini provider using `gemini -p` with plain text output
+- factory.go: BuildProvider() factory for all 4 providers
+- Refactored runner.buildProvider() to delegate to BuildProvider()
+- Full test coverage for both providers and the factory
+
+Fixes #207
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix: correct install URLs for Codex and Gemini providers
+
+Codex: https://github.com/openai/codex
+Gemini: https://github.com/google-gemini/gemini-cli
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* fix: Codex JSONL parser — handle thread_id and item text fields
+
+Real Codex CLI uses thread_id (not session_id) in thread.started events
+and text (not content) in agent_message items. Fixed parser to handle
+both field names. Added integration test (build tag: integration).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* chore: add .opencode/ to gitignore
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+* test: add integration tests for Codex and Gemini providers
+
+Run with: go test ./harness/ -tags=integration
+Requires: codex CLI auth'd, GEMINI_API_KEY env var set with
+gemini settings.json auth type set to gemini-api-key.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (94c67c1)
+
+
+
+### Chores
+
+- Chore: rebrand README and assets to gold/dark theme (#306)
+
+Update all visual assets and badge colors to match the new agentfield.ai
+website theme (dark #0c0b09 background, gold #d4a24a accents, cream #f5f0eb text).
+
+- README badges: purple #7c3aed → gold #d4a24a, label bg → #0c0b09
+- GitHub hero banner: rethemed to gold, model updated to claude-sonnet-4
+- Architecture diagram: rethemed purple/green headings → gold
+- Features strip: rethemed teal dots → gold dots on dark background (980bb90)
+
 ## [0.1.63-rc.1] - 2026-03-24
 
 
