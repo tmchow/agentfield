@@ -221,6 +221,14 @@ func (c *executionController) handleSync(ctx *gin.Context) {
 		return
 	}
 
+	// Check LLM health and per-agent concurrency limits before proceeding
+	if err := CheckExecutionPreconditions(plan.target.NodeID); err != nil {
+		_ = c.failExecution(reqCtx, plan, err, 0, nil)
+		writeExecutionError(ctx, err)
+		return
+	}
+	defer ReleaseExecutionSlot(plan.target.NodeID)
+
 	// Emit execution started event with full reasoner context
 	c.publishExecutionStartedEvent(plan)
 
@@ -355,6 +363,14 @@ func (c *executionController) handleAsync(ctx *gin.Context) {
 		return
 	}
 
+	// Check LLM health and per-agent concurrency limits before proceeding
+	if err := CheckExecutionPreconditions(plan.target.NodeID); err != nil {
+		_ = c.failExecution(reqCtx, plan, err, 0, nil)
+		writeExecutionError(ctx, err)
+		return
+	}
+	// Note: slot is released in asyncExecutionJob.process() after completion
+
 	// Emit execution started event with full reasoner context
 	c.publishExecutionStartedEvent(plan)
 
@@ -365,6 +381,7 @@ func (c *executionController) handleAsync(ctx *gin.Context) {
 	}
 
 	if ok := pool.submit(job); !ok {
+		ReleaseExecutionSlot(plan.target.NodeID) // Release since process() won't run
 		queueErr := errors.New("async execution queue is full; retry later")
 		if updateErr := c.failExecution(reqCtx, plan, queueErr, 0, nil); updateErr != nil {
 			logger.Logger.Error().
@@ -1124,6 +1141,15 @@ func (c *executionController) prepareExecution(ctx context.Context, ginCtx *gin.
 func (c *executionController) callAgent(ctx context.Context, plan *preparedExecution) ([]byte, time.Duration, bool, error) {
 	start := time.Now()
 
+	if plan.target != nil && plan.exec != nil {
+		PublishExecutionLog(plan.exec.ExecutionID, plan.exec.RunID, plan.target.NodeID,
+			"info", "calling agent", map[string]interface{}{
+				"agent":    plan.target.NodeID,
+				"reasoner": plan.target.TargetName,
+				"base_url": plan.agent.BaseURL,
+			})
+	}
+
 	// Check execution state before calling agent.
 	currentExec, err := c.store.GetExecutionRecord(ctx, plan.exec.ExecutionID)
 	if err == nil && currentExec != nil {
@@ -1207,6 +1233,13 @@ func (c *executionController) callAgent(ctx context.Context, plan *preparedExecu
 }
 
 func (c *executionController) completeExecution(ctx context.Context, plan *preparedExecution, result []byte, elapsed time.Duration) error {
+	if plan.target != nil && plan.exec != nil {
+		PublishExecutionLog(plan.exec.ExecutionID, plan.exec.RunID, plan.target.NodeID,
+			"info", "execution completed", map[string]interface{}{
+				"duration_ms": elapsed.Milliseconds(),
+			})
+	}
+
 	resultURI := c.savePayload(ctx, result)
 
 	var lastErr error
@@ -1273,6 +1306,14 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 }
 
 func (c *executionController) failExecution(ctx context.Context, plan *preparedExecution, callErr error, elapsed time.Duration, result []byte) error {
+	if plan.target != nil && plan.exec != nil {
+		PublishExecutionLog(plan.exec.ExecutionID, plan.exec.RunID, plan.target.NodeID,
+			"error", "execution failed", map[string]interface{}{
+				"error":       callErr.Error(),
+				"duration_ms": elapsed.Milliseconds(),
+			})
+	}
+
 	errMsg := callErr.Error()
 	resultURI := c.savePayload(ctx, result)
 	var lastErr error
@@ -1865,6 +1906,12 @@ func writeExecutionError(ctx *gin.Context, err error) {
 		return
 	}
 
+	var pe *executionPreconditionError
+	if errors.As(err, &pe) {
+		ctx.JSON(pe.HTTPStatusCode(), gin.H{"error": pe.Error()})
+		return
+	}
+
 	ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 }
 
@@ -1902,6 +1949,11 @@ func (c *executionController) savePayload(ctx context.Context, data []byte) *str
 }
 
 func (j asyncExecutionJob) process() {
+	// Release the per-agent concurrency slot when this job finishes
+	if j.plan.target != nil {
+		defer ReleaseExecutionSlot(j.plan.target.NodeID)
+	}
+
 	// Use a bounded context so that paused executions do not block goroutines
 	// indefinitely if the resume/cancel event is never delivered (e.g. event bus
 	// crash, server restart). 24 hours is generous but prevents permanent leaks.
