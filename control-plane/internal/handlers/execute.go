@@ -392,7 +392,7 @@ func (c *executionController) handleAsync(ctx *gin.Context) {
 		logger.Logger.Warn().
 			Str("execution_id", plan.exec.ExecutionID).
 			Msg("async execution rejected due to queue saturation")
-		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": queueErr.Error()})
+		ctx.JSON(http.StatusServiceUnavailable, gin.H{"error": queueErr.Error(), "error_category": "concurrency_limit"})
 		return
 	}
 
@@ -1306,11 +1306,15 @@ func (c *executionController) completeExecution(ctx context.Context, plan *prepa
 }
 
 func (c *executionController) failExecution(ctx context.Context, plan *preparedExecution, callErr error, elapsed time.Duration, result []byte) error {
+	// Classify the error for user-facing diagnostics
+	category := classifyExecutionError(callErr)
+
 	if plan.target != nil && plan.exec != nil {
 		PublishExecutionLog(plan.exec.ExecutionID, plan.exec.RunID, plan.target.NodeID,
 			"error", "execution failed", map[string]interface{}{
-				"error":       callErr.Error(),
-				"duration_ms": elapsed.Milliseconds(),
+				"error":          callErr.Error(),
+				"error_category": string(category),
+				"duration_ms":    elapsed.Milliseconds(),
 			})
 	}
 
@@ -1336,6 +1340,8 @@ func (c *executionController) failExecution(ctx context.Context, plan *preparedE
 			now := time.Now().UTC()
 			current.Status = types.ExecutionStatusFailed
 			current.ErrorMessage = &errMsg
+			categoryStr := string(category)
+			current.StatusReason = &categoryStr
 			current.CompletedAt = pointerTime(now)
 			duration := elapsed.Milliseconds()
 			current.DurationMS = &duration
@@ -1879,15 +1885,17 @@ func (e *callError) Error() string {
 
 func writeExecutionError(ctx *gin.Context, err error) {
 	if err == nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unknown error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unknown error", "error_category": string(ErrorCategoryInternal)})
 		return
 	}
 
 	var ce *callError
 	if errors.As(err, &ce) {
+		category := classifyCallError(ce, err)
 		response := gin.H{
-			"error":  ce.message,
-			"status": "failed",
+			"error":          ce.message,
+			"error_category": string(category),
+			"status":         "failed",
 		}
 		// Preserve structured error data from the agent's response body.
 		if len(ce.body) > 0 {
@@ -1908,11 +1916,89 @@ func writeExecutionError(ctx *gin.Context, err error) {
 
 	var pe *executionPreconditionError
 	if errors.As(err, &pe) {
-		ctx.JSON(pe.HTTPStatusCode(), gin.H{"error": pe.Error()})
+		ctx.JSON(pe.HTTPStatusCode(), gin.H{
+			"error":          pe.Error(),
+			"error_category": string(pe.Category()),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Classify untyped errors (timeouts, connection failures, etc.)
+	category := classifyRawError(err)
+	httpStatus := http.StatusBadRequest
+	if category == ErrorCategoryAgentTimeout || category == ErrorCategoryAgentUnreachable {
+		httpStatus = http.StatusGatewayTimeout
+	}
+	ctx.JSON(httpStatus, gin.H{
+		"error":          err.Error(),
+		"error_category": string(category),
+	})
+}
+
+// classifyExecutionError determines the error category from any execution error.
+func classifyExecutionError(err error) ErrorCategory {
+	if err == nil {
+		return ErrorCategoryInternal
+	}
+
+	var ce *callError
+	if errors.As(err, &ce) {
+		return classifyCallError(ce, err)
+	}
+
+	var pe *executionPreconditionError
+	if errors.As(err, &pe) {
+		return pe.Category()
+	}
+
+	return classifyRawError(err)
+}
+
+// classifyCallError determines the error category for an agent call error.
+func classifyCallError(ce *callError, original error) ErrorCategory {
+	if ce.statusCode >= 500 {
+		return ErrorCategoryAgentError
+	}
+	if ce.statusCode == 408 {
+		return ErrorCategoryAgentTimeout
+	}
+	// Check if the body is valid JSON — if not, it's a bad response
+	if len(ce.body) > 0 {
+		var js json.RawMessage
+		if json.Unmarshal(ce.body, &js) != nil {
+			return ErrorCategoryBadResponse
+		}
+	}
+	return ErrorCategoryAgentError
+}
+
+// classifyRawError inspects an untyped error for timeout/connection patterns.
+func classifyRawError(err error) ErrorCategory {
+	if err == nil {
+		return ErrorCategoryInternal
+	}
+
+	errStr := err.Error()
+
+	// Context deadline exceeded = timeout
+	if errors.Is(err, context.DeadlineExceeded) || strings.Contains(errStr, "context deadline exceeded") {
+		return ErrorCategoryAgentTimeout
+	}
+
+	// Connection refused / reset = agent unreachable
+	if strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "connection reset") ||
+		strings.Contains(errStr, "no such host") ||
+		strings.Contains(errStr, "i/o timeout") {
+		return ErrorCategoryAgentUnreachable
+	}
+
+	// Cancelled context
+	if errors.Is(err, context.Canceled) || strings.Contains(errStr, "context canceled") {
+		return ErrorCategoryInternal
+	}
+
+	return ErrorCategoryInternal
 }
 
 func pointerTime(t time.Time) *time.Time {

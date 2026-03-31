@@ -89,6 +89,15 @@ func (l *AgentConcurrencyLimiter) GetRunningCount(agentNodeID string) int64 {
 	return atomic.LoadInt64(actual.(*int64))
 }
 
+// MaxPerAgent returns the configured max concurrent executions per agent.
+// Returns 0 if unlimited.
+func (l *AgentConcurrencyLimiter) MaxPerAgent() int {
+	if l == nil {
+		return 0
+	}
+	return l.maxPerAgent
+}
+
 // GetAllCounts returns a snapshot of running counts for all agents.
 func (l *AgentConcurrencyLimiter) GetAllCounts() map[string]int64 {
 	result := make(map[string]int64)

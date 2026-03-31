@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Agent-Field/agentfield/control-plane/internal/events"
+	"github.com/Agent-Field/agentfield/control-plane/internal/handlers"
 	"github.com/Agent-Field/agentfield/control-plane/internal/logger"
 	"github.com/Agent-Field/agentfield/control-plane/internal/services"
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,49 @@ func NewExecutionLogsHandler(llmHealthMonitor *services.LLMHealthMonitor) *Execu
 	return &ExecutionLogsHandler{
 		llmHealthMonitor: llmHealthMonitor,
 	}
+}
+
+// GetExecutionQueueStatusHandler returns concurrency slot usage per agent and overall queue health.
+// GET /api/ui/v1/executions/queue
+func (h *ExecutionLogsHandler) GetExecutionQueueStatusHandler(c *gin.Context) {
+	limiter := handlers.GetConcurrencyLimiter()
+	maxPerAgent := 0
+	counts := map[string]int64{}
+	if limiter != nil {
+		maxPerAgent = limiter.MaxPerAgent()
+		counts = limiter.GetAllCounts()
+	}
+
+	type agentSlot struct {
+		AgentNodeID string `json:"agent_node_id"`
+		Running     int64  `json:"running"`
+		Max         int    `json:"max"`
+		Available   int    `json:"available"`
+	}
+
+	agents := make([]agentSlot, 0, len(counts))
+	totalRunning := int64(0)
+	for agentID, running := range counts {
+		avail := maxPerAgent - int(running)
+		if avail < 0 {
+			avail = 0
+		}
+		agents = append(agents, agentSlot{
+			AgentNodeID: agentID,
+			Running:     running,
+			Max:         maxPerAgent,
+			Available:   avail,
+		})
+		totalRunning += running
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"enabled":           maxPerAgent > 0,
+		"max_per_agent":     maxPerAgent,
+		"total_running":     totalRunning,
+		"agents":            agents,
+		"checked_at":        time.Now().Format(time.RFC3339),
+	})
 }
 
 // StreamExecutionLogsHandler streams real-time log events for a specific execution via SSE.

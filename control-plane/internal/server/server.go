@@ -1132,9 +1132,10 @@ func (s *AgentFieldServer) setupRoutes() {
 				executions.POST("/:execution_id/verify-vc", didHandler.VerifyExecutionVCComprehensiveHandler)
 			}
 
-			// LLM health status endpoint
+			// LLM health status endpoint and execution queue status
 			llmHandler := ui.NewExecutionLogsHandler(s.llmHealthMonitor)
 			uiAPI.GET("/llm/health", llmHandler.GetLLMHealthHandler)
+			uiAPI.GET("/queue/status", llmHandler.GetExecutionQueueStatusHandler)
 
 			// Workflows management group
 			workflows := uiAPI.Group("/workflows")

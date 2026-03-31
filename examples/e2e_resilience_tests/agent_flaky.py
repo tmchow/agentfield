@@ -41,5 +41,11 @@ async def timeout_then_fail(delay_seconds: int = 60) -> dict:
     raise RuntimeError("Simulated timeout + failure after long hang")
 
 
+@app.reasoner()
+async def crash(message: str = "boom") -> dict:
+    """Always raises an exception. Simulates an agent crash."""
+    raise RuntimeError(f"Agent crashed: {message}")
+
+
 if __name__ == "__main__":
     app.run(auto_port=True)

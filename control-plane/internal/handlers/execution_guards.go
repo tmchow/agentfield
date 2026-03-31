@@ -50,14 +50,16 @@ func CheckExecutionPreconditions(agentNodeID string) error {
 			}
 			if lastErr != "" {
 				return &executionPreconditionError{
-					code:    503,
-					message: "LLM backend unavailable: " + lastErr,
+					code:     503,
+					message:  "LLM backend unavailable: " + lastErr,
+					category: ErrorCategoryLLMUnavailable,
 				}
 			}
 		}
 		return &executionPreconditionError{
-			code:    503,
-			message: "all configured LLM backends are unavailable",
+			code:     503,
+			message:  "all configured LLM backends are unavailable",
+			category: ErrorCategoryLLMUnavailable,
 		}
 	}
 
@@ -65,8 +67,9 @@ func CheckExecutionPreconditions(agentNodeID string) error {
 	limiter := GetConcurrencyLimiter()
 	if err := limiter.Acquire(agentNodeID); err != nil {
 		return &executionPreconditionError{
-			code:    429,
-			message: err.Error(),
+			code:     429,
+			message:  err.Error(),
+			category: ErrorCategoryConcurrencyLimit,
 		}
 	}
 
@@ -80,10 +83,24 @@ func ReleaseExecutionSlot(agentNodeID string) {
 	limiter.Release(agentNodeID)
 }
 
+// ErrorCategory classifies execution failures for user-facing diagnostics.
+type ErrorCategory string
+
+const (
+	ErrorCategoryLLMUnavailable  ErrorCategory = "llm_unavailable"
+	ErrorCategoryConcurrencyLimit ErrorCategory = "concurrency_limit"
+	ErrorCategoryAgentTimeout    ErrorCategory = "agent_timeout"
+	ErrorCategoryAgentError      ErrorCategory = "agent_error"
+	ErrorCategoryAgentUnreachable ErrorCategory = "agent_unreachable"
+	ErrorCategoryBadResponse     ErrorCategory = "bad_response"
+	ErrorCategoryInternal        ErrorCategory = "internal_error"
+)
+
 // executionPreconditionError carries both an HTTP status code and message.
 type executionPreconditionError struct {
-	code    int
-	message string
+	code     int
+	message  string
+	category ErrorCategory
 }
 
 func (e *executionPreconditionError) Error() string {
@@ -93,6 +110,11 @@ func (e *executionPreconditionError) Error() string {
 // HTTPStatusCode returns the appropriate HTTP status code for this error.
 func (e *executionPreconditionError) HTTPStatusCode() int {
 	return e.code
+}
+
+// Category returns the error classification.
+func (e *executionPreconditionError) Category() ErrorCategory {
+	return e.category
 }
 
 // PublishExecutionLog publishes a structured log event for an execution.
