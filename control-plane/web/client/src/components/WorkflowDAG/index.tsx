@@ -1076,8 +1076,6 @@ function decorateEdgesWithStatus(
 
       // Process the data if we have it
       if (data) {
-        console.log("🔍 DAG DEBUG: Processing data:", data);
-        console.log("🔍 DAG DEBUG: Timeline executions:", data.timeline);
 
         const timeline = data.timeline ?? [];
 
