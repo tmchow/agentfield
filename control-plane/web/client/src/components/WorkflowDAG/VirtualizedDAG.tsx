@@ -11,7 +11,7 @@ import {
   BackgroundVariant,
   ConnectionMode,
 } from "@xyflow/react";
-import React, { useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef, type CSSProperties } from "react";
 
 import { AgentLegend } from "./AgentLegend";
 import FloatingConnectionLine from "./FloatingConnectionLine";
@@ -20,13 +20,15 @@ interface VirtualizedDAGProps {
   nodes: Node[];
   edges: Edge[];
   onNodeClick?: (event: React.MouseEvent, node: Node) => void;
-  nodeTypes: Record<string, React.ComponentType<any>>;
-  edgeTypes?: Record<string, React.ComponentType<any>>;
+  nodeTypes: Record<string, React.ComponentType<object>>;
+  edgeTypes?: Record<string, React.ComponentType<object>>;
   className?: string;
   threshold?: number;
   workflowId: string;
   onAgentFilter: (agentName: string | null) => void;
   selectedAgent: string | null;
+  onExpandGraph?: () => void;
+  style?: CSSProperties;
 }
 
 export function VirtualizedDAG({
@@ -39,6 +41,8 @@ export function VirtualizedDAG({
   workflowId,
   onAgentFilter,
   selectedAgent,
+  onExpandGraph,
+  style,
 }: VirtualizedDAGProps) {
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges);
@@ -54,6 +58,25 @@ export function VirtualizedDAG({
     () => `workflowDAGViewport:${workflowId}`,
     [workflowId]
   );
+
+  function isValidSavedViewport(v: unknown): v is { x: number; y: number; zoom: number } {
+    if (!v || typeof v !== "object") return false;
+    const o = v as Record<string, unknown>;
+    return (
+      typeof o.x === "number" &&
+      Number.isFinite(o.x) &&
+      typeof o.y === "number" &&
+      Number.isFinite(o.y) &&
+      typeof o.zoom === "number" &&
+      Number.isFinite(o.zoom) &&
+      o.zoom > 0
+    );
+  }
+
+  React.useEffect(() => {
+    hasInitializedViewportRef.current = false;
+    viewportRef.current = defaultViewport;
+  }, [workflowId, defaultViewport]);
 
   const fitViewOptions = React.useMemo(
     () => ({
@@ -81,28 +104,48 @@ export function VirtualizedDAG({
   }, [edges, setFlowEdges]);
 
   React.useEffect(() => {
-    if (!hasInitializedViewportRef.current) {
-      const saved = localStorage.getItem(viewportStorageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          viewportRef.current = parsed;
-          setTimeout(() => setViewport(parsed), 0);
-        } catch {
-          setTimeout(() => fitView({ padding: 0.2 }), 100);
-        }
-      } else {
-        setTimeout(() => fitView({ padding: 0.2 }), 100);
-      }
-      hasInitializedViewportRef.current = true;
-    } else {
-      const vp = viewportRef.current;
-      setTimeout(() => setViewport(vp), 0);
+    if (flowNodes.length === 0) {
+      return;
     }
+
+    if (!hasInitializedViewportRef.current) {
+      let rafOuter = 0;
+      let rafInner = 0;
+      const apply = () => {
+        const saved = localStorage.getItem(viewportStorageKey);
+        if (saved) {
+          try {
+            const parsed: unknown = JSON.parse(saved);
+            if (isValidSavedViewport(parsed)) {
+              viewportRef.current = parsed;
+              setViewport(parsed);
+              hasInitializedViewportRef.current = true;
+              return;
+            }
+          } catch {
+            /* fall through */
+          }
+        }
+        fitView({ padding: 0.2, duration: 0 });
+        hasInitializedViewportRef.current = true;
+      };
+      rafOuter = requestAnimationFrame(() => {
+        rafInner = requestAnimationFrame(apply);
+      });
+      return () => {
+        cancelAnimationFrame(rafOuter);
+        cancelAnimationFrame(rafInner);
+      };
+    }
+
+    const vp = viewportRef.current;
+    requestAnimationFrame(() => setViewport(vp));
+    return undefined;
   }, [flowNodes.length, flowEdges.length, viewportStorageKey, fitView, setViewport]);
 
   return (
     <ReactFlow
+      style={style}
       nodes={flowNodes}
       edges={flowEdges}
       onNodesChange={onNodesChange}
@@ -115,7 +158,9 @@ export function VirtualizedDAG({
             viewportStorageKey,
             JSON.stringify(viewport)
           );
-        } catch {}
+        } catch {
+          /* ignore quota / private mode */
+        }
       }}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
@@ -144,6 +189,7 @@ export function VirtualizedDAG({
           selectedAgent={selectedAgent}
           compact={nodes.length <= 20}
           nodes={flowNodes}
+          onExpandGraph={onExpandGraph}
         />
       </Panel>
     </ReactFlow>
