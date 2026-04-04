@@ -67,7 +67,7 @@ export function ExecutionTimeline({ execution }: ExecutionTimelineProps) {
   const status = normalizeStatus(execution.status);
 
   return (
-    <div className="flex items-center gap-4 text-body-small">
+    <div className="flex items-center gap-4 text-sm text-muted-foreground">
       <div className="flex items-center gap-2">
         <Play className="w-3 h-3" />
         <span>Started {startedTime}</span>

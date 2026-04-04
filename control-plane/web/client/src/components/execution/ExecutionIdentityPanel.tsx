@@ -85,7 +85,7 @@ export function ExecutionIdentityPanel({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-body-small">Agent Node ID</label>
+                    <label className="text-sm text-muted-foreground">Agent Node ID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-sm text-foreground bg-muted/30 px-2 py-1 rounded">
                         {execution.agent_node_id}
@@ -103,7 +103,7 @@ export function ExecutionIdentityPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-body-small">Decentralized Identifier (DID)</label>
+                    <label className="text-sm text-muted-foreground">Decentralized Identifier (DID)</label>
                     <div className="flex items-center gap-2 mt-1">
                       <DIDDisplay nodeId={execution.agent_node_id} variant="full" />
                     </div>
@@ -112,7 +112,7 @@ export function ExecutionIdentityPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-body-small">Execution ID</label>
+                    <label className="text-sm text-muted-foreground">Execution ID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-sm text-foreground bg-muted/30 px-2 py-1 rounded">
                         {truncateId(execution.execution_id)}
@@ -152,7 +152,7 @@ export function ExecutionIdentityPanel({
             {vcLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span className="text-body-small">Loading credential status...</span>
+                <span className="text-sm text-muted-foreground">Loading credential status...</span>
               </div>
             ) : vcStatus?.has_vc ? (
               <div className="space-y-4">
@@ -170,7 +170,7 @@ export function ExecutionIdentityPanel({
                       <p className="text-sm font-medium text-foreground">
                         Credential Verified
                       </p>
-                      <p className="text-body-small">
+                      <p className="text-sm text-muted-foreground">
                         Status: {vcStatus.status}
                       </p>
                     </div>
@@ -204,7 +204,7 @@ export function ExecutionIdentityPanel({
 
                 {vcStatus.vc_id && (
                   <div>
-                    <label className="text-body-small">Credential ID</label>
+                    <label className="text-sm text-muted-foreground">Credential ID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-sm text-foreground bg-muted/30 px-2 py-1 rounded">
                         {truncateId(vcStatus.vc_id)}
@@ -230,7 +230,7 @@ export function ExecutionIdentityPanel({
 
                 {vcStatus.created_at && (
                   <div>
-                    <label className="text-body-small">Issued At</label>
+                    <label className="text-sm text-muted-foreground">Issued At</label>
                     <p className="font-mono text-sm text-foreground mt-1">
                       {new Date(vcStatus.created_at).toLocaleString()}
                     </p>
@@ -239,7 +239,7 @@ export function ExecutionIdentityPanel({
 
                 <ResponsiveGrid columns={{ base: 1, md: 2 }} gap="sm" align="start">
                   <div>
-                    <label className="text-body-small">Issuer DID</label>
+                    <label className="text-sm text-muted-foreground">Issuer DID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {issuerDid || '—'}
@@ -256,7 +256,7 @@ export function ExecutionIdentityPanel({
                     </div>
                   </div>
                   <div>
-                    <label className="text-body-small">Proof</label>
+                    <label className="text-sm text-muted-foreground">Proof</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {proofValue || '—'}
@@ -273,7 +273,7 @@ export function ExecutionIdentityPanel({
                     </div>
                   </div>
                   <div>
-                    <label className="text-body-small">Caller DID</label>
+                    <label className="text-sm text-muted-foreground">Caller DID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {callerDid || '—'}
@@ -289,11 +289,11 @@ export function ExecutionIdentityPanel({
                       )}
                     </div>
                     {callerAgent && (
-                      <p className="text-body-small mt-1">Agent node: {callerAgent}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Agent node: {callerAgent}</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-body-small">Target DID</label>
+                    <label className="text-sm text-muted-foreground">Target DID</label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {targetDid || '—'}
@@ -309,31 +309,31 @@ export function ExecutionIdentityPanel({
                       )}
                     </div>
                     {targetAgent && (
-                      <p className="text-body-small mt-1">Agent node: {targetAgent}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Agent node: {targetAgent}</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-body-small">Function</label>
+                    <label className="text-sm text-muted-foreground">Function</label>
                     <p className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded mt-1 break-all">
                       {functionName || '—'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-body-small">Execution Timestamp</label>
+                    <label className="text-sm text-muted-foreground">Execution Timestamp</label>
                     <p className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded mt-1 break-all">
                       {executionTimestamp ? new Date(executionTimestamp).toLocaleString() : '—'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-body-small">Duration</label>
+                    <label className="text-sm text-muted-foreground">Duration</label>
                     <p className="font-mono text-xs text-foreground bg-muted/30 px-2 py-1 rounded mt-1">
                       {durationMs ? `${durationMs} ms` : '—'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-body-small">Input Hash</label>
+                    <label className="text-sm text-muted-foreground">Input Hash</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="font-mono text-body-small bg-muted/30 px-2 py-1 rounded break-all">
+                      <code className="font-mono text-sm text-muted-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {inputHash || '—'}
                       </code>
                       {inputHash && (
@@ -348,9 +348,9 @@ export function ExecutionIdentityPanel({
                     </div>
                   </div>
                   <div>
-                    <label className="text-body-small">Output Hash</label>
+                    <label className="text-sm text-muted-foreground">Output Hash</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="font-mono text-body-small bg-muted/30 px-2 py-1 rounded break-all">
+                      <code className="font-mono text-sm text-muted-foreground bg-muted/30 px-2 py-1 rounded break-all">
                         {outputHash || '—'}
                       </code>
                       {outputHash && (

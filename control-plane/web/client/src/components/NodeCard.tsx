@@ -339,7 +339,7 @@ const NodeCard = memo(
               </h3>
               <Badge
                 variant="outline"
-                className="h-6 rounded-full px-2 text-body-small"
+                className="h-6 rounded-full px-2 text-sm text-muted-foreground"
                 aria-label={`Node version ${nodeSummary.version}`}
               >
                 v{nodeSummary.version}
@@ -347,7 +347,7 @@ const NodeCard = memo(
               {deploymentType === "serverless" && (
                 <Badge
                   variant="outline"
-                  className="h-6 rounded-full px-2 text-body-small flex items-center gap-1"
+                  className="h-6 rounded-full px-2 text-sm text-muted-foreground flex items-center gap-1"
                   aria-label="Deployment type: serverless"
                 >
                   <Flash className="h-3.5 w-3.5" aria-hidden="true" />
@@ -357,7 +357,7 @@ const NodeCard = memo(
               {isHighImportance && (
                 <Badge
                   variant="outline"
-                  className="h-6 rounded-full px-2 text-body-small"
+                  className="h-6 rounded-full px-2 text-sm text-muted-foreground"
                   aria-label="Node is high capability"
                 >
                   High capability
@@ -366,7 +366,7 @@ const NodeCard = memo(
               {hasMcpIssues && (
                 <Badge
                   variant="destructive"
-                  className="h-6 rounded-full px-2 text-body-small"
+                  className="h-6 rounded-full px-2 text-sm text-muted-foreground"
                   aria-label="Node has MCP issues detected"
                 >
                   Issues detected
@@ -386,7 +386,7 @@ const NodeCard = memo(
                 {heartbeatText}
               </span>
               {didStatus && didStatus.has_did && (
-                <div className="flex items-center gap-1 text-body-small">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Identification className="h-3.5 w-3.5" aria-hidden="true" />
                   <CompositeDIDStatus
                     status={didStatus.did_status}
@@ -398,7 +398,7 @@ const NodeCard = memo(
                 </div>
               )}
               {mcpSummary && (
-                <div className="flex items-center gap-2 text-body-small">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MCPHealthDot
                     status={getMCPHealthStatus()}
                     size="sm"
@@ -413,7 +413,7 @@ const NodeCard = memo(
                     </span>
                   )}
                   {capabilitiesAvailable && (
-                    <span className="rounded-full bg-status-success-bg px-2 py-0.5 text-[10px] font-medium text-status-success">
+                    <span className="rounded-full bg-status-success/10 px-2 py-0.5 text-[10px] font-medium text-status-success">
                       Capabilities ready
                     </span>
                   )}
@@ -442,7 +442,7 @@ const NodeCard = memo(
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-body-small">
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Code className="h-4 w-4" aria-hidden="true" />
             <span>

@@ -84,32 +84,32 @@ export function CompactReasonersStats({
           <div className="flex items-center gap-2">
             <Wifi className="h-4 w-4 text-status-success flex-shrink-0" />
             <span className="text-status-success font-medium">{safeOnlineCount}</span>
-            <span className="text-body-small">online</span>
+            <span className="text-sm text-muted-foreground">online</span>
           </div>
 
           <span className="text-muted-foreground/60">•</span>
 
           {/* Offline Count */}
           <div className="flex items-center gap-2">
-            <WifiOff className="h-4 w-4 text-status-neutral flex-shrink-0" />
-            <span className="text-status-neutral font-medium">{safeOfflineCount}</span>
-            <span className="text-body-small">offline</span>
+            <WifiOff className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-muted-foreground font-medium">{safeOfflineCount}</span>
+            <span className="text-sm text-muted-foreground">offline</span>
           </div>
 
           <span className="text-muted-foreground/60">•</span>
 
           {/* Total Count */}
           <div className="flex items-center gap-2">
-            <Grid className="h-4 w-4 text-text-tertiary flex-shrink-0" />
+            <Grid className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="text-foreground font-medium">{safeTotal}</span>
-            <span className="text-body-small">total</span>
+            <span className="text-sm text-muted-foreground">total</span>
           </div>
         </div>
 
         {/* Center: Additional Metrics */}
-        <div className="hidden md:flex items-center gap-3 text-body-small">
+        <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Terminal className="h-3 w-3 text-text-tertiary flex-shrink-0" />
+            <Terminal className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             <span className="font-medium text-foreground">{safeNodesCount}</span>
             <span>nodes</span>
           </div>
@@ -124,7 +124,7 @@ export function CompactReasonersStats({
         </div>
 
         {/* Right: Last Updated + Refresh */}
-        <div className="flex items-center gap-3 text-body-small flex-shrink-0">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-shrink-0">
           <HoverCard>
             <HoverCardTrigger asChild>
               <span className="cursor-pointer hover:text-foreground transition-colors">
@@ -154,9 +154,9 @@ export function CompactReasonersStats({
       </div>
 
       {/* Mobile: Additional Metrics Row */}
-      <div className="md:hidden flex items-center gap-3 text-body-small mt-2 pt-2 border-t border-border/50">
+      <div className="md:hidden flex items-center gap-3 text-sm text-muted-foreground mt-2 pt-2 border-t border-border/50">
         <div className="flex items-center gap-2">
-          <Terminal className="h-3 w-3 text-text-tertiary flex-shrink-0" />
+          <Terminal className="h-3 w-3 text-muted-foreground flex-shrink-0" />
           <span className="font-medium text-foreground">{safeNodesCount}</span>
           <span>nodes</span>
         </div>

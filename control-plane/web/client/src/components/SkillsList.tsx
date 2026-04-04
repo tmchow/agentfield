@@ -193,7 +193,7 @@ const SkillsList: React.FC<SkillsListProps> = ({
           <Function className="h-4 w-4 text-muted-foreground" />
           <h4 className="text-sm font-medium">Skills (0)</h4>
         </div>
-        <p className="text-body-small">No skills available.</p>
+        <p className="text-sm text-muted-foreground">No skills available.</p>
       </div>
     );
   }

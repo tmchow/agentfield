@@ -214,7 +214,7 @@ export function ReasonersSkillsTable({
               clearButtonAriaLabel="Clear reasoner and skill search"
             />
             {copyFeedback && (
-              <div className="text-sm text-status-success bg-status-success-bg border border-status-success-border rounded-md px-3 py-1">
+              <div className="text-sm text-status-success bg-status-success/10 border border-status-success/30 rounded-md px-3 py-1">
                 {copyFeedback}
               </div>
             )}
@@ -224,7 +224,7 @@ export function ReasonersSkillsTable({
       <CardContent>
         <Table>
           <TableHeader>
-            <TableRow className="border-border-secondary">
+            <TableRow className="border-border">
               <TableHead className="w-12">Type</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>DID</TableHead>
@@ -237,7 +237,7 @@ export function ReasonersSkillsTable({
               <TableRow
                 key={`${item.type}-${item.id}`}
                 className={cn(
-                  "border-border-secondary hover:bg-bg-hover transition-colors duration-150",
+                  "border-border hover:bg-accent transition-colors duration-150",
                   item.type === "reasoner" && nodeId && "cursor-pointer"
                 )}
                 onClick={(event) => handleRowClick(item, event)}
@@ -251,7 +251,7 @@ export function ReasonersSkillsTable({
 
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-text-primary">
+                    <span className="font-medium text-foreground">
                       {item.name}
                     </span>
                     <Badge
@@ -288,14 +288,14 @@ export function ReasonersSkillsTable({
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-text-quaternary text-xs">No DID</span>
+                    <span className="text-muted-foreground text-xs">No DID</span>
                   )}
                 </TableCell>
 
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     {getStatusDot(item.status)}
-                    <span className="text-body capitalize">
+                    <span className="text-sm capitalize">
                       {item.status}
                     </span>
                   </div>
@@ -306,14 +306,14 @@ export function ReasonersSkillsTable({
                     {item.exposure_level && (
                       <Badge
                         variant="outline"
-                        className="text-xs bg-card text-text-tertiary border-border-secondary"
+                        className="text-xs bg-card text-muted-foreground border-border"
                       >
                         {item.exposure_level}
                       </Badge>
                     )}
 
                     {item.memory_retention && (
-                      <div className="text-xs text-text-tertiary">
+                      <div className="text-xs text-muted-foreground">
                         Memory: {item.memory_retention}
                       </div>
                     )}
@@ -324,7 +324,7 @@ export function ReasonersSkillsTable({
                           <Badge
                             key={index}
                             variant="outline"
-                            className="text-xs bg-card text-text-tertiary border-border-secondary"
+                            className="text-xs bg-card text-muted-foreground border-border"
                           >
                             {capability}
                           </Badge>
@@ -332,7 +332,7 @@ export function ReasonersSkillsTable({
                         {item.capabilities.length > 2 && (
                           <Badge
                             variant="outline"
-                            className="text-xs bg-card text-text-quaternary border-border-secondary"
+                            className="text-xs bg-card text-muted-foreground border-border"
                           >
                             +{item.capabilities.length - 2}
                           </Badge>
@@ -346,7 +346,7 @@ export function ReasonersSkillsTable({
                           <Badge
                             key={index}
                             variant="outline"
-                            className="text-xs bg-card text-text-tertiary border-border-secondary"
+                            className="text-xs bg-card text-muted-foreground border-border"
                           >
                             #{tag}
                           </Badge>
@@ -354,7 +354,7 @@ export function ReasonersSkillsTable({
                         {item.tags.length > 2 && (
                           <Badge
                             variant="outline"
-                            className="text-xs bg-card text-text-quaternary border-border-secondary"
+                            className="text-xs bg-card text-muted-foreground border-border"
                           >
                             +{item.tags.length - 2}
                           </Badge>

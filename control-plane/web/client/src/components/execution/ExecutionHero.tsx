@@ -39,7 +39,7 @@ function VCStatusCard({
 }) {
   if (vcLoading) {
     return (
-      <div className="flex items-center gap-2 text-body-small">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <SpinnerGap className="w-3 h-3 animate-spin" />
         <span>Checking VC...</span>
       </div>
@@ -70,7 +70,7 @@ function VCStatusCard({
   }
 
   return (
-    <div className="flex items-center gap-1 text-body-small">
+    <div className="flex items-center gap-1 text-sm text-muted-foreground">
       <X className="w-3 h-3" />
       <span>No VC</span>
     </div>
@@ -119,7 +119,7 @@ export function ExecutionHero({
           <div className="flex items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-heading-2">
+                <h1 className="text-xl font-semibold">
                   {execution.reasoner_id}
                 </h1>
                 <StatusIndicator
@@ -130,10 +130,10 @@ export function ExecutionHero({
               </div>
 
               {/* Clean Identity Row - No Confusing "Verified" Labels */}
-              <div className="flex items-center gap-4 text-body">
+              <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <span>Agent:</span>
-                  <code className="font-mono bg-muted/50 px-2 py-0.5 rounded text-body-small">
+                  <code className="font-mono bg-muted/50 px-2 py-0.5 rounded text-sm text-muted-foreground">
                     {execution.agent_node_id}
                   </code>
                   <CopyButton
@@ -150,7 +150,7 @@ export function ExecutionHero({
                   <DIDDisplay
                     nodeId={execution.agent_node_id}
                     variant="inline"
-                    className="text-body-small"
+                    className="text-sm text-muted-foreground"
                   />
                 </div>
 
@@ -167,30 +167,30 @@ export function ExecutionHero({
           {/* Right: Key Metrics - Horizontal Layout */}
           <div className="flex items-center gap-6">
             <div className="text-center">
-              <div className="text-heading-3 text-foreground">
+              <div className="text-base font-semibold text-foreground">
                 {formatDuration(execution.duration_ms)}
               </div>
-              <div className="text-body-small flex items-center gap-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Duration
               </div>
             </div>
 
             <div className="text-center">
-              <div className="text-heading-3 text-foreground">
+              <div className="text-base font-semibold text-foreground">
                 {formatBytes(execution.input_size)}
               </div>
-              <div className="text-body-small flex items-center gap-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
                 <ArrowDown className="w-3 h-3" />
                 Input
               </div>
             </div>
 
             <div className="text-center">
-              <div className="text-heading-3 text-foreground">
+              <div className="text-base font-semibold text-foreground">
                 {formatBytes(execution.output_size)}
               </div>
-              <div className="text-body-small flex items-center gap-1">
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
                 <ArrowUp className="w-3 h-3" />
                 Output
               </div>
@@ -238,7 +238,7 @@ export function ExecutionHero({
           </div>
 
           {/* Right: Execution ID */}
-          <div className="flex items-center gap-2 text-body-small">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>ID:</span>
             <code
               className="font-mono bg-muted/50 px-2 py-0.5 rounded text-xs"

@@ -29,7 +29,7 @@ export function ExecutionResult({ result, error, loading }: ExecutionResultProps
       <div className="flex items-center justify-center py-8">
         <div className="text-center space-y-2">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-          <p className="text-body-small">Executing reasoner...</p>
+          <p className="text-sm text-muted-foreground">Executing reasoner...</p>
         </div>
       </div>
     );
@@ -97,32 +97,32 @@ export function ExecutionResult({ result, error, loading }: ExecutionResultProps
       {/* Execution Metadata */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-muted/50 rounded-lg">
         <div>
-          <p className="text-body-small">Execution ID</p>
+          <p className="text-sm text-muted-foreground">Execution ID</p>
           <p className="text-sm font-mono">{result.execution_id.slice(0, 8)}...</p>
         </div>
         {result.workflow_id && (
           <div>
-            <p className="text-body-small">Workflow</p>
+            <p className="text-sm text-muted-foreground">Workflow</p>
             <p className="text-sm font-mono">{result.workflow_id.slice(0, 8)}...</p>
           </div>
         )}
         {result.run_id && (
           <div>
-            <p className="text-body-small">Run</p>
+            <p className="text-sm text-muted-foreground">Run</p>
             <p className="text-sm font-mono">{result.run_id.slice(0, 8)}...</p>
           </div>
         )}
         <div>
-          <p className="text-body-small">Duration</p>
+          <p className="text-sm text-muted-foreground">Duration</p>
           <p className="text-sm font-semibold">{result.duration_ms}ms</p>
         </div>
         <div>
-          <p className="text-body-small">Timestamp</p>
+          <p className="text-sm text-muted-foreground">Timestamp</p>
           <p className="text-sm">{new Date(result.timestamp).toLocaleTimeString()}</p>
         </div>
         {result.cost && (
           <div>
-            <p className="text-body-small">Cost</p>
+            <p className="text-sm text-muted-foreground">Cost</p>
             <p className="text-sm">${result.cost.toFixed(4)}</p>
           </div>
         )}
@@ -181,7 +181,7 @@ export function ExecutionResult({ result, error, loading }: ExecutionResultProps
       )}
 
       {/* Performance Indicator */}
-      <div className="flex items-center gap-2 text-body-small">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Clock className="h-4 w-4" />
         <span>
           Execution completed in {result.duration_ms}ms

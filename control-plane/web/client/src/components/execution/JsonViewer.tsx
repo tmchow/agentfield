@@ -109,7 +109,7 @@ function JsonNode({ data, keyName, level, collapsed, isLast = false }: JsonNodeP
         </span>
         {isCollapsed && (
           <>
-            <span className="text-body-small italic">
+            <span className="text-sm text-muted-foreground italic">
               {getPreview(data)}
             </span>
             <span className="text-muted-foreground">

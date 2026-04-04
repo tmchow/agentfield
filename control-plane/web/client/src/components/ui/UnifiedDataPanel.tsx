@@ -100,7 +100,7 @@ export function UnifiedDataPanel({
                 <InProgress className="w-3 h-3 animate-spin text-muted-foreground" />
               )}
             </h3>
-            <div className="flex items-center gap-2 text-body-small">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {size && <span>{formatBytes(size)}</span>}
               {hasData && (
                 <>
@@ -166,7 +166,7 @@ export function UnifiedDataPanel({
               <Database className="w-8 h-8 text-destructive/50" />
               <div>
                 <p className="text-sm font-medium">Failed to load data</p>
-                <p className="text-body-small mt-1">{error}</p>
+                <p className="text-sm text-muted-foreground mt-1">{error}</p>
               </div>
             </div>
           </div>

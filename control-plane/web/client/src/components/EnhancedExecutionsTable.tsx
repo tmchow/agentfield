@@ -118,7 +118,7 @@ function LoadingRow() {
       >
         <div className="flex items-center justify-center col-span-7">
           <SpinnerGap className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-body-small">
+          <span className="ml-2 text-sm text-muted-foreground">
             Loading more executions…
           </span>
         </div>
@@ -132,7 +132,7 @@ function EmptyState() {
     <Card className="card-foundation">
       <CardContent className="py-12">
         <div className="text-center space-y-2">
-          <div className="text-secondary-foundation text-heading-3">
+          <div className="text-secondary-foundation text-base font-semibold">
             No executions yet
           </div>
           <div className="text-tertiary-foundation">
@@ -322,7 +322,7 @@ export function EnhancedExecutionsTable({
                           <div className="truncate font-medium text-sm">
                             {execution.task_name || "Unknown Reasoner"}
                           </div>
-                          <div className="flex items-center gap-2 text-body-small">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px] font-medium">
                               {execution.agent_name
                                 ? execution.agent_name.charAt(0).toUpperCase()
@@ -381,7 +381,7 @@ export function EnhancedExecutionsTable({
           </div>
 
           {isFetchingMore && (
-            <div className="flex items-center justify-center gap-2 border-t border-border bg-muted/20 py-3 text-body-small">
+            <div className="flex items-center justify-center gap-2 border-t border-border bg-muted/20 py-3 text-sm text-muted-foreground">
               <SpinnerGap className="h-4 w-4 animate-spin" />
               Loading more executions…
             </div>

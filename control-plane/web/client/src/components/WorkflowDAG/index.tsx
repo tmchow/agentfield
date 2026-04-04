@@ -1200,7 +1200,7 @@ function decorateEdgesWithStatus(
         <CardContent className="flex flex-1 items-center justify-center px-6 py-12 text-center">
           <div>
             <div className="mb-2 text-red-600">Failed to load workflow DAG</div>
-            <div className="text-body-small">{error}</div>
+            <div className="text-sm text-muted-foreground">{error}</div>
           </div>
         </CardContent>
       </Card>
@@ -1393,7 +1393,7 @@ function WorkflowDAGSkeleton({ className }: WorkflowDAGSkeletonProps) {
         <div className="flex h-full w-full items-center justify-center bg-muted/20">
           <div className="space-y-4 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-            <div className="text-body-small">
+            <div className="text-sm text-muted-foreground">
               Loading workflow DAG...
             </div>
           </div>

@@ -101,7 +101,7 @@ export function UnifiedStatusIndicator({
     if (!status.state_transition) return null;
 
     return (
-      <div className="text-body-small mt-1">
+      <div className="text-sm text-muted-foreground mt-1">
         Transitioning: {status.state_transition.from} →{" "}
         {status.state_transition.to}
         {status.state_transition.reason && (
@@ -137,7 +137,7 @@ export function UnifiedStatusIndicator({
         </Badge>
 
         {showDetails && (
-          <div className="text-body-small mt-1">
+          <div className="text-sm text-muted-foreground mt-1">
             <div
               className={`font-medium ${getHealthScoreColor(
                 status.health_score

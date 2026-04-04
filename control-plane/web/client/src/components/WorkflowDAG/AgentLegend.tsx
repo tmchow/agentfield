@@ -98,7 +98,7 @@ export function AgentLegend({
         <div className="flex items-center gap-2 mb-3">
           <Filter size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium">Agents</span>
-          <span className="text-body-small">
+          <span className="text-sm text-muted-foreground">
             ({agentColors.length})
           </span>
         </div>
@@ -138,7 +138,7 @@ export function AgentLegend({
         {selectedAgent && (
           <button
             onClick={() => onAgentFilter?.(null)}
-            className="w-full mt-3 text-body-small hover:text-foreground transition-colors"
+            className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Clear filter
           </button>
@@ -161,7 +161,7 @@ export function AgentLegend({
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium">Agents</span>
-          <span className="text-body-small">
+          <span className="text-sm text-muted-foreground">
             ({agentColors.length})
           </span>
         </div>
@@ -236,7 +236,7 @@ export function AgentLegend({
             </div>
 
             {filteredAgents.length === 0 && searchTerm && (
-              <div className="text-center py-4 text-body-small">
+              <div className="text-center py-4 text-sm text-muted-foreground">
                 No agents found matching "{searchTerm}"
               </div>
             )}
@@ -247,7 +247,7 @@ export function AgentLegend({
             <div className="p-3 border-t">
               <button
                 onClick={() => onAgentFilter?.(null)}
-                className="w-full text-body-small hover:text-foreground transition-colors"
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Clear filter
               </button>
@@ -305,7 +305,7 @@ export function AgentLegendMini({
         className
       )}
     >
-      <span className="text-body-small mr-1">Agents:</span>
+      <span className="text-sm text-muted-foreground mr-1">Agents:</span>
       {agentColors.slice(0, 8).map((agent) => (
         <button
           key={agent.name}
@@ -330,7 +330,7 @@ export function AgentLegendMini({
         </button>
       ))}
       {agentColors.length > 8 && (
-        <span className="text-body-small">
+        <span className="text-sm text-muted-foreground">
           +{agentColors.length - 8}
         </span>
       )}

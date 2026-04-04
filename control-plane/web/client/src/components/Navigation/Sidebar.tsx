@@ -105,7 +105,7 @@ export function Sidebar({ sections, isCollapsed = false }: SidebarProps) {
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/20 to-transparent" />
 
           {!isCollapsed && (
-            <div className="text-body-small/50 text-center">
+            <div className="text-sm text-muted-foreground/50 text-center">
               v{import.meta.env.VITE_APP_VERSION || "1.0.0"}
             </div>
           )}

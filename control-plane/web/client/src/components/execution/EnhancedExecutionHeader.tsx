@@ -94,7 +94,7 @@ function ExecutionTimeline({ execution }: { execution: WorkflowExecution }) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-body-small">Timeline:</span>
+      <span className="text-sm text-muted-foreground">Timeline:</span>
       <div className="flex items-center gap-3">
         {timelineSteps.map((step, index) => {
           const Icon = step.failed ? XCircle : step.icon;
@@ -133,7 +133,7 @@ function ExecutionTimeline({ execution }: { execution: WorkflowExecution }) {
 
               {/* Timestamp and duration */}
               {isActive && (
-                <div className="flex items-center gap-1 text-body-small font-mono">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground font-mono">
                   {step.name === 'queued' && execution.created_at && (
                     <span title={`Queued at ${new Date(execution.created_at).toLocaleString()}`}>
                       {formatTimestamp(execution.created_at)}
@@ -180,7 +180,7 @@ function ExecutionTimeline({ execution }: { execution: WorkflowExecution }) {
         variant="ghost"
         size="sm"
         onClick={() => navigate(`/workflows/${execution.workflow_id}/enhanced`)}
-        className="h-6 px-2 text-body-small hover:text-foreground ml-2"
+        className="h-6 px-2 text-sm text-muted-foreground hover:text-foreground ml-2"
       >
         <ExternalLink className="w-3 h-3 mr-1" />
         View Workflow
@@ -266,20 +266,20 @@ export function EnhancedExecutionHeader({
         {/* Main Header */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-heading-2">{execution.reasoner_id}</h1>
+            <h1 className="text-xl font-semibold">{execution.reasoner_id}</h1>
             <StatusIndicator
               status={normalizedStatus}
               animated={normalizedStatus === 'running'}
               className="text-sm"
             />
-            <span className="text-body">{statusLabel}</span>
+            <span className="text-sm">{statusLabel}</span>
           </div>
 
           {/* Key Information Row */}
-          <div className="flex flex-wrap items-center gap-4 text-body">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
             <div className="flex items-center gap-2 group">
               <span>Agent:</span>
-              <code className="font-mono text-body-small text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
+              <code className="font-mono text-sm text-muted-foreground text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
                 {execution.agent_node_id}
               </code>
               <CopyButton
@@ -293,12 +293,12 @@ export function EnhancedExecutionHeader({
 
             <div className="flex items-center gap-2">
               <span>DID:</span>
-              <DIDDisplay nodeId={execution.agent_node_id} variant="inline" className="text-body-small" />
+              <DIDDisplay nodeId={execution.agent_node_id} variant="inline" className="text-sm text-muted-foreground" />
             </div>
 
             <div className="flex items-center gap-2 group">
               <span>ID:</span>
-              <code className="font-mono text-body-small text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
+              <code className="font-mono text-sm text-muted-foreground text-foreground bg-muted/30 px-1.5 py-0.5 rounded">
                 {truncateId(execution.execution_id)}
               </code>
               <CopyButton
@@ -313,7 +313,7 @@ export function EnhancedExecutionHeader({
             {vcLoading ? (
               <div className="flex items-center gap-2">
                 <span>VC:</span>
-                <span className="text-body-small">Loading…</span>
+                <span className="text-sm text-muted-foreground">Loading…</span>
               </div>
             ) : vcStatus?.has_vc ? (
               <div className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export function EnhancedExecutionHeader({
           </div>
 
           {/* Workflow Context Row */}
-          <div className="flex flex-wrap items-center gap-4 text-body-small">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2 group">
               <span>Workflow:</span>
               <button
@@ -390,7 +390,7 @@ export function EnhancedExecutionHeader({
 
             {workflowTags.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-body-small">Tags:</span>
+                <span className="text-sm text-muted-foreground">Tags:</span>
                 <div className="flex flex-wrap gap-1">
                   {workflowTags.slice(0, 3).map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs font-normal">

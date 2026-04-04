@@ -311,7 +311,7 @@ function JsonNode({
 
           {!isExpanded && (
             <>
-              <span className="text-body-small italic">
+              <span className="text-sm text-muted-foreground italic">
                 {getCollectionInfo()}
               </span>
               <span className="text-muted-foreground">

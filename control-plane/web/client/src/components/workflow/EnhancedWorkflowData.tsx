@@ -340,7 +340,7 @@ export function EnhancedWorkflowData({
     return (
       <span
         className={cn(
-          "text-body-small px-2 py-0.5 rounded-full uppercase tracking-wide",
+          "text-sm text-muted-foreground px-2 py-0.5 rounded-full uppercase tracking-wide",
           classes
         )}
       >
@@ -421,7 +421,7 @@ export function EnhancedWorkflowData({
             <span className="text-sm font-medium text-foreground truncate">
               {node.agent_name || node.reasoner_id || "Unnamed node"}
             </span>
-            <span className="text-body-small truncate">
+            <span className="text-sm text-muted-foreground truncate">
               {node.reasoner_id || node.execution_id}
             </span>
           </div>
@@ -434,7 +434,7 @@ export function EnhancedWorkflowData({
             {statusBadge(node.status)}
           </div>
         </div>
-        <div className="mt-2 flex items-center gap-3 text-body-small">
+        <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
           <span>{formatTimestamp(node.started_at)}</span>
           <span>•</span>
           <span>{formatDuration(node.duration_ms)}</span>
@@ -470,7 +470,7 @@ export function EnhancedWorkflowData({
             )}
         </div>
         {(inputPreview || outputPreview) && (
-          <div className="mt-2 space-y-1 text-body-small font-mono text-muted-foreground/80">
+          <div className="mt-2 space-y-1 text-sm text-muted-foreground font-mono text-muted-foreground/80">
             {inputPreview && (
               <div className="line-clamp-2">in: {inputPreview}</div>
             )}
@@ -600,7 +600,7 @@ export function EnhancedWorkflowData({
               {visibleNodes.length > 0 ? (
                 <>{visibleNodes.map(renderListItem)}</>
               ) : (
-                <div className="px-2 py-16 text-center text-body-small">
+                <div className="px-2 py-16 text-center text-sm text-muted-foreground">
                   {nodesWithData.length === 0 && (
                     <div className="flex flex-col items-center gap-3">
                       <Database className="h-10 w-10 text-muted-foreground" />
@@ -629,12 +629,12 @@ export function EnhancedWorkflowData({
               <>
                 {/* Metadata Header */}
                 <div className="space-y-2">
-                  <h3 className="text-heading-3">
+                  <h3 className="text-base font-semibold">
                     {activeNode.agent_name ||
                       activeNode.reasoner_id ||
                       "Selected node"}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-2 text-body-small">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <span className="font-mono">{activeNode.execution_id}</span>
                     <span>•</span>
                     {statusBadge(activeNode.status)}
@@ -643,7 +643,7 @@ export function EnhancedWorkflowData({
                     <span>•</span>
                     <span>Depth {activeNode.workflow_depth ?? "—"}</span>
                   </div>
-                  <div className="text-body-small text-muted-foreground">
+                  <div className="text-sm text-muted-foreground text-muted-foreground">
                     Started: {formatTimestamp(activeNode.started_at)}
                     {activeNode.completed_at && (
                       <>
@@ -684,7 +684,7 @@ export function EnhancedWorkflowData({
 
                 {/* Loading and Error States */}
                 {activeIsLoading && (
-                  <div className="flex items-center gap-2 text-body-small">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <InProgress className="h-4 w-4 animate-spin" /> Loading
                     execution details…
                   </div>
@@ -789,12 +789,12 @@ export function EnhancedWorkflowData({
                                     </Badge>
                                   )}
                                   {event.event_type && (
-                                    <span className="text-body-small uppercase tracking-wide">
+                                    <span className="text-sm text-muted-foreground uppercase tracking-wide">
                                       {event.event_type}
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-body-small">
+                                <span className="text-sm text-muted-foreground">
                                   {formatTimestamp(event.created_at)}
                                 </span>
                               </div>
@@ -841,7 +841,7 @@ export function EnhancedWorkflowData({
                         })}
                       </div>
                     ) : (
-                      <p className="text-body-small">
+                      <p className="text-sm text-muted-foreground">
                         Webhook registered for this execution. No deliveries
                         have been recorded yet.
                       </p>

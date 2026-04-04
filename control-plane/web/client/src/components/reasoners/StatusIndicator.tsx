@@ -13,30 +13,30 @@ export function StatusIndicator({ status, showText = true, size = 'md' }: Status
         return {
           label: 'Online',
           dot: 'bg-status-success',
-          text: 'text-status-success-light',
-          chip: 'bg-status-success-bg border-status-success-border'
+          text: 'text-status-success',
+          chip: 'bg-status-success/10 border-status-success/30'
         };
       case 'degraded':
         return {
           label: 'Limited',
           dot: 'bg-status-warning',
-          text: 'text-status-warning-light',
-          chip: 'bg-status-warning-bg border-status-warning-border'
+          text: 'text-status-warning',
+          chip: 'bg-status-warning/10 border-status-warning/30'
         };
       case 'offline':
         return {
           label: 'Offline',
-          dot: 'bg-status-neutral',
-          text: 'text-status-neutral-light',
-          chip: 'bg-status-neutral-bg border-status-neutral-border'
+          dot: 'bg-muted',
+          text: 'text-muted-foreground',
+          chip: 'bg-muted border-border'
         };
       case 'unknown':
       default:
         return {
           label: 'Unknown',
-          dot: 'bg-status-neutral',
-          text: 'text-status-neutral-light',
-          chip: 'bg-status-neutral-bg border-status-neutral-border'
+          dot: 'bg-muted',
+          text: 'text-muted-foreground',
+          chip: 'bg-muted border-border'
         };
     }
   };

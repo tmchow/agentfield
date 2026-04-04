@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { EnhancedJsonViewer } from "./EnhancedJsonViewer";
+import { UnifiedJsonViewer } from "@/components/ui/UnifiedJsonViewer";
 import type { CanonicalStatus } from "../../utils/status";
 import { getStatusLabel } from "../../utils/status";
 
@@ -83,7 +83,7 @@ export function FormattedOutput({
 
         {/* Execution Info */}
         {(executionId || duration) && (
-          <div className="text-body-small flex items-center gap-4">
+          <div className="text-sm text-muted-foreground flex items-center gap-4">
             {duration && (
               <span className="flex items-center gap-1">
                 <Time className="h-3 w-3" />
@@ -167,14 +167,14 @@ export function FormattedOutput({
       ) : (
         <Card>
           <CardContent className="p-4">
-            <EnhancedJsonViewer data={data} maxInlineHeight={400} />
+            <UnifiedJsonViewer data={data} />
           </CardContent>
         </Card>
       )}
 
       {/* Execution Info */}
       {(executionId || duration) && (
-        <div className="text-body-small flex items-center gap-4 pt-2 border-t">
+        <div className="text-sm text-muted-foreground flex items-center gap-4 pt-2 border-t">
           {duration && (
             <span className="flex items-center gap-1">
               <Time className="h-3 w-3" />

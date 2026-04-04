@@ -520,7 +520,7 @@ function ExecutionTrendsCard({
                       <p className="font-medium text-foreground">
                         {datum.label}
                       </p>
-                      <p className="text-text-secondary">
+                      <p className="text-muted-foreground">
                         Total: {datum.total}
                       </p>
                       <p className="text-emerald-500">
@@ -604,7 +604,7 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
         >
           {/* Left column: Top Workflows */}
           <div className="flex flex-col h-full gap-3">
-            <div className="flex items-center gap-2 text-label flex-shrink-0">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-shrink-0">
               <GitCommit className="h-3.5 w-3.5" />
               Top workflows
             </div>
@@ -660,7 +660,7 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
           <div className="flex flex-col h-full gap-6">
             {/* Active Runs Section - fixed height */}
             <div className="space-y-3 flex-shrink-0">
-              <div className="flex items-center gap-2 text-label">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <GitCommit className="h-3.5 w-3.5" />
                 Active runs
               </div>
@@ -704,7 +704,7 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
 
             {/* Longest Recent Runs Section - fills remaining space */}
             <div className="flex flex-col flex-1 min-h-0 gap-3">
-              <div className="flex items-center gap-2 text-label flex-shrink-0">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-shrink-0">
                 <GitCommit className="h-3.5 w-3.5" />
                 Longest recent runs
               </div>
@@ -764,8 +764,8 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 p-5 pt-0">
-        <div className="flex items-center justify-between text-body">
-          <span className="text-text-secondary">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
             {incidents.length} issues in the last 7 days
           </span>
           {incidents.length > 0 && (
@@ -778,7 +778,7 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
           )}
         </div>
         {incidents.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border/40 bg-muted/10 p-4 text-center text-body-small">
+          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border/40 bg-muted/10 p-4 text-center text-sm text-muted-foreground">
             No failures or cancellations detected in the last 7 days.
           </div>
         ) : (
@@ -805,15 +805,15 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
                       {incident.status}
                     </span>
                   </div>
-                  <p className="ml-4 mt-1 text-text-secondary">
+                  <p className="ml-4 mt-1 text-muted-foreground">
                     {incident.execution_id} · {incident.reasoner_id}
                   </p>
                   {incident.error && (
-                    <p className="ml-4 mt-2 line-clamp-2 text-body-small text-destructive/80">
+                    <p className="ml-4 mt-2 line-clamp-2 text-sm text-muted-foreground text-destructive/80">
                       {incident.error}
                     </p>
                   )}
-                  <p className="ml-4 mt-2 text-[10px] text-text-tertiary">
+                  <p className="ml-4 mt-2 text-[10px] text-muted-foreground">
                     Started {formatTimestamp(incident.started_at)}
                   </p>
                 </Link>
@@ -860,7 +860,7 @@ function ReasonerActivityPanel({
         <CardTitle className="flex items-center gap-2">
           <Cpu className="h-4 w-4" /> Reasoner activity
         </CardTitle>
-        <div className="grid grid-cols-3 gap-2 text-center text-body-small uppercase tracking-wide text-text-tertiary">
+        <div className="grid grid-cols-3 gap-2 text-center text-sm text-muted-foreground uppercase tracking-wide text-muted-foreground">
           <StatusCounter
             label="Active agents"
             value={agentSummary.active}
@@ -880,7 +880,7 @@ function ReasonerActivityPanel({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 min-h-0 p-5 pt-0">
         {reasoners.length === 0 ? (
-          <p className="text-body-small">
+          <p className="text-sm text-muted-foreground">
             No recent reasoner activity. Trigger a workflow or execution to
             populate this view.
           </p>
@@ -923,7 +923,7 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
             variant="subtle"
           />
         </div>
-        <div className="flex items-center gap-4 text-[10px] text-text-tertiary">
+        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
           <span>{reasoner.activeRuns} running</span>
           <span>{reasoner.incidentCount} incidents</span>
         </div>
@@ -939,7 +939,7 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
               <Server className="h-3 w-3" />
               {agent.id}
               {agent.lastHeartbeat && (
-                <span className="text-[9px] text-text-tertiary">
+                <span className="text-[9px] text-muted-foreground">
                   · {formatTimestamp(agent.lastHeartbeat)}
                 </span>
               )}
@@ -967,7 +967,7 @@ function StatusCounter({ label, value, tone }: StatusCounterProps) {
 
   return (
     <div className="rounded-xl border border-border/40 bg-muted/30 px-2 py-2">
-      <p className="text-[10px] text-text-tertiary">{label}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-base font-semibold", toneClass)}>{value}</p>
     </div>
   );

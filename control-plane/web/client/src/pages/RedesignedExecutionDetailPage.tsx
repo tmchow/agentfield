@@ -98,10 +98,10 @@ export function RedesignedExecutionDetailPage() {
       <ExecutionDetailsLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <h2 className="text-heading-2 mb-2">
+            <h2 className="text-xl font-semibold mb-2">
               Execution Not Found
             </h2>
-            <p className="text-body">
+            <p className="text-sm">
               {error || "The requested execution could not be found."}
             </p>
           </div>
@@ -142,7 +142,7 @@ export function RedesignedExecutionDetailPage() {
             icon={Settings}
             defaultOpen={false}
             badge={
-              <span className="text-body-small bg-muted/50 px-2 py-0.5 rounded">
+              <span className="text-sm text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
                 Metadata
               </span>
             }
@@ -225,7 +225,7 @@ export function RedesignedExecutionDetailPage() {
                   <div className="space-y-2">
                     {execution.input_uri && (
                       <div>
-                        <label className="text-body-small">Input URI</label>
+                        <label className="text-sm text-muted-foreground">Input URI</label>
                         <p className="font-mono text-xs text-foreground break-all">
                           {execution.input_uri}
                         </p>
@@ -233,7 +233,7 @@ export function RedesignedExecutionDetailPage() {
                     )}
                     {execution.result_uri && (
                       <div>
-                        <label className="text-body-small">Result URI</label>
+                        <label className="text-sm text-muted-foreground">Result URI</label>
                         <p className="font-mono text-xs text-foreground break-all">
                           {execution.result_uri}
                         </p>

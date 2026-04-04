@@ -2,7 +2,7 @@
 import { ArrowUp, FileText, CheckCircle, XCircle } from "@/components/ui/icon-bridge";
 import type { WorkflowExecution } from "../../types/executions";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { EnhancedJsonViewer } from "./EnhancedJsonViewer";
+import { UnifiedJsonViewer } from "@/components/ui/UnifiedJsonViewer";
 
 interface RedesignedOutputDataPanelProps {
   execution: WorkflowExecution;
@@ -32,7 +32,7 @@ export function RedesignedOutputDataPanel({ execution }: RedesignedOutputDataPan
   const isRunning = ["running", "pending"].includes(normalizedStatus);
 
   const badge = (
-    <span className="text-body-small bg-muted/50 px-2 py-0.5 rounded">
+    <span className="text-sm text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
       {formatBytes(execution.output_size)}
     </span>
   );
@@ -81,11 +81,8 @@ export function RedesignedOutputDataPanel({ execution }: RedesignedOutputDataPan
       contentClassName="p-0"
     >
       {hasOutputData ? (
-        <EnhancedJsonViewer
+        <UnifiedJsonViewer
           data={outputData}
-          showCopyButton={true}
-          collapsible={true}
-          maxHeight="300px"
         />
       ) : (
         <div className="p-6 text-center text-muted-foreground">

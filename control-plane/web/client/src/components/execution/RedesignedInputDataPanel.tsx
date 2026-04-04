@@ -2,7 +2,7 @@
 import { ArrowDown, Database } from "@/components/ui/icon-bridge";
 import type { WorkflowExecution } from "../../types/executions";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { EnhancedJsonViewer } from "./EnhancedJsonViewer";
+import { UnifiedJsonViewer } from "@/components/ui/UnifiedJsonViewer";
 
 interface RedesignedInputDataPanelProps {
   execution: WorkflowExecution;
@@ -27,7 +27,7 @@ export function RedesignedInputDataPanel({ execution }: RedesignedInputDataPanel
   })();
 
   const badge = (
-    <span className="text-body-small bg-muted/50 px-2 py-0.5 rounded">
+    <span className="text-sm text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
       {formatBytes(execution.input_size)}
     </span>
   );
@@ -41,11 +41,8 @@ export function RedesignedInputDataPanel({ execution }: RedesignedInputDataPanel
       contentClassName="p-0"
     >
       {hasInputData ? (
-        <EnhancedJsonViewer
+        <UnifiedJsonViewer
           data={inputData}
-          showCopyButton={true}
-          collapsible={true}
-          maxHeight="300px"
         />
       ) : (
         <div className="p-6 text-center text-muted-foreground">

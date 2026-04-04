@@ -164,7 +164,7 @@ export function EnhancedWorkflowTabs({
 
       {/* Tab Context Info */}
       <div className={cn(
-        "flex items-center gap-4 ml-6 text-body-small",
+        "flex items-center gap-4 ml-6 text-sm text-muted-foreground",
         isMobile ? "hidden" : "flex"
       )}>
         {/* Current Tab Info */}

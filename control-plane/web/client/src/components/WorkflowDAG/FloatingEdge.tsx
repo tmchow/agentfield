@@ -168,7 +168,7 @@ function FloatingEdge({ id, source, target, style = {}, data }: FloatingEdgeProp
             }}
             className="nodrag nopan"
           >
-            <div className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-body-small shadow-sm backdrop-blur-sm">
+            <div className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
               {duration < 1000
                 ? `${duration}ms`
                 : `${(duration / 1000).toFixed(1)}s`}

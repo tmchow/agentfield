@@ -492,7 +492,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
           <div className="flex flex-shrink-0 items-center gap-1">
             <Calendar size={11} className="flex-shrink-0 text-muted-foreground" />
             <span
-              className="font-mono text-body-small"
+              className="font-mono text-sm text-muted-foreground"
               title={`Started: ${formatTimestamp(data.started_at)}`}
             >
               {formatTimestamp(data.started_at)}

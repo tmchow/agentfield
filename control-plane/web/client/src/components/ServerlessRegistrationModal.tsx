@@ -121,7 +121,7 @@ export function ServerlessRegistrationModal({
                 disabled={isLoading || !!success}
                 className="font-mono text-sm"
               />
-              <p className="text-body-small">
+              <p className="text-sm text-muted-foreground">
                 The URL where your remote agent is deployed
               </p>
             </div>
@@ -150,7 +150,7 @@ export function ServerlessRegistrationModal({
             <div className="rounded-lg bg-muted p-3 border">
               <div className="flex items-start gap-2">
                 <Server className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="text-body-small">
+                <div className="text-sm text-muted-foreground">
                   <div className="font-semibold mb-1">Automatic Discovery</div>
                   <div>The system will call your agent's <code className="bg-muted-foreground/10 px-1 rounded">/discover</code> endpoint to automatically detect all reasoners and skills.</div>
                 </div>

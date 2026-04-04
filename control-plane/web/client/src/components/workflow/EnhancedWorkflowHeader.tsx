@@ -336,14 +336,14 @@ export function EnhancedWorkflowHeader({
 
               {/* Active execution count */}
               {activeExecutions > 0 && (
-                <Badge variant="secondary" className="h-5 px-2 text-body-small" showIcon={false}>
+                <Badge variant="secondary" className="h-5 px-2 text-sm text-muted-foreground" showIcon={false}>
                   {activeExecutions} active
                 </Badge>
               )}
 
               {/* Failed execution count */}
               {failedExecutions > 0 && (
-                <Badge variant="destructive" className="h-5 px-2 text-body-small" showIcon={false}>
+                <Badge variant="destructive" className="h-5 px-2 text-sm text-muted-foreground" showIcon={false}>
                   {failedExecutions} {failedExecutions === 1 ? "issue" : "issues"}
                 </Badge>
               )}
@@ -367,7 +367,7 @@ export function EnhancedWorkflowHeader({
                               ? "Webhook activity"
                               : "Webhook registered"}
                         </p>
-                        <p className="text-body-small">
+                        <p className="text-sm text-muted-foreground">
                           {webhookSummary.totalDeliveries > 0
                             ? `${webhookSummary.totalDeliveries} deliveries \u00B7 ${webhookSummary.successDeliveries} succeeded`
                             : webhookSummary.pendingNodes > 0
@@ -376,7 +376,7 @@ export function EnhancedWorkflowHeader({
                         </p>
                       </div>
                       {latestWebhookTimestamp && (
-                        <span className="text-body-small text-muted-foreground whitespace-nowrap">
+                        <span className="text-sm text-muted-foreground text-muted-foreground whitespace-nowrap">
                           {latestWebhookTimestamp}
                         </span>
                       )}
@@ -415,7 +415,7 @@ export function EnhancedWorkflowHeader({
                     </div>
 
                     {webhookSummary.lastStatus && (
-                      <div className="text-body-small">
+                      <div className="text-sm text-muted-foreground">
                         <span className="font-medium text-foreground">Last status:</span>{" "}
                         {formatWebhookStatusLabel(webhookSummary.lastStatus)}
                         {webhookSummary.lastHttpStatus && (
@@ -425,7 +425,7 @@ export function EnhancedWorkflowHeader({
                     )}
 
                     {webhookSummary.lastError && (
-                      <div className="text-body-small text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                      <div className="text-sm text-muted-foreground text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
                         {webhookSummary.lastError}
                       </div>
                     )}
@@ -771,12 +771,12 @@ export function EnhancedWorkflowHeader({
             </span>
           )}
           {activeExecutions > 0 && (
-            <Badge variant="secondary" className="h-5 px-2 text-body-small flex-shrink-0" showIcon={false}>
+            <Badge variant="secondary" className="h-5 px-2 text-sm text-muted-foreground flex-shrink-0" showIcon={false}>
               {activeExecutions} active
             </Badge>
           )}
           {failedExecutions > 0 && (
-            <Badge variant="destructive" className="h-5 px-2 text-body-small flex-shrink-0" showIcon={false}>
+            <Badge variant="destructive" className="h-5 px-2 text-sm text-muted-foreground flex-shrink-0" showIcon={false}>
               {failedExecutions} {failedExecutions === 1 ? "issue" : "issues"}
             </Badge>
           )}

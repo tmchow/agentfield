@@ -452,7 +452,7 @@ export function AllReasonersPage() {
 
       {/* Footer Info */}
       {!loading && !error && data && data.reasoners.length > 0 && (
-        <div className="text-center text-body-small py-4">
+        <div className="text-center text-sm text-muted-foreground py-4">
           Last updated: {lastRefresh.toLocaleTimeString()}
         </div>
       )}

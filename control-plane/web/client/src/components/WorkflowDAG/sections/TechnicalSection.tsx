@@ -91,10 +91,10 @@ export function TechnicalSection({
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {detail.icon}
         <div className="min-w-0 flex-1">
-          <span className="text-body-small/70 block">
+          <span className="text-sm text-muted-foreground/70 block">
             {detail.label}
           </span>
-          <span className="text-body-small font-mono truncate block">
+          <span className="text-sm text-muted-foreground font-mono truncate block">
             {detail.value}
           </span>
         </div>
@@ -239,12 +239,12 @@ export function TechnicalSection({
                     <Badge variant="outline" className="text-xs">
                       {update.action}
                     </Badge>
-                    <span className="text-body-small font-mono">
+                    <span className="text-sm text-muted-foreground font-mono">
                       {update.scope}/{update.key}
                     </span>
                   </div>
                   {update.value && (
-                    <pre className="text-body-small font-mono mt-1 whitespace-pre-wrap">
+                    <pre className="text-sm text-muted-foreground font-mono mt-1 whitespace-pre-wrap">
                       {typeof update.value === "string"
                         ? update.value
                         : JSON.stringify(update.value, null, 2)}
@@ -260,7 +260,7 @@ export function TechnicalSection({
         {/* Raw Node Data */}
         {renderExpandableSection(
           "Raw Node Data",
-          <pre className="text-body-small font-mono whitespace-pre-wrap overflow-x-auto">
+          <pre className="text-sm text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
             {JSON.stringify(node, null, 2)}
           </pre>,
           "raw-node-data"
@@ -270,7 +270,7 @@ export function TechnicalSection({
         {details &&
           renderExpandableSection(
             "Raw Details Data",
-            <pre className="text-body-small font-mono whitespace-pre-wrap overflow-x-auto">
+            <pre className="text-sm text-muted-foreground font-mono whitespace-pre-wrap overflow-x-auto">
               {JSON.stringify(details, null, 2)}
             </pre>,
             "raw-details-data"

@@ -83,7 +83,7 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
   const navigationItems = mode === 'developer' ? developerItems : userItems;
 
   return (
-    <nav className="flex items-center gap-0.5 bg-bg-tertiary p-1 rounded-lg border border-border-secondary">
+    <nav className="flex items-center gap-0.5 bg-muted p-1 rounded-lg border border-border">
       {navigationItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentPage === item.id;
@@ -98,10 +98,10 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
               transition-all duration-200 ease-in-out group
               ${
                 isActive
-                  ? "bg-bg-elevated text-foreground shadow-sm border border-border"
+                  ? "bg-card text-foreground shadow-sm border border-border"
                   : item.disabled
-                  ? "text-text-disabled cursor-not-allowed opacity-50"
-                  : "text-text-secondary hover:text-foreground hover:bg-bg-elevated/60"
+                  ? "text-muted-foreground opacity-50 cursor-not-allowed opacity-50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/60"
               }
               ${!item.disabled ? "cursor-pointer" : ""}
             `}

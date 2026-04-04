@@ -156,7 +156,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
             </div>
 
-            <p className="text-body-small">
+            <p className="text-sm text-muted-foreground">
               Error ID: {this.state.errorId}
             </p>
           </CardContent>

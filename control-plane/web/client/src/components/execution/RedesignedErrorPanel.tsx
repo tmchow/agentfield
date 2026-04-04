@@ -130,7 +130,7 @@ export function RedesignedErrorPanel({ execution }: RedesignedErrorPanelProps) {
           <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
             Debugging Tips
           </h5>
-          <ul className="text-body-small space-y-1">
+          <ul className="text-sm text-muted-foreground space-y-1">
             <li>• Check the input data format and validation</li>
             <li>• Review the reasoner implementation for this error type</li>
             <li>• Verify agent node connectivity and dependencies</li>

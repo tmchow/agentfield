@@ -681,7 +681,7 @@ export function NodesPage() {
           </div>
 
           {!isLoading && !error && nodes.length > 0 && (
-            <div className="py-2 text-center text-body-small">
+            <div className="py-2 text-center text-sm text-muted-foreground">
               Last updated: {lastRefresh.toLocaleTimeString()}
             </div>
           )}

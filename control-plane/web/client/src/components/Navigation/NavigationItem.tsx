@@ -26,13 +26,13 @@ export function NavigationItemComponent({
           isCollapsed ? "justify-center p-3 mx-1" : "px-4 py-2.5 mx-2",
 
           // Interactive states - fast and snappy
-          "hover:bg-bg-elevated/60 hover:text-foreground",
-          "active:bg-bg-elevated/80",
+          "hover:bg-card/60 hover:text-foreground",
+          "active:bg-card/80",
 
           // Active state with clean indicator
           isActive
             ? cn(
-                "bg-bg-elevated text-foreground font-medium",
+                "bg-card text-foreground font-medium",
                 "before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2",
                 "before:w-0.5 before:h-4 before:bg-primary before:rounded-r-full"
               )
@@ -72,7 +72,7 @@ export function NavigationItemComponent({
         )}>
           {item.label}
           {item.description && (
-            <div className="text-body-small mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               {item.description}
             </div>
           )}

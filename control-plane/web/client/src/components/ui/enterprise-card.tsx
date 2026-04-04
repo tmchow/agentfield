@@ -5,7 +5,7 @@ export const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-border hover:border-border-secondary",
+        default: "border-border hover:border-border",
         elevated: "border-border shadow-md",
         interactive: "border-border hover:border-primary/30 cursor-pointer transition-all duration-200",
       },

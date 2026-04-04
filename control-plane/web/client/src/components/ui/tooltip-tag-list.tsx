@@ -3,7 +3,7 @@ import { Badge } from "./badge";
 /**
  * A tag group rendered inside a tooltip.
  * - `label` (optional) renders an uppercase section header (e.g. "From", "Granted").
- * - `tags` is the list of tag strings to render as glass-style chips.
+ * - `tags` is the list of tag strings to render as -style chips.
  *   An empty array renders a muted "any" placeholder.
  */
 export interface TooltipTagGroup {
@@ -18,7 +18,7 @@ export interface TooltipTagListProps {
 /**
  * Renders one or more groups of tags as styled chips inside a tooltip.
  *
- * Uses the `tooltip` badge variant (semi-transparent glass on dark bg).
+ * Uses the `tooltip` badge variant (semi-transparent  on dark bg).
  * Place inside `<TooltipContent>` for consistent styling across the app.
  */
 export function TooltipTagList({ groups }: TooltipTagListProps) {

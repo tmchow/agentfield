@@ -207,7 +207,7 @@ export function EnhancedJsonViewer({
       case 'null':
         return (
           <div className="flex items-center gap-2">
-            <span className="text-body-small italic">null</span>
+            <span className="text-sm text-muted-foreground italic">null</span>
             <Button
               variant="ghost"
               size="sm"
@@ -301,7 +301,7 @@ export function EnhancedJsonViewer({
                       </div>
                     ))}
                     {arrayValue.length > 10 && (
-                      <div className="text-body-small text-center py-2">
+                      <div className="text-sm text-muted-foreground text-center py-2">
                         ... and {arrayValue.length - 10} more items
                       </div>
                     )}
@@ -315,7 +315,7 @@ export function EnhancedJsonViewer({
       case 'undefined':
         return (
           <div className="flex items-center gap-2">
-            <span className="text-body-small italic">undefined</span>
+            <span className="text-sm text-muted-foreground italic">undefined</span>
             <Button
               variant="ghost"
               size="sm"
