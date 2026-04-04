@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { RunTrace, buildTraceTree, formatDuration } from "@/components/RunTrace";
 import { StepDetail } from "@/components/StepDetail";
 import { WorkflowDAGViewer } from "@/components/WorkflowDAG";
@@ -285,15 +284,14 @@ export function RunDetailPage() {
                   />
                 </div>
               ) : (
-                <ScrollArea className="flex-1 min-h-0 h-full">
-                  <div className="p-2">
+                <div className="flex-1 min-h-0 overflow-hidden">
                     {traceTree ? (
                       <RunTrace
                         node={traceTree}
                         maxDuration={maxDuration}
                         selectedId={selectedStepId}
                         onSelect={setSelectedStepId}
-                        runStartedAt={dag.dag.started_at}
+                        runStartedAt={dag?.dag?.started_at ?? ""}
                       />
                     ) : (
                       <p className="text-xs text-muted-foreground p-4">
@@ -301,7 +299,6 @@ export function RunDetailPage() {
                       </p>
                     )}
                   </div>
-                </ScrollArea>
               )}
             </CardContent>
           </Card>

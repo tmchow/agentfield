@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useRunDAG } from "@/hooks/queries";
+import { useRunDAG, useStepDetail } from "@/hooks/queries";
 import { formatDuration } from "@/components/RunTrace";
 import { normalizeExecutionStatus } from "@/utils/status";
 import { cn } from "@/lib/utils";
@@ -84,49 +84,87 @@ function durationDeltaLabel(msA?: number, msB?: number): string | null {
   return `${sign}${delta.toFixed(0)}%`;
 }
 
-// ─── Output diff section ───────────────────────────────────────────────────────
+// ─── Step I/O diff section ────────────────────────────────────────────────────
 
-function OutputDiff({
+function StepDiff({
   stepA,
   stepB,
-  indexA,
-  indexB,
+  index,
 }: {
   stepA?: WorkflowDAGLightweightNode;
   stepB?: WorkflowDAGLightweightNode;
-  indexA: number;
-  indexB: number;
+  index: number;
 }) {
+  const detailA = useStepDetail(stepA?.execution_id);
+  const detailB = useStepDetail(stepB?.execution_id);
+
   const label = stepA?.reasoner_id ?? stepB?.reasoner_id ?? "—";
-  const stepNum = indexA + 1;
+  const stepNum = index + 1;
 
   return (
     <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
       <p className="text-[10px] font-medium text-amber-400 uppercase tracking-wider mb-2">
-        Output Diff — Step #{stepNum} · {label}
+        Step I/O Diff — Step #{stepNum} · {label}
       </p>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-[10px] text-muted-foreground mb-1 font-medium">Run A</p>
-          <pre className="font-mono text-[10px] text-muted-foreground bg-background/50 rounded p-2 whitespace-pre-wrap break-all max-h-40 overflow-auto">
-            {stepA
-              ? stepA.status === "failed"
-                ? `ERROR: step failed`
-                : stepA.status
-              : "— (no step)"}
-          </pre>
+
+      {(detailA.isLoading || detailB.isLoading) ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
         </div>
-        <div>
-          <p className="text-[10px] text-muted-foreground mb-1 font-medium">Run B</p>
-          <pre className="font-mono text-[10px] text-muted-foreground bg-background/50 rounded p-2 whitespace-pre-wrap break-all max-h-40 overflow-auto">
-            {stepB
-              ? stepB.status === "failed"
-                ? `ERROR: step failed`
-                : stepB.status
-              : "— (no step)"}
-          </pre>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Run A */}
+          <div className="flex flex-col gap-2">
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Input (Run A)</p>
+              <pre className="text-[10px] font-mono bg-background/50 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap break-all">
+                {detailA.data?.input_data
+                  ? JSON.stringify(detailA.data.input_data, null, 2).slice(0, 500)
+                  : stepA ? "—" : "— (no step)"}
+              </pre>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Output (Run A)</p>
+              <pre className={cn(
+                "text-[10px] font-mono rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap break-all",
+                detailA.data?.error_message ? "bg-destructive/10 text-destructive" : "bg-background/50",
+              )}>
+                {detailA.data?.error_message
+                  ? detailA.data.error_message
+                  : detailA.data?.output_data
+                    ? JSON.stringify(detailA.data.output_data, null, 2).slice(0, 500)
+                    : stepA ? "—" : "— (no step)"}
+              </pre>
+            </div>
+          </div>
+
+          {/* Run B */}
+          <div className="flex flex-col gap-2">
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Input (Run B)</p>
+              <pre className="text-[10px] font-mono bg-background/50 rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap break-all">
+                {detailB.data?.input_data
+                  ? JSON.stringify(detailB.data.input_data, null, 2).slice(0, 500)
+                  : stepB ? "—" : "— (no step)"}
+              </pre>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Output (Run B)</p>
+              <pre className={cn(
+                "text-[10px] font-mono rounded p-2 max-h-32 overflow-auto whitespace-pre-wrap break-all",
+                detailB.data?.error_message ? "bg-destructive/10 text-destructive" : "bg-background/50",
+              )}>
+                {detailB.data?.error_message
+                  ? detailB.data.error_message
+                  : detailB.data?.output_data
+                    ? JSON.stringify(detailB.data.output_data, null, 2).slice(0, 500)
+                    : stepB ? "—" : "— (no step)"}
+              </pre>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -324,7 +362,8 @@ export function ComparisonPage() {
       </div>
 
       {/* ─── Summary cards ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 flex-shrink-0">
+      <div className="sticky top-0 z-10 bg-background pb-3 flex-shrink-0">
+      <div className="grid grid-cols-2 gap-4">
         <RunSummaryCard
           runId={runIdA}
           label="A"
@@ -344,6 +383,7 @@ export function ComparisonPage() {
           isB
         />
       </div>
+      </div>
 
       <Separator className="flex-shrink-0" />
 
@@ -353,7 +393,7 @@ export function ComparisonPage() {
           Step Comparison
           {maxLen > 0 && (
             <span className="ml-2 normal-case text-muted-foreground/60 font-normal">
-              — click a diverged row to inspect output diff
+              — click any row to inspect step I/O diff
             </span>
           )}
         </p>
@@ -405,16 +445,14 @@ export function ComparisonPage() {
                       <TableRow
                         key={i}
                         className={cn(
-                          "h-8 transition-colors",
-                          diverged && "bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer",
+                          "h-8 transition-colors cursor-pointer",
+                          diverged && "bg-amber-500/5 hover:bg-amber-500/10",
                           isSelected && "bg-amber-500/10 ring-inset ring-1 ring-amber-500/30",
                           extra && "opacity-60",
-                          !diverged && !extra && "hover:bg-muted/30",
+                          !diverged && !isSelected && "hover:bg-muted/30",
                         )}
                         onClick={() => {
-                          if (diverged || extra) {
-                            setSelectedDivergedIndex(isSelected ? null : i);
-                          }
+                          setSelectedDivergedIndex(isSelected ? null : i);
                         }}
                       >
                         {/* Index */}
@@ -470,11 +508,10 @@ export function ComparisonPage() {
             {/* ─── Output diff panel ─────────────────────────────────────── */}
             {divergedStep != null && (
               <div className="px-3 pb-3">
-                <OutputDiff
+                <StepDiff
                   stepA={divergedStep.a}
                   stepB={divergedStep.b}
-                  indexA={divergedStep.index}
-                  indexB={divergedStep.index}
+                  index={divergedStep.index}
                 />
               </div>
             )}
