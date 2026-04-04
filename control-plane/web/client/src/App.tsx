@@ -15,6 +15,7 @@ import { NodesPage } from "./pages/NodesPage";
 import { ReasonerDetailPage } from "./pages/ReasonerDetailPage.tsx";
 import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
+import { RunsPage } from "./pages/RunsPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { queryClient } from "./lib/query-client";
@@ -58,7 +59,7 @@ function AppContent() {
             </div>
           }
         />
-        <Route path="/runs" element={<div className="text-muted-foreground">Runs page — coming soon</div>} />
+        <Route path="/runs" element={<RunsPage />} />
         <Route path="/runs/:runId" element={<div className="text-muted-foreground">Run Detail — coming soon</div>} />
         <Route path="/playground" element={<div className="text-muted-foreground">Playground — coming soon</div>} />
         <Route path="/playground/:reasonerId" element={<div className="text-muted-foreground">Playground — coming soon</div>} />
