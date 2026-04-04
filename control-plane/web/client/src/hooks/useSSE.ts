@@ -66,10 +66,9 @@ export function useSSE<T = any>(
     exponentialBackoff = true,
     eventTypes = [],
     onConnectionChange,
-    onError
+    onError,
+    trackEvents = false
   } = options;
-
-  const trackEvents = options?.trackEvents ?? false;
 
   const [state, setState] = useState<SSEState>({
     connected: false,

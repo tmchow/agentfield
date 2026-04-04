@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { RunTrace, buildTraceTree, formatDuration } from "@/components/RunTrace";
 import { StepDetail } from "@/components/StepDetail";
 import { WorkflowDAGViewer } from "@/components/WorkflowDAG";
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import type {
   WebhookFailurePreview,
   WebhookRunSummary,

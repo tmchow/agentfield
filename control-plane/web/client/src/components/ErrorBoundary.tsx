@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Auto-reset after 30 seconds for transient errors, limited to one attempt
     if (this.state.resetCount < 1) {
       this.resetTimeoutId = window.setTimeout(() => {
-        this.setState({ hasError: false, error: null, resetCount: this.state.resetCount + 1 });
+        this.setState(prev => ({ hasError: false, error: null, errorInfo: null, errorId: '', resetCount: prev.resetCount + 1 }));
       }, 30000);
     }
   }

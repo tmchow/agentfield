@@ -1066,15 +1066,15 @@ export function RunsPage() {
                   disabled={cancelMutation.isPending}
                   onClick={async () => {
                     try {
-                      for (const runId of selected) {
-                        const run = filteredRuns.find((r) => r.run_id === runId);
-                        if (
-                          run?.root_execution_id &&
-                          (run.status === "running" || run.status === "pending")
-                        ) {
-                          await cancelMutation.mutateAsync(run.root_execution_id);
-                        }
-                      }
+                      await Promise.all(
+                        [...selected].map((runId) => {
+                          const run = filteredRuns.find((r) => r.run_id === runId);
+                          return run?.root_execution_id &&
+                            (run.status === "running" || run.status === "pending")
+                            ? cancelMutation.mutateAsync(run.root_execution_id)
+                            : Promise.resolve();
+                        })
+                      );
                       setSelected(new Set());
                     } catch (err) {
                       console.error('Bulk cancel failed:', err);
