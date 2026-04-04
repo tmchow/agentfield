@@ -19,6 +19,7 @@ import { NewSettingsPage } from "./pages/NewSettingsPage";
 import { AgentsPage } from "./pages/AgentsPage";
 import { RunsPage } from "./pages/RunsPage";
 import { RunDetailPage } from "./pages/RunDetailPage";
+import { ComparisonPage } from "./pages/ComparisonPage";
 import { PlaygroundPage } from "./pages/PlaygroundPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
@@ -42,6 +43,7 @@ function AppContent() {
         <Route path="/settings/observability-webhook" element={<Navigate to="/settings" replace />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/runs" element={<RunsPage />} />
+        <Route path="/runs/compare" element={<ComparisonPage />} />
         <Route path="/runs/:runId" element={<RunDetailPage />} />
         <Route path="/playground" element={<PlaygroundPage />} />
         <Route path="/playground/:reasonerId" element={<PlaygroundPage />} />
