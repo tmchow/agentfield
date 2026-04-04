@@ -83,18 +83,26 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    isActive={location.pathname.startsWith(item.path)}
-                    onClick={() => navigate(item.path)}
-                    tooltip={item.title}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navigation.map((item) => {
+                const active = location.pathname.startsWith(item.path);
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      isActive={active}
+                      onClick={() => navigate(item.path)}
+                      tooltip={item.title}
+                      className={
+                        active
+                          ? "relative before:absolute before:left-0 before:inset-y-1 before:w-0.5 before:rounded-full before:bg-sidebar-primary font-medium"
+                          : undefined
+                      }
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
