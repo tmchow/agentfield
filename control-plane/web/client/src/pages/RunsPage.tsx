@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useRuns, useCancelExecution } from "@/hooks/queries";
 import type { WorkflowSummary } from "@/types/workflows";
 import { normalizeExecutionStatus } from "@/utils/status";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -12,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,18 +47,20 @@ function formatDuration(ms: number | undefined, terminal?: boolean): string {
   return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
 }
 
-function RunStatusBadge({ status }: { status: string }) {
+function StatusDot({ status }: { status: string }) {
   const canonical = normalizeExecutionStatus(status);
-  const variant =
-    canonical === "failed" || canonical === "timeout"
-      ? "destructive"
-      : canonical === "succeeded"
-        ? "default"
-        : "secondary";
+  const color =
+    canonical === "succeeded"
+      ? "bg-green-500"
+      : canonical === "failed" || canonical === "timeout"
+        ? "bg-red-500"
+        : canonical === "running"
+          ? "bg-blue-500"
+          : "bg-muted-foreground";
 
   const label =
     canonical === "succeeded"
-      ? "succeeded"
+      ? "ok"
       : canonical === "failed"
         ? "failed"
         : canonical === "running"
@@ -71,7 +73,12 @@ function RunStatusBadge({ status }: { status: string }) {
                 ? "pending"
                 : canonical;
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={cn("size-1.5 rounded-full shrink-0", color)} />
+      <span className="text-[11px]">{label}</span>
+    </div>
+  );
 }
 
 // ─── constants ─────────────────────────────────────────────────────────────────
@@ -108,6 +115,10 @@ export function RunsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  // sort state
+  const [sortBy, setSortBy] = useState("latest_activity");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   // pagination state
   const [page, setPage] = useState(1);
   const [allRuns, setAllRuns] = useState<WorkflowSummary[]>([]);
@@ -127,20 +138,22 @@ export function RunsPage() {
     }, 300);
   }, []);
 
-  // reset pagination when filters change
-  const prevFiltersRef = useRef({ timeRange, status, debouncedSearch });
+  // reset pagination when filters/sort change
+  const prevFiltersRef = useRef({ timeRange, status, debouncedSearch, sortBy, sortOrder });
   useEffect(() => {
     const prev = prevFiltersRef.current;
     if (
       prev.timeRange !== timeRange ||
       prev.status !== status ||
-      prev.debouncedSearch !== debouncedSearch
+      prev.debouncedSearch !== debouncedSearch ||
+      prev.sortBy !== sortBy ||
+      prev.sortOrder !== sortOrder
     ) {
       setPage(1);
       setAllRuns([]);
-      prevFiltersRef.current = { timeRange, status, debouncedSearch };
+      prevFiltersRef.current = { timeRange, status, debouncedSearch, sortBy, sortOrder };
     }
-  }, [timeRange, status, debouncedSearch]);
+  }, [timeRange, status, debouncedSearch, sortBy, sortOrder]);
 
   const filters = useMemo(
     () => ({
@@ -149,8 +162,10 @@ export function RunsPage() {
       search: debouncedSearch || undefined,
       page,
       pageSize: PAGE_SIZE,
+      sortBy,
+      sortOrder,
     }),
-    [timeRange, status, debouncedSearch, page],
+    [timeRange, status, debouncedSearch, page, sortBy, sortOrder],
   );
 
   const { data, isLoading, isFetching, isError, error } = useRuns(filters);
@@ -235,6 +250,51 @@ export function RunsPage() {
     [],
   );
 
+  // sortable header click handler
+  const handleSortClick = useCallback(
+    (column: string) => {
+      if (sortBy === column) {
+        setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+      } else {
+        setSortBy(column);
+        setSortOrder("desc");
+      }
+      setPage(1);
+      setAllRuns([]);
+    },
+    [sortBy],
+  );
+
+  // sortable header sub-component
+  const SortableHead = useCallback(
+    ({ column, label, className }: { column: string; label: string; className?: string }) => {
+      const active = sortBy === column;
+      return (
+        <TableHead
+          className={cn(
+            "h-8 px-3 text-[11px] font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
+            className,
+          )}
+          onClick={() => handleSortClick(column)}
+        >
+          <div className="flex items-center gap-1">
+            {label}
+            {active ? (
+              sortOrder === "asc" ? (
+                <ArrowUp className="size-3 text-foreground" />
+              ) : (
+                <ArrowDown className="size-3 text-foreground" />
+              )
+            ) : (
+              <ArrowUpDown className="size-3 opacity-30" />
+            )}
+          </div>
+        </TableHead>
+      );
+    },
+    [sortBy, sortOrder, handleSortClick],
+  );
+
   return (
     <div className="space-y-3">
       {/* Page heading */}
@@ -301,8 +361,8 @@ export function RunsPage() {
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
-            className="pl-8 h-8 text-xs"
-            placeholder="Search by run ID or reasoner…"
+            className="pl-8 h-8 text-xs w-64"
+            placeholder="Search runs, reasoners, agents…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
@@ -357,6 +417,7 @@ export function RunsPage() {
         <Table className="text-xs">
           <TableHeader>
             <TableRow>
+              {/* Checkbox */}
               <TableHead className="h-8 w-10 px-3 text-[11px] font-medium text-muted-foreground">
                 <Checkbox
                   checked={allSelected}
@@ -365,42 +426,44 @@ export function RunsPage() {
                   aria-label="Select all"
                 />
               </TableHead>
+              {/* Status first — most scannable */}
+              <SortableHead column="status" label="Status" className="w-24" />
+              {/* Reasoner — what was called */}
               <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
+                Reasoner
+              </TableHead>
+              {/* Agent — which node ran it */}
+              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
+                Agent
+              </TableHead>
+              {/* Steps — complexity */}
+              <SortableHead column="total_executions" label="Steps" className="w-20" />
+              {/* Duration — performance */}
+              <SortableHead column="duration_ms" label="Duration" className="w-24" />
+              {/* Started — when (relative) */}
+              <SortableHead column="latest_activity" label="Started" className="w-36" />
+              {/* Run ID — reference, de-emphasized */}
+              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground w-36">
                 Run ID
-              </TableHead>
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Root Reasoner
-              </TableHead>
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Steps
-              </TableHead>
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Status
-              </TableHead>
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Duration
-              </TableHead>
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Started
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loadingInitial ? (
               <TableRow>
-                <TableCell colSpan={7} className="p-8 text-center text-muted-foreground text-xs">
+                <TableCell colSpan={8} className="p-8 text-center text-muted-foreground text-xs">
                   Loading runs…
                 </TableCell>
               </TableRow>
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={7} className="p-8 text-center text-destructive text-xs">
+                <TableCell colSpan={8} className="p-8 text-center text-destructive text-xs">
                   {error instanceof Error ? error.message : "Failed to load runs"}
                 </TableCell>
               </TableRow>
             ) : filteredRuns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="p-8 text-center text-muted-foreground text-xs">
+                <TableCell colSpan={8} className="p-8 text-center text-muted-foreground text-xs">
                   No runs found
                 </TableCell>
               </TableRow>
@@ -458,12 +521,15 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
       })
     : "—";
 
+  const agentLabel = run.agent_id || run.agent_name || "—";
+
   return (
     <TableRow
       className="cursor-pointer"
       data-state={isSelected ? "selected" : undefined}
       onClick={() => onRowClick(run)}
     >
+      {/* Checkbox */}
       <TableCell className="px-3 py-1.5 w-10" onClick={(e) => onToggleSelect(run.run_id, e)}>
         <Checkbox
           checked={isSelected}
@@ -471,23 +537,33 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
           onCheckedChange={() => {}}
         />
       </TableCell>
-      <TableCell className="px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
-        {shortId}
+      {/* Status dot */}
+      <TableCell className="px-3 py-1.5 w-24">
+        <StatusDot status={run.status} />
       </TableCell>
+      {/* Reasoner */}
       <TableCell className="px-3 py-1.5 text-xs font-medium">
         {run.root_reasoner || run.display_name || "—"}
       </TableCell>
-      <TableCell className="px-3 py-1.5 text-xs tabular-nums">
+      {/* Agent */}
+      <TableCell className="px-3 py-1.5 text-[11px] text-muted-foreground font-mono truncate max-w-[120px]">
+        {agentLabel}
+      </TableCell>
+      {/* Steps */}
+      <TableCell className="px-3 py-1.5 text-xs tabular-nums w-20">
         {run.total_executions ?? 1}
       </TableCell>
-      <TableCell className="px-3 py-1.5">
-        <RunStatusBadge status={run.status} />
-      </TableCell>
-      <TableCell className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground">
+      {/* Duration */}
+      <TableCell className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground w-24">
         {formatDuration(run.duration_ms, run.terminal)}
       </TableCell>
-      <TableCell className="px-3 py-1.5 text-[11px] text-muted-foreground">
+      {/* Started */}
+      <TableCell className="px-3 py-1.5 text-[11px] text-muted-foreground w-36">
         {startedAt}
+      </TableCell>
+      {/* Run ID — de-emphasized, rightmost */}
+      <TableCell className="px-3 py-1.5 font-mono text-[11px] text-muted-foreground w-36">
+        {shortId}
       </TableCell>
     </TableRow>
   );
