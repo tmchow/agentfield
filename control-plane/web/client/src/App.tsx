@@ -18,6 +18,7 @@ import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
 import { NewSettingsPage } from "./pages/NewSettingsPage";
 import { AgentsPage } from "./pages/AgentsPage";
 import { RunsPage } from "./pages/RunsPage";
+import { RunDetailPage } from "./pages/RunDetailPage";
 import { PlaygroundPage } from "./pages/PlaygroundPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
@@ -41,7 +42,7 @@ function AppContent() {
         <Route path="/settings/observability-webhook" element={<Navigate to="/settings" replace />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/runs" element={<RunsPage />} />
-        <Route path="/runs/:runId" element={<div className="text-muted-foreground">Run Detail — coming soon</div>} />
+        <Route path="/runs/:runId" element={<RunDetailPage />} />
         <Route path="/playground" element={<PlaygroundPage />} />
         <Route path="/playground/:reasonerId" element={<PlaygroundPage />} />
 
