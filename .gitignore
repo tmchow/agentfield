@@ -46,6 +46,8 @@ node_modules/
 .vscode/
 *.code-workspace
 .opencode/
+.agit/
+.claude/worktrees/
 
 # Generated assets
 coverage/
