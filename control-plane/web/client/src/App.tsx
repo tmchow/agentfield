@@ -7,6 +7,7 @@ import { useFocusManagement } from "./hooks/useFocusManagement";
 import { AppLayout } from "./components/AppLayout";
 import { AllReasonersPage } from "./pages/AllReasonersPage.tsx";
 import { EnhancedDashboardPage } from "./pages/EnhancedDashboardPage";
+import { NewDashboardPage } from "./pages/NewDashboardPage";
 import { ExecutionsPage } from "./pages/ExecutionsPage";
 import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage";
 import { EnhancedWorkflowDetailPage } from "./pages/EnhancedWorkflowDetailPage";
@@ -16,6 +17,7 @@ import { ReasonerDetailPage } from "./pages/ReasonerDetailPage.tsx";
 import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
 import { RunsPage } from "./pages/RunsPage";
+import { PlaygroundPage } from "./pages/PlaygroundPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { queryClient } from "./lib/query-client";
@@ -27,7 +29,8 @@ function AppContent() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<RootRedirect />} />
-        <Route path="/dashboard" element={<EnhancedDashboardPage />} />
+        <Route path="/dashboard" element={<NewDashboardPage />} />
+        <Route path="/dashboard/legacy" element={<EnhancedDashboardPage />} />
         <Route path="/nodes" element={<NodesPage />} />
         <Route path="/nodes/:nodeId" element={<NodeDetailPage />} />
         <Route path="/reasoners/all" element={<AllReasonersPage />} />
@@ -61,8 +64,8 @@ function AppContent() {
         />
         <Route path="/runs" element={<RunsPage />} />
         <Route path="/runs/:runId" element={<div className="text-muted-foreground">Run Detail — coming soon</div>} />
-        <Route path="/playground" element={<div className="text-muted-foreground">Playground — coming soon</div>} />
-        <Route path="/playground/:reasonerId" element={<div className="text-muted-foreground">Playground — coming soon</div>} />
+        <Route path="/playground" element={<PlaygroundPage />} />
+        <Route path="/playground/:reasonerId" element={<PlaygroundPage />} />
       </Route>
     </Routes>
   );
