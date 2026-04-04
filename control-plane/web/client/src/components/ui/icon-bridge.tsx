@@ -145,6 +145,7 @@ export { ArrowUpRight };
 export { RotateCcw as ArrowCounterClockwise };
 export { RotateCcw as ArrowSquareOut };
 export { Maximize as ArrowsOutSimple };
+export { RefreshCw };
 export { RefreshCw as ArrowsClockwise };
 export { RefreshCw as ArrowClockwise };
 export { RefreshCw as Renew };
@@ -295,6 +296,11 @@ export { Hash };
 
 // ID / Identification
 export { IdCard as Identification };
+
+// Help / Question
+export { HelpCircle };
+export { HelpCircle as Question };
+export { HelpCircle as QuestionMark };
 
 // Info
 export { Info };

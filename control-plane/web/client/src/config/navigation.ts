@@ -1,70 +1,35 @@
-import type { NavigationSection } from '@/components/Navigation/types';
+import {
+  LayoutDashboard,
+  Play,
+  Bot,
+  FlaskConical,
+  Settings,
+} from "lucide-react";
 
-export const navigationSections: NavigationSection[] = [
+export const navigation = [
   {
-    id: 'overview',
-    title: 'Overview',
-    items: [
-      {
-        id: 'dashboard',
-        label: 'Dashboard',
-        href: '/dashboard',
-        icon: 'dashboard',
-        description: 'Real-time system overview and operational metrics'
-      }
-    ]
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/dashboard",
   },
   {
-    id: 'agent-hub',
-    title: 'Agent Hub',
-    items: [
-      {
-        id: 'node-overview',
-        label: 'Agent Node',
-        href: '/nodes',
-        icon: 'data-center',
-        description: 'Node infrastructure and status'
-      },
-      {
-        id: 'all-reasoners',
-        label: 'Reasoners',
-        href: '/reasoners/all',
-        icon: 'function',
-        description: 'Browse and manage all reasoners'
-      }
-    ]
+    title: "Runs",
+    icon: Play,
+    path: "/runs",
   },
   {
-    id: 'executions',
-    title: 'Executions',
-    items: [
-      {
-        id: 'individual-executions',
-        label: 'Individual Executions',
-        href: '/executions',
-        icon: 'run',
-        description: 'Single agent executions and calls'
-      },
-      {
-        id: 'workflow-executions',
-        label: 'Workflow Executions',
-        href: '/workflows',
-        icon: 'flow-data',
-        description: 'Multi-step workflow processes'
-      }
-    ]
+    title: "Agents",
+    icon: Bot,
+    path: "/agents",
   },
   {
-    id: 'settings',
-    title: 'Settings',
-    items: [
-      {
-        id: 'observability-webhook',
-        label: 'Observability Webhook',
-        href: '/settings/observability-webhook',
-        icon: 'settings',
-        description: 'Configure external event forwarding'
-      }
-    ]
-  }
+    title: "Playground",
+    icon: FlaskConical,
+    path: "/playground",
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    path: "/settings",
+  },
 ];
