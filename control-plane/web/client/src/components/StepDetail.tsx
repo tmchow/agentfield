@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useStepDetail } from "@/hooks/queries";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Collapsible,
@@ -8,7 +10,76 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "@/components/ui/icon-bridge";
+import { Copy, Check } from "lucide-react";
 import { formatDuration } from "./RunTrace";
+
+// ─── Simple JSON syntax highlighter ──────────────────────────────────────────
+
+function JsonHighlight({ data }: { data: unknown }) {
+  const json = JSON.stringify(data, null, 2);
+  const highlighted = json
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    // Keys
+    .replace(/"([^"]+)":/g, '<span class="text-blue-400 dark:text-blue-300">"$1"</span>:')
+    // String values
+    .replace(/: "([^"]*)"(,?)/g, ': <span class="text-green-500 dark:text-green-400">"$1"</span>$2')
+    // Number values
+    .replace(/: (-?\d+\.?\d*)(,?)/g, ': <span class="text-amber-500 dark:text-amber-400">$1</span>$2')
+    // Boolean values
+    .replace(/: (true|false)(,?)/g, ': <span class="text-purple-500 dark:text-purple-400">$1</span>$2')
+    // Null values
+    .replace(/: (null)(,?)/g, ': <span class="text-red-400 dark:text-red-300">$1</span>$2');
+
+  return (
+    <pre
+      className="text-xs font-mono leading-relaxed whitespace-pre-wrap break-all"
+      dangerouslySetInnerHTML={{ __html: highlighted }}
+    />
+  );
+}
+
+// ─── Copy button with transient check icon ────────────────────────────────────
+
+function CopyBtn({
+  label,
+  getText,
+  disabled,
+}: {
+  label: string;
+  getText: () => string;
+  disabled?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = () => {
+    const text = getText();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-6 px-2 text-[10px] text-muted-foreground"
+      onClick={handleClick}
+      disabled={disabled}
+    >
+      {copied ? (
+        <Check className="size-2.5 mr-1" />
+      ) : (
+        <Copy className="size-2.5 mr-1" />
+      )}
+      {label}
+    </Button>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function StepDetail({ executionId }: { executionId: string }) {
   const { data: execution, isLoading } = useStepDetail(executionId);
@@ -37,6 +108,16 @@ export function StepDetail({ executionId }: { executionId: string }) {
   const hasInput = execution.input_data != null;
   const notes = execution.notes ?? [];
 
+  const buildCurl = () => {
+    const origin = window.location.origin;
+    return (
+      `curl -X POST '${origin}/api/v1/execute/${execution.agent_node_id}.${execution.reasoner_id}' \\\n` +
+      `  -H 'Content-Type: application/json' \\\n` +
+      `  -H 'X-API-Key: YOUR_API_KEY' \\\n` +
+      `  -d '${JSON.stringify({ input: execution.input_data })}'`
+    );
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-4 p-4">
@@ -53,6 +134,21 @@ export function StepDetail({ executionId }: { executionId: string }) {
               <> · Depth: {execution.workflow_depth}</>
             )}
           </p>
+
+          {/* Copy action row */}
+          <div className="flex flex-wrap items-center gap-0.5 mt-2">
+            <CopyBtn label="Copy cURL" getText={buildCurl} />
+            <CopyBtn
+              label="Copy Input"
+              getText={() => JSON.stringify(execution.input_data, null, 2)}
+              disabled={!hasInput}
+            />
+            <CopyBtn
+              label="Copy Output"
+              getText={() => JSON.stringify(execution.output_data, null, 2)}
+              disabled={!hasOutput}
+            />
+          </div>
         </div>
 
         {/* Input section */}
@@ -63,9 +159,9 @@ export function StepDetail({ executionId }: { executionId: string }) {
               Input
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <pre className="mt-2 rounded-md bg-muted p-3 text-xs font-mono overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                {JSON.stringify(execution.input_data, null, 2)}
-              </pre>
+              <div className="mt-2 rounded-md bg-muted p-3 overflow-auto max-h-64">
+                <JsonHighlight data={execution.input_data} />
+              </div>
             </CollapsibleContent>
           </Collapsible>
         )}
@@ -85,9 +181,9 @@ export function StepDetail({ executionId }: { executionId: string }) {
               Output
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <pre className="mt-2 rounded-md bg-muted p-3 text-xs font-mono overflow-auto max-h-48 whitespace-pre-wrap break-all">
-                {JSON.stringify(execution.output_data, null, 2)}
-              </pre>
+              <div className="mt-2 rounded-md bg-muted p-3 overflow-auto max-h-64">
+                <JsonHighlight data={execution.output_data} />
+              </div>
             </CollapsibleContent>
           </Collapsible>
         ) : (

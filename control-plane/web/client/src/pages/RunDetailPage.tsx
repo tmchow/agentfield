@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RunTrace, buildTraceTree, formatDuration } from "@/components/RunTrace";
@@ -138,6 +139,17 @@ export function RunDetailPage() {
           <Badge variant={statusVariant(dag.workflow_status)}>
             {dag.workflow_status}
           </Badge>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              window.open(`/api/v1/did/workflow/${runId}/vc-chain`, "_blank");
+            }}
+          >
+            <Download className="size-3.5 mr-1.5" />
+            Export VC
+          </Button>
 
           {dag.workflow_status === "running" && (
             <Button
