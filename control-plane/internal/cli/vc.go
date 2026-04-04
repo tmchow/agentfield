@@ -1,11 +1,15 @@
 package cli
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +17,62 @@ import (
 	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
 	"github.com/spf13/cobra"
 )
+
+// maxDIDDocBytes limits the response body when fetching external DID documents.
+const maxDIDDocBytes = 2 << 20 // 2 MiB
+
+// safeHTTPClient returns an http.Client that refuses to connect to private/loopback/link-local IPs,
+// preventing SSRF when resolving user-supplied DID URLs or custom resolvers.
+func safeHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				host, _, err := net.SplitHostPort(addr)
+				if err != nil {
+					return nil, fmt.Errorf("invalid address: %s", addr)
+				}
+				ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+				if err != nil {
+					return nil, err
+				}
+				for _, ip := range ips {
+					if isPrivateIP(ip.IP) {
+						return nil, fmt.Errorf("request to private/internal address %s is blocked", ip.IP)
+					}
+				}
+				dialer := &net.Dialer{Timeout: 5 * time.Second}
+				return dialer.DialContext(ctx, network, addr)
+			},
+		},
+	}
+}
+
+func isPrivateIP(ip net.IP) bool {
+	privateRanges := []string{
+		"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+		"127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10",
+	}
+	for _, cidr := range privateRanges {
+		_, network, _ := net.ParseCIDR(cidr)
+		if network != nil && network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateExternalURL ensures a URL is HTTPS and not pointing to metadata endpoints.
+func validateExternalURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL: %v", err)
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("only HTTPS URLs are allowed, got %s", u.Scheme)
+	}
+	return nil
+}
 
 // NewVCCommand creates the vc command with subcommands
 func NewVCCommand() *cobra.Command {
@@ -253,9 +313,13 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 		path = "/" + strings.Join(parts[3:], "/") + "/did.json"
 	}
 
-	url := fmt.Sprintf("https://%s%s", domain, path)
+	didURL := fmt.Sprintf("https://%s%s", domain, path)
 
-	resp, err := http.Get(url)
+	if err := validateExternalURL(didURL); err != nil {
+		return DIDResolutionInfo{}, fmt.Errorf("blocked did:web resolution: %v", err)
+	}
+
+	resp, err := safeHTTPClient().Get(didURL)
 	if err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to fetch DID document: %v", err)
 	}
@@ -266,7 +330,7 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 	}
 
 	var didDoc map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&didDoc); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxDIDDocBytes)).Decode(&didDoc); err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to parse DID document: %v", err)
 	}
 
@@ -280,7 +344,7 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 		DID:          did,
 		Method:       "web",
 		PublicKeyJWK: publicKeyJWK,
-		WebURL:       url,
+		WebURL:       didURL,
 		ResolvedFrom: "web",
 	}, nil
 }
@@ -296,9 +360,13 @@ func resolveFromWeb(did, resolver string) (DIDResolutionInfo, error) {
 }
 
 func resolveFromCustom(did, resolver string) (DIDResolutionInfo, error) {
-	url := fmt.Sprintf("%s/%s", strings.TrimSuffix(resolver, "/"), did)
+	resolverURL := fmt.Sprintf("%s/%s", strings.TrimSuffix(resolver, "/"), did)
 
-	resp, err := http.Get(url)
+	if err := validateExternalURL(resolverURL); err != nil {
+		return DIDResolutionInfo{}, fmt.Errorf("blocked custom resolver: %v", err)
+	}
+
+	resp, err := safeHTTPClient().Get(resolverURL)
 	if err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to resolve DID: %v", err)
 	}
@@ -309,7 +377,7 @@ func resolveFromCustom(did, resolver string) (DIDResolutionInfo, error) {
 	}
 
 	var resolution DIDResolutionInfo
-	if err := json.NewDecoder(resp.Body).Decode(&resolution); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxDIDDocBytes)).Decode(&resolution); err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to parse resolution response: %v", err)
 	}
 
