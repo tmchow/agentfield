@@ -14,7 +14,7 @@ import {
   AnimatedTabs,
   AnimatedTabsList,
   AnimatedTabsTrigger,
-} from "../ui/animated-tabs";
+} from "../ui/tabs";
 import { cn } from "../../lib/utils";
 import { getStatusLabel, normalizeExecutionStatus } from "../../utils/status";
 import type { WorkflowSummary, WorkflowTimelineNode } from "../../types/workflows";

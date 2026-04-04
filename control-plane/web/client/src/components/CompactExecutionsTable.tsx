@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Renew, Security, Terminal } from "@/components/ui/icon-bridge";
 import { useExecutionVCStatus } from "../hooks/useVCVerification";
 import type { EnhancedExecution } from "../types/workflows";
-import StatusIndicator from "./ui/status-indicator";
+import StatusIndicator from "@/components/status/UnifiedStatusIndicator";
 import { VerifiableCredentialBadge } from "./vc/VerifiableCredentialBadge";
 import { CompactTable } from "./ui/CompactTable";
 import { FastTableSearch, createSearchMatcher } from "./ui/FastTableSearch";

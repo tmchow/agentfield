@@ -1,12 +1,12 @@
 import type { ReasonerStatus } from '../../types/reasoners';
 
-interface StatusIndicatorProps {
+interface ReasonerStatusDotProps {
   status: ReasonerStatus;
   showText?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function StatusIndicator({ status, showText = true, size = 'md' }: StatusIndicatorProps) {
+export function ReasonerStatusDot({ status, showText = true, size = 'md' }: ReasonerStatusDotProps) {
   const getStatusConfig = (status: ReasonerStatus) => {
     switch (status) {
       case 'online':
@@ -44,24 +44,12 @@ export function StatusIndicator({ status, showText = true, size = 'md' }: Status
   const getSizeConfig = (size: 'sm' | 'md' | 'lg') => {
     switch (size) {
       case 'sm':
-        return {
-          dot: 'w-2 h-2',
-          text: 'text-xs',
-          gap: 'gap-1.5'
-        };
+        return { dot: 'w-2 h-2', text: 'text-xs', gap: 'gap-1.5' };
       case 'lg':
-        return {
-          dot: 'w-3 h-3',
-          text: 'text-sm',
-          gap: 'gap-2'
-        };
+        return { dot: 'w-3 h-3', text: 'text-sm', gap: 'gap-2' };
       case 'md':
       default:
-        return {
-          dot: 'w-2.5 h-2.5',
-          text: 'text-xs',
-          gap: 'gap-2'
-        };
+        return { dot: 'w-2.5 h-2.5', text: 'text-xs', gap: 'gap-2' };
     }
   };
 

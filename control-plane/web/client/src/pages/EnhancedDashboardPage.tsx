@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusIndicator } from "@/components/ui/StatusIndicator";
 import { TrendMetricCard } from "@/components/ui/TrendMetricCard";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "../components/PageHeader";
@@ -910,18 +909,22 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
             <Zap className="h-3 w-3" />
             {reasoner.reasonerId}
           </Badge>
-          <StatusIndicator
-            status={reasoner.status}
-            label={
+          <Badge
+            variant={
               reasoner.status === "active"
-                ? "Active"
+                ? "success"
                 : reasoner.status === "attention"
-                  ? "Needs attention"
-                  : "Idle"
+                  ? "warning"
+                  : "secondary"
             }
-            size="sm"
-            variant="subtle"
-          />
+            className="text-xs"
+          >
+            {reasoner.status === "active"
+              ? "Active"
+              : reasoner.status === "attention"
+                ? "Needs attention"
+                : "Idle"}
+          </Badge>
         </div>
         <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
           <span>{reasoner.activeRuns} running</span>

@@ -2,7 +2,7 @@ import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { ReasonerCardProps } from '../../types/reasoners';
-import { StatusIndicator } from './StatusIndicator';
+import { ReasonerStatusDot } from './ReasonerStatusDot';
 import { CompositeDIDStatus } from '../did/DIDStatusBadge';
 import { useDIDStatus } from '../../hooks/useDIDInfo';
 import { Bot, Layers, Timer, Tag, Flash, CheckCircle, BarChart3, Identification } from '@/components/ui/icon-bridge';
@@ -99,7 +99,7 @@ export function ReasonerCard({ reasoner, onClick }: ReasonerCardProps) {
           </div>
         </div>
         <div className="mt-0.5 flex flex-shrink-0 items-center gap-2">
-          <StatusIndicator status={status} size="sm" />
+          <ReasonerStatusDot status={status} size="sm" />
           {didStatus && didStatus.has_did && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Identification className="h-3 w-3" />

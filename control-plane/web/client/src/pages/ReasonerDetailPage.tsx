@@ -21,7 +21,7 @@ import {
 } from "../components/reasoners/ExecutionQueue";
 import { FormattedOutput } from "../components/reasoners/FormattedOutput";
 import { PerformanceChart } from "../components/reasoners/PerformanceChart";
-import { StatusIndicator } from "../components/reasoners/StatusIndicator";
+import { ReasonerStatusDot as StatusIndicator } from "../components/reasoners/ReasonerStatusDot";
 import { Alert } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import {

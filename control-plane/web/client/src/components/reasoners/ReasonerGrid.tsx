@@ -7,7 +7,7 @@ import { Skeleton } from "../ui/skeleton";
 import { DIDIdentityBadge } from "../did/DIDDisplay";
 import { EmptyReasonersState } from "./EmptyReasonersState";
 import { ReasonerCard } from "./ReasonerCard";
-import { StatusIndicator } from "./StatusIndicator";
+import { ReasonerStatusDot } from "./ReasonerStatusDot";
 
 export function ReasonerGrid({
   reasoners,
@@ -200,7 +200,7 @@ function ReasonerTable({
                     </div>
                   </td>
                   <td className="py-2 px-3">
-                    <StatusIndicator
+                    <ReasonerStatusDot
                       status={status}
                       showText={false}
                       size="sm"

@@ -13,7 +13,7 @@ import {
 import type { AgentNodeSummary } from '../types/agentfield';
 import { NodeCard } from './NodeCard';
 import type { DensityMode } from './DensityToggle';
-import { getStatusPriority } from './ui/status-indicator';
+import { getLifecycleStatusPriority as getStatusPriority } from '@/components/status/UnifiedStatusIndicator';
 import { getNodeStatusPresentation } from "@/utils/node-status";
 import { cn } from "@/lib/utils";
 import { cardVariants } from "@/components/ui/card";

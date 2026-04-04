@@ -15,7 +15,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "./ui/hover-card";
-import StatusIndicator from "./ui/status-indicator";
+import StatusIndicator from "@/components/status/UnifiedStatusIndicator";
 import { VerifiableCredentialBadge } from "./vc/VerifiableCredentialBadge";
 import { WorkflowDeleteDialog } from "./workflows/WorkflowDeleteDialog";
 import {

@@ -7,7 +7,7 @@ import {
   AnimatedTabs,
   AnimatedTabsList,
   AnimatedTabsTrigger,
-} from "./animated-tabs";
+} from "./tabs";
 
 export interface SegmentedControlOption {
   value: string;

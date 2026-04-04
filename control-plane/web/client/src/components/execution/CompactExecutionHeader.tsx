@@ -44,7 +44,7 @@ import {
   AnimatedTabs,
   AnimatedTabsList,
   AnimatedTabsTrigger,
-} from "../ui/animated-tabs";
+} from "../ui/tabs";
 import { cn } from "../../lib/utils";
 import {
   normalizeExecutionStatus,

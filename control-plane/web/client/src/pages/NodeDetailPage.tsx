@@ -29,7 +29,7 @@ import {
   AnimatedTabsContent,
   AnimatedTabsList,
   AnimatedTabsTrigger,
-} from "@/components/ui/animated-tabs";
+} from "@/components/ui/tabs";
 import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
 import { useMode } from "@/contexts/ModeContext";
 import { useNodeUnifiedStatusSSE } from "@/hooks/useSSE";

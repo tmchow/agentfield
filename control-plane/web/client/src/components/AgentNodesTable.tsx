@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp, ServerProxy, Time, Earth, Network_3 } from '@/components/ui/icon-bridge';
 import { getNodeDetails } from '../services/api';
-import StatusIndicator from './ui/status-indicator';
+import StatusIndicator from '@/components/status/UnifiedStatusIndicator';
 import ReasonersList from './ReasonersList';
 import SkillsList from './SkillsList';
 import { Skeleton } from '@/components/ui/skeleton';

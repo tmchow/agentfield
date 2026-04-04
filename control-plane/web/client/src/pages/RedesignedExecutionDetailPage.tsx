@@ -2,28 +2,19 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
 import { ExecutionDetailsLayout } from "../components/execution/ExecutionDetailsLayout";
-import { ExecutionHeader } from "../components/execution/ExecutionHeader";
+import { CompactExecutionHeader } from "../components/execution/CompactExecutionHeader";
 import { EnhancedDataPanel } from "../components/execution/EnhancedDataPanel";
 import { RedesignedErrorPanel } from "../components/execution/RedesignedErrorPanel";
 import { EnhancedNotesSection } from "../components/execution/EnhancedNotesSection";
 import { CollapsibleSection } from "../components/execution/CollapsibleSection";
 import { getExecutionDetails } from "../services/executionsApi";
-import { getExecutionVCStatus } from "../services/vcApi";
 import type { WorkflowExecution } from "../types/executions";
 import { Settings } from "@/components/ui/icon-bridge";
 
 export function RedesignedExecutionDetailPage() {
   const { executionId } = useParams<{ executionId: string }>();
   const [execution, setExecution] = useState<WorkflowExecution | null>(null);
-  const [vcStatus, setVcStatus] = useState<{
-    has_vc: boolean;
-    vc_id?: string;
-    status: string;
-    created_at?: string;
-    vc_document?: any;
-  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [vcLoading, setVcLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refreshExecution = async () => {
@@ -61,24 +52,6 @@ export function RedesignedExecutionDetailPage() {
     fetchExecution();
   }, [executionId]);
 
-  useEffect(() => {
-    if (!executionId) return;
-
-    const fetchVCStatus = async () => {
-      try {
-        setVcLoading(true);
-        const vcData = await getExecutionVCStatus(executionId);
-        setVcStatus(vcData);
-      } catch (err) {
-        console.error("Failed to fetch VC status:", err);
-        setVcStatus({ has_vc: false, status: "error" });
-      } finally {
-        setVcLoading(false);
-      }
-    };
-
-    fetchVCStatus();
-  }, [executionId]);
 
   if (loading) {
     return (
@@ -113,11 +86,12 @@ export function RedesignedExecutionDetailPage() {
   return (
     <ExecutionDetailsLayout>
       <div className="space-y-6">
-        {/* Enhanced Header with Critical Info */}
-        <ExecutionHeader
+        {/* Execution Header */}
+        <CompactExecutionHeader
           execution={execution}
-          vcStatus={vcStatus}
-          vcLoading={vcLoading}
+          activeTab="overview"
+          onTabChange={() => {}}
+          navigationTabs={[]}
         />
 
         {/* Main Content Sections */}
