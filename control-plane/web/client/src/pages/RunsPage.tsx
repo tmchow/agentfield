@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUp, ArrowDown, ArrowUpDown, Copy, Play } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useRuns, useCancelExecution } from "@/hooks/queries";
 import type { WorkflowSummary } from "@/types/workflows";
 import { normalizeExecutionStatus } from "@/utils/status";
@@ -23,6 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getExecutionDetails } from "@/services/executionsApi";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +85,53 @@ function StatusDot({ status }: { status: string }) {
     <div className="flex items-center gap-1.5">
       <div className={cn("size-1.5 rounded-full shrink-0", color)} />
       <span className="text-[11px]">{label}</span>
+    </div>
+  );
+}
+
+// ─── RunPreview ────────────────────────────────────────────────────────────────
+
+function RunPreview({ rootExecutionId }: { rootExecutionId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["run-preview", rootExecutionId],
+    queryFn: () => getExecutionDetails(rootExecutionId),
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="p-3 space-y-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+
+  const inputText = data?.input_data
+    ? JSON.stringify(data.input_data, null, 2).slice(0, 300)
+    : "—";
+  const outputText = data?.output_data
+    ? JSON.stringify(data.output_data, null, 2).slice(0, 300)
+    : "—";
+
+  return (
+    <div className="flex flex-col divide-y divide-border text-xs">
+      <div className="p-3">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+          Input
+        </p>
+        <pre className="font-mono text-[10px] text-muted-foreground max-h-24 overflow-auto whitespace-pre-wrap break-all">
+          {inputText}
+        </pre>
+      </div>
+      <div className="p-3">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+          Output
+        </p>
+        <pre className="font-mono text-[10px] text-muted-foreground max-h-24 overflow-auto whitespace-pre-wrap break-all">
+          {outputText}
+        </pre>
+      </div>
     </div>
   );
 }
@@ -428,13 +483,9 @@ export function RunsPage() {
               </TableHead>
               {/* Status first — most scannable */}
               <SortableHead column="status" label="Status" className="w-24" />
-              {/* Reasoner — what was called */}
+              {/* Target — agent.reasoner combined */}
               <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Reasoner
-              </TableHead>
-              {/* Agent — which node ran it */}
-              <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-                Agent
+                Target
               </TableHead>
               {/* Steps — complexity */}
               <SortableHead column="total_executions" label="Steps" className="w-20" />
@@ -451,20 +502,28 @@ export function RunsPage() {
           <TableBody>
             {loadingInitial ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-8 text-center text-muted-foreground text-xs">
+                <TableCell colSpan={7} className="p-8 text-center text-muted-foreground text-xs">
                   Loading runs…
                 </TableCell>
               </TableRow>
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-8 text-center text-destructive text-xs">
+                <TableCell colSpan={7} className="p-8 text-center text-destructive text-xs">
                   {error instanceof Error ? error.message : "Failed to load runs"}
                 </TableCell>
               </TableRow>
             ) : filteredRuns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-8 text-center text-muted-foreground text-xs">
-                  No runs found
+                <TableCell colSpan={7} className="p-8">
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Play className="size-8 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No runs found</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {timeRange !== "all"
+                        ? "Try expanding the time range"
+                        : "Execute a reasoner to create your first run"}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -510,8 +569,6 @@ interface RunRowProps {
 }
 
 function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
-  const shortId = run.run_id.length > 12 ? run.run_id.slice(0, 12) + "…" : run.run_id;
-
   const startedAt = run.started_at
     ? new Date(run.started_at).toLocaleString(undefined, {
         month: "short",
@@ -521,7 +578,8 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
       })
     : "—";
 
-  const agentLabel = run.agent_id || run.agent_name || "—";
+  const agentLabel = run.agent_id || run.agent_name || "";
+  const reasonerLabel = run.root_reasoner || run.display_name || "—";
 
   return (
     <TableRow
@@ -541,13 +599,30 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
       <TableCell className="px-3 py-1.5 w-24">
         <StatusDot status={run.status} />
       </TableCell>
-      {/* Reasoner */}
-      <TableCell className="px-3 py-1.5 text-xs font-medium">
-        {run.root_reasoner || run.display_name || "—"}
-      </TableCell>
-      {/* Agent */}
-      <TableCell className="px-3 py-1.5 text-[11px] text-muted-foreground font-mono truncate max-w-[120px]">
-        {agentLabel}
+      {/* Target: agent.reasoner with hover I/O preview */}
+      <TableCell className="px-3 py-1.5 max-w-[280px]" onClick={(e) => e.stopPropagation()}>
+        <HoverCard openDelay={300}>
+          <HoverCardTrigger asChild>
+            <span
+              className="text-xs font-medium font-mono truncate block cursor-pointer hover:underline underline-offset-2"
+              onClick={() => onRowClick(run)}
+            >
+              {agentLabel ? (
+                <>
+                  <span className="text-muted-foreground">{agentLabel}.</span>
+                  <span>{reasonerLabel}</span>
+                </>
+              ) : (
+                <span>{reasonerLabel}</span>
+              )}
+            </span>
+          </HoverCardTrigger>
+          {run.root_execution_id && (
+            <HoverCardContent className="w-96 p-0" side="bottom" align="start">
+              <RunPreview rootExecutionId={run.root_execution_id} />
+            </HoverCardContent>
+          )}
+        </HoverCard>
       </TableCell>
       {/* Steps */}
       <TableCell className="px-3 py-1.5 text-xs tabular-nums w-20">
@@ -561,9 +636,23 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
       <TableCell className="px-3 py-1.5 text-[11px] text-muted-foreground w-36">
         {startedAt}
       </TableCell>
-      {/* Run ID — de-emphasized, rightmost */}
-      <TableCell className="px-3 py-1.5 font-mono text-[11px] text-muted-foreground w-36">
-        {shortId}
+      {/* Run ID with copy button */}
+      <TableCell className="px-3 py-1.5 w-36">
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[80px]">
+            {run.run_id.slice(0, 12)}
+          </span>
+          <button
+            className="text-muted-foreground/50 hover:text-foreground transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(run.run_id);
+            }}
+            title="Copy Run ID"
+          >
+            <Copy className="size-2.5" />
+          </button>
+        </div>
       </TableCell>
     </TableRow>
   );
