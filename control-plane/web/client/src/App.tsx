@@ -1,4 +1,4 @@
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RootRedirect } from "./components/RootRedirect";
 import { ModeProvider } from "./contexts/ModeContext";
@@ -23,6 +23,11 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { queryClient } from "./lib/query-client";
 
+function NavigateToPlayground() {
+  const { reasonerId } = useParams();
+  return <Navigate to={`/playground/${reasonerId}`} replace />;
+}
+
 function AppContent() {
   useFocusManagement();
 
@@ -32,14 +37,6 @@ function AppContent() {
         <Route path="/" element={<RootRedirect />} />
         <Route path="/dashboard" element={<NewDashboardPage />} />
         <Route path="/dashboard/legacy" element={<EnhancedDashboardPage />} />
-        <Route path="/nodes" element={<NodesPage />} />
-        <Route path="/nodes/:nodeId" element={<NodeDetailPage />} />
-        <Route path="/reasoners/all" element={<AllReasonersPage />} />
-        <Route path="/reasoners/:fullReasonerId" element={<ReasonerDetailPage />} />
-        <Route path="/executions" element={<ExecutionsPage />} />
-        <Route path="/executions/:executionId" element={<EnhancedExecutionDetailPage />} />
-        <Route path="/workflows" element={<WorkflowsPage />} />
-        <Route path="/workflows/:workflowId" element={<EnhancedWorkflowDetailPage />} />
         <Route path="/settings" element={<NewSettingsPage />} />
         <Route path="/settings/observability-webhook" element={<Navigate to="/settings" replace />} />
         <Route path="/agents" element={<AgentsPage />} />
@@ -47,6 +44,20 @@ function AppContent() {
         <Route path="/runs/:runId" element={<div className="text-muted-foreground">Run Detail — coming soon</div>} />
         <Route path="/playground" element={<PlaygroundPage />} />
         <Route path="/playground/:reasonerId" element={<PlaygroundPage />} />
+
+        {/* Old → New redirects */}
+        <Route path="/executions" element={<Navigate to="/runs" replace />} />
+        <Route path="/executions/:executionId" element={<Navigate to="/runs" replace />} />
+        <Route path="/workflows" element={<Navigate to="/runs" replace />} />
+        <Route path="/workflows/:workflowId" element={<Navigate to="/runs" replace />} />
+        <Route path="/nodes" element={<Navigate to="/agents" replace />} />
+        <Route path="/nodes/:nodeId" element={<Navigate to="/agents" replace />} />
+        <Route path="/reasoners/all" element={<Navigate to="/agents" replace />} />
+        <Route path="/reasoners/:reasonerId" element={<NavigateToPlayground />} />
+        <Route path="/identity/dids" element={<Navigate to="/settings" replace />} />
+        <Route path="/identity/credentials" element={<Navigate to="/settings" replace />} />
+        <Route path="/authorization" element={<Navigate to="/settings" replace />} />
+        <Route path="/packages" element={<Navigate to="/settings" replace />} />
       </Route>
     </Routes>
   );
