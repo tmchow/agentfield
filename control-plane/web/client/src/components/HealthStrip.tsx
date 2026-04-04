@@ -43,9 +43,10 @@ export function HealthStrip({ className }: HealthStripProps) {
     },
   );
 
+  const llmLoading = llmHealth.isLoading;
   const llmOk = llmHealth.data
     ? !llmHealth.data.endpoints?.some((ep) => !ep.healthy)
-    : true;
+    : undefined;
 
   const nodes: AgentNodeSummary[] = agents.data?.nodes ?? [];
   const totalAgents = agents.data?.count ?? nodes.length;
@@ -75,7 +76,7 @@ export function HealthStrip({ className }: HealthStripProps) {
 
   const compactTriggerClass = cn(
     "h-8 gap-1.5 px-2 text-xs",
-    !llmOk && "border-destructive/50 text-destructive",
+    llmOk === false && "border-destructive/50 text-destructive",
   );
 
   return (
@@ -90,7 +91,7 @@ export function HealthStrip({ className }: HealthStripProps) {
                 variant="outline"
                 size="sm"
                 className={compactTriggerClass}
-                aria-label={`System status: LLM ${llmOk ? "healthy" : "degraded"}, ${onlineCount} of ${totalAgents} agents online, ${totalRunning} running, ${sseLabel}`}
+                aria-label={`System status: LLM ${llmOk === true ? "healthy" : llmOk === false ? "degraded" : "unknown"}, ${onlineCount} of ${totalAgents} agents online, ${totalRunning} running, ${sseLabel}`}
               >
                 <Activity className="size-3.5 shrink-0" aria-hidden />
                 <span className="tabular-nums text-muted-foreground">
@@ -115,23 +116,32 @@ export function HealthStrip({ className }: HealthStripProps) {
               </p>
               <ul className="space-y-2.5 text-sm">
                 <li className="flex items-start gap-2">
-                  {llmOk ? (
+                  {llmOk === true ? (
                     <CircleCheck
                       className="mt-0.5 size-4 shrink-0 text-green-500"
                       aria-hidden
                     />
-                  ) : (
+                  ) : llmOk === false ? (
                     <CircleAlert
                       className="mt-0.5 size-4 shrink-0 text-destructive"
+                      aria-hidden
+                    />
+                  ) : (
+                    <CircleAlert
+                      className="mt-0.5 size-4 shrink-0 text-amber-500"
                       aria-hidden
                     />
                   )}
                   <div>
                     <div className="font-medium">LLM</div>
                     <div className="text-xs text-muted-foreground">
-                      {llmOk
+                      {llmOk === true
                         ? "All LLM endpoints responding"
-                        : "One or more LLM endpoints are unhealthy"}
+                        : llmOk === false
+                          ? "One or more LLM endpoints are unhealthy"
+                          : llmLoading
+                            ? "Checking LLM health…"
+                            : "LLM health status unavailable"}
                     </div>
                   </div>
                 </li>
@@ -198,14 +208,19 @@ export function HealthStrip({ className }: HealthStripProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1 sm:gap-1.5">
-                {llmOk ? (
+                {llmOk === true ? (
                   <CircleCheck
                     className="size-3.5 shrink-0 text-green-500"
                     aria-hidden
                   />
-                ) : (
+                ) : llmOk === false ? (
                   <CircleAlert
                     className="size-3.5 shrink-0 text-destructive"
+                    aria-hidden
+                  />
+                ) : (
+                  <CircleAlert
+                    className="size-3.5 shrink-0 text-amber-500"
                     aria-hidden
                   />
                 )}
@@ -213,17 +228,21 @@ export function HealthStrip({ className }: HealthStripProps) {
                   LLM
                 </span>
                 <Badge
-                  variant={llmOk ? "secondary" : "destructive"}
+                  variant={llmOk === true ? "secondary" : llmOk === false ? "destructive" : "outline"}
                   className="h-5 px-1.5 text-micro"
                 >
-                  {llmOk ? "Healthy" : "Degraded"}
+                  {llmOk === true ? "Healthy" : llmOk === false ? "Degraded" : "Unknown"}
                 </Badge>
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              {llmOk
+              {llmOk === true
                 ? "All LLM endpoints responding"
-                : "One or more LLM endpoints are unhealthy"}
+                : llmOk === false
+                  ? "One or more LLM endpoints are unhealthy"
+                  : llmLoading
+                    ? "Checking LLM health…"
+                    : "LLM health status unavailable"}
             </TooltipContent>
           </Tooltip>
 

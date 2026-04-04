@@ -68,6 +68,10 @@ import {
   formatTruncatedFormattedJson,
 } from "@/components/ui/json-syntax-highlight";
 
+// ─── module-level singletons ──────────────────────────────────────────────────
+
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 /** Compact run id for tables: full id if short, else ellipsis + last `tail` chars. */
@@ -102,7 +106,6 @@ function formatRelativeStarted(
 ): string {
   const diff = Math.max(0, nowMs - startedMs);
   const s = Math.floor(diff / 1000);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
   if (liveGranular) {
     if (s < 8) return "just now";
@@ -576,6 +579,43 @@ function RunsPaginationBar({
   );
 }
 
+// ─── SortableHead ──────────────────────────────────────────────────────────────
+
+interface SortableHeadProps {
+  column: string;
+  label: string;
+  sortBy: string;
+  sortOrder: string;
+  onSortClick: (column: string) => void;
+  className?: string;
+}
+
+function SortableHead({ column, label, sortBy, sortOrder, onSortClick, className }: SortableHeadProps) {
+  const active = sortBy === column;
+  return (
+    <TableHead
+      className={cn(
+        "h-8 px-3 text-micro-plus font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
+        className,
+      )}
+      onClick={() => onSortClick(column)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {active ? (
+          sortOrder === "asc" ? (
+            <ArrowUp className="size-3 text-foreground" />
+          ) : (
+            <ArrowDown className="size-3 text-foreground" />
+          )
+        ) : (
+          <ArrowUpDown className="size-3 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  );
+}
+
 // ─── main component ────────────────────────────────────────────────────────────
 
 export function RunsPage() {
@@ -800,36 +840,6 @@ export function RunsPage() {
     [sortBy],
   );
 
-  // sortable header sub-component
-  const SortableHead = useCallback(
-    ({ column, label, className }: { column: string; label: string; className?: string }) => {
-      const active = sortBy === column;
-      return (
-        <TableHead
-          className={cn(
-            "h-8 px-3 text-micro-plus font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
-            className,
-          )}
-          onClick={() => handleSortClick(column)}
-        >
-          <div className="flex items-center gap-1">
-            {label}
-            {active ? (
-              sortOrder === "asc" ? (
-                <ArrowUp className="size-3 text-foreground" />
-              ) : (
-                <ArrowDown className="size-3 text-foreground" />
-              )
-            ) : (
-              <ArrowUpDown className="size-3 opacity-30" />
-            )}
-          </div>
-        </TableHead>
-      );
-    },
-    [sortBy, sortOrder, handleSortClick],
-  );
-
   return (
     <div className={cn("space-y-3", selected.size > 0 && "pb-24")}>
       {/* Page heading */}
@@ -928,7 +938,7 @@ export function RunsPage() {
                 />
               </TableHead>
               {/* Status first — most scannable */}
-              <SortableHead column="status" label="Status" className="w-24" />
+              <SortableHead column="status" label="Status" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-24" />
               {/* Target + short run id (full id via copy) */}
               <TableHead
                 className="h-8 px-3 text-micro-plus font-medium text-muted-foreground min-w-0"
@@ -943,11 +953,11 @@ export function RunsPage() {
                 </span>
               </TableHead>
               {/* Steps — complexity */}
-              <SortableHead column="total_executions" label="Steps" className="w-20" />
+              <SortableHead column="total_executions" label="Steps" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-20" />
               {/* Duration — performance */}
-              <SortableHead column="duration_ms" label="Duration" className="w-24" />
+              <SortableHead column="duration_ms" label="Duration" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-24" />
               {/* Started — when (relative) */}
-              <SortableHead column="latest_activity" label="Started" className="min-w-[9.5rem] w-44" />
+              <SortableHead column="latest_activity" label="Started" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="min-w-[9.5rem] w-44" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1055,16 +1065,20 @@ export function RunsPage() {
                   className="h-8 text-xs"
                   disabled={cancelMutation.isPending}
                   onClick={async () => {
-                    for (const runId of selected) {
-                      const run = filteredRuns.find((r) => r.run_id === runId);
-                      if (
-                        run?.root_execution_id &&
-                        (run.status === "running" || run.status === "pending")
-                      ) {
-                        await cancelMutation.mutateAsync(run.root_execution_id);
+                    try {
+                      for (const runId of selected) {
+                        const run = filteredRuns.find((r) => r.run_id === runId);
+                        if (
+                          run?.root_execution_id &&
+                          (run.status === "running" || run.status === "pending")
+                        ) {
+                          await cancelMutation.mutateAsync(run.root_execution_id);
+                        }
                       }
+                      setSelected(new Set());
+                    } catch (err) {
+                      console.error('Bulk cancel failed:', err);
                     }
-                    setSelected(new Set());
                   }}
                 >
                   Cancel running
@@ -1095,7 +1109,15 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
     <TableRow
       className="cursor-pointer"
       data-state={isSelected ? "selected" : undefined}
+      tabIndex={0}
+      role="link"
       onClick={() => onRowClick(run)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onRowClick(run);
+        }
+      }}
     >
       {/* Checkbox */}
       <TableCell className="px-3 py-1.5 w-10" onClick={(e) => onToggleSelect(run.run_id, e)}>

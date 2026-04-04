@@ -72,10 +72,10 @@ export class Image {
   /**
    * Create Image from a URL.
    */
-  static async fromUrl(
+  static fromUrl(
     url: string,
     detail: 'low' | 'high' | 'auto' = 'high'
-  ): Promise<Image> {
+  ): Image {
     return new Image({ url, detail });
   }
 
@@ -129,7 +129,7 @@ export class Audio {
     const ext = getExtension(absolutePath).toLowerCase().replace('.', '');
     const audioFormat =
       format ||
-      (ext in ['wav', 'mp3', 'flac', 'ogg'] ? (ext as 'wav' | 'mp3' | 'flac' | 'ogg') : 'wav');
+      (['wav', 'mp3', 'flac', 'ogg'].includes(ext) ? (ext as 'wav' | 'mp3' | 'flac' | 'ogg') : 'wav');
 
     // Read file and encode to base64
     const buffer = await readFile(absolutePath);
@@ -213,7 +213,7 @@ export class File {
   /**
    * Create File from a URL.
    */
-  static async fromUrl(url: string, mimeType?: string): Promise<File> {
+  static fromUrl(url: string, mimeType?: string): File {
     return new File({ url, mimeType });
   }
 
@@ -304,10 +304,10 @@ export async function imageFromFile(
 /**
  * Create image content from a URL.
  */
-export async function imageFromUrl(
+export function imageFromUrl(
   url: string,
   detail: 'low' | 'high' | 'auto' = 'high'
-): Promise<Image> {
+): Image {
   return Image.fromUrl(url, detail);
 }
 
@@ -316,7 +316,7 @@ export async function imageFromUrl(
  */
 export async function imageFromBuffer(
   buffer: Buffer | Uint8Array,
-  mimeType?: string,
+  mimeType: string = 'image/jpeg',
   detail: 'low' | 'high' | 'auto' = 'high'
 ): Promise<Image> {
   return Image.fromBuffer(buffer, mimeType, detail);
@@ -383,7 +383,7 @@ export async function fileFromPath(filePath: string, mimeType?: string): Promise
 /**
  * Create file content from a URL.
  */
-export async function fileFromUrl(url: string, mimeType?: string): Promise<File> {
+export function fileFromUrl(url: string, mimeType?: string): File {
   return File.fromUrl(url, mimeType);
 }
 

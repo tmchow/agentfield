@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { RunTrace, buildTraceTree, formatDuration } from "@/components/RunTrace";
 import { StepDetail } from "@/components/StepDetail";
 import { WorkflowDAGViewer } from "@/components/WorkflowDAG";
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import type {
   WebhookFailurePreview,
   WebhookRunSummary,
@@ -793,16 +794,18 @@ export function RunDetailPage() {
                     flex: "1 1 0%",
                   }}
                 >
-                  <WorkflowDAGViewer
-                    key={runId}
-                    className="h-full min-h-0 flex-1"
-                    workflowId={dag.root_workflow_id || runId || ""}
-                    dagData={dag}
-                    selectedNodeIds={selectedStepId ? [selectedStepId] : undefined}
-                    onExecutionClick={(execution) =>
-                      setSelectedStepId(execution.execution_id)
-                    }
-                  />
+                  <ErrorBoundary>
+                    <WorkflowDAGViewer
+                      key={runId}
+                      className="h-full min-h-0 flex-1"
+                      workflowId={dag.root_workflow_id || runId || ""}
+                      dagData={dag}
+                      selectedNodeIds={selectedStepId ? [selectedStepId] : undefined}
+                      onExecutionClick={(execution) =>
+                        setSelectedStepId(execution.execution_id)
+                      }
+                    />
+                  </ErrorBoundary>
                 </div>
               ) : (
                 <div className="min-h-0 min-w-0 flex-1 overflow-hidden">

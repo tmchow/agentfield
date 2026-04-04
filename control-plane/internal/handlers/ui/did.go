@@ -2,6 +2,7 @@ package ui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -220,12 +221,8 @@ func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 		return
 	}
 
-	// DEBUG: Log the execution ID being requested
-	fmt.Printf("DEBUG: GetExecutionVCStatusHandler called for execution_id: %s\n", executionID)
-
 	// If VC service is not available, return empty response
 	if h.vcService == nil {
-		fmt.Printf("DEBUG: VC service is nil for execution_id: %s\n", executionID)
 		c.JSON(http.StatusOK, gin.H{
 			"has_vc":     false,
 			"status":     "none",
@@ -236,7 +233,6 @@ func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 
 	executionVC, err := h.vcService.GetExecutionVCByExecutionID(executionID)
 	if err != nil {
-		fmt.Printf("DEBUG: Execution VC lookup failed for %s: %v\n", executionID, err)
 		c.JSON(http.StatusOK, gin.H{
 			"has_vc":     false,
 			"status":     "none",
@@ -245,16 +241,12 @@ func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("DEBUG: Found VC for execution_id %s: vc_id=%s, status=%s, vc_document_type=%T\n",
-		executionID, executionVC.VCID, executionVC.Status, executionVC.VCDocument)
-
 	var vcDocumentForResponse interface{}
 	documentStatus := executionVC.Status
 
 	if len(executionVC.VCDocument) > 0 {
 		var parsed interface{}
 		if err := json.Unmarshal(executionVC.VCDocument, &parsed); err != nil {
-			fmt.Printf("DEBUG: VC document parsing failed for %s: %v\n", executionID, err)
 			vcDocumentForResponse = map[string]interface{}{
 				"parse_error": true,
 				"error":       err.Error(),
@@ -264,7 +256,6 @@ func (h *DIDHandler) GetExecutionVCStatusHandler(c *gin.Context) {
 			documentStatus = "malformed"
 		} else {
 			vcDocumentForResponse = parsed
-			fmt.Printf("DEBUG: VC document is valid JSON (%d bytes)\n", len(executionVC.VCDocument))
 		}
 	} else if executionVC.StorageURI != "" {
 		vcDocumentForResponse = map[string]interface{}{
@@ -302,26 +293,20 @@ func (h *DIDHandler) GetExecutionVCHandler(c *gin.Context) {
 		return
 	}
 
-	// DEBUG: Log the execution ID being requested
-	fmt.Printf("DEBUG: GetExecutionVCHandler called for execution_id: %s\n", executionID)
-
 	// If VC service is not available, return error
 	if h.vcService == nil {
-		fmt.Printf("DEBUG: VC service is nil for execution_id: %s\n", executionID)
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "VC service not available"})
 		return
 	}
 
 	executionVC, err := h.vcService.GetExecutionVCByExecutionID(executionID)
 	if err != nil {
-		fmt.Printf("DEBUG: No VC found for execution_id: %s (err=%v)\n", executionID, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "VC not found for this execution"})
 		return
 	}
 
 	if len(executionVC.VCDocument) == 0 {
 		if executionVC.StorageURI == "" {
-			fmt.Printf("DEBUG: VC document is empty for execution_id: %s\n", executionID)
 			c.JSON(http.StatusNotFound, gin.H{"error": "VC document not found or empty"})
 			return
 		}
@@ -489,7 +474,12 @@ func (h *DIDHandler) VerifyAuditBundleHandler(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, afcli.MaxVerifyAuditBodyBytes)
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body", "details": err.Error()})
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "request body too large", "max_bytes": afcli.MaxVerifyAuditBodyBytes})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		}
 		return
 	}
 	if len(body) == 0 {
@@ -503,6 +493,10 @@ func (h *DIDHandler) VerifyAuditBundleHandler(c *gin.Context) {
 		Verbose:      c.Query("verbose") == "true",
 	}
 	result := afcli.VerifyProvenanceJSON(body, opts)
+	if !result.FormatValid {
+		c.JSON(http.StatusUnprocessableEntity, result)
+		return
+	}
 	c.JSON(http.StatusOK, result)
 }
 

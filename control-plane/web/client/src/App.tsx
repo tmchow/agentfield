@@ -26,6 +26,7 @@ import { AccessManagementPage } from "./pages/AccessManagementPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { queryClient } from "./lib/query-client";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function NavigateToPlayground() {
   const { reasonerId } = useParams();
@@ -83,9 +84,11 @@ function App() {
         <ModeProvider>
           <AuthProvider>
             <AuthGuard>
-              <Router basename={import.meta.env.VITE_BASE_PATH || "/ui"}>
-                <AppContent />
-              </Router>
+              <ErrorBoundary>
+                <Router basename={import.meta.env.VITE_BASE_PATH || "/ui"}>
+                  <AppContent />
+                </Router>
+              </ErrorBoundary>
             </AuthGuard>
           </AuthProvider>
         </ModeProvider>

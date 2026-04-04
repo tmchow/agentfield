@@ -18,6 +18,7 @@ interface State {
   error: Error | null;
   errorInfo: ErrorInfo | null;
   errorId: string;
+  resetCount: number;
 }
 
 /**
@@ -33,7 +34,8 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      errorId: ''
+      errorId: '',
+      resetCount: 0
     };
   }
 
@@ -58,10 +60,12 @@ export class ErrorBoundary extends Component<Props, State> {
     // Call optional error handler
     this.props.onError?.(error, errorInfo);
 
-    // Auto-reset after 30 seconds for transient errors
-    this.resetTimeoutId = window.setTimeout(() => {
-      this.handleReset();
-    }, 30000);
+    // Auto-reset after 30 seconds for transient errors, limited to one attempt
+    if (this.state.resetCount < 1) {
+      this.resetTimeoutId = window.setTimeout(() => {
+        this.setState({ hasError: false, error: null, resetCount: this.state.resetCount + 1 });
+      }, 30000);
+    }
   }
 
   componentDidUpdate(prevProps: Props) {

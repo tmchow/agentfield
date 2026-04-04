@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -181,7 +182,12 @@ func (h *DIDHandlers) VerifyAuditBundle(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, afcli.MaxVerifyAuditBodyBytes)
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body", "details": err.Error()})
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "request body too large", "max_bytes": afcli.MaxVerifyAuditBodyBytes})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		}
 		return
 	}
 	if len(body) == 0 {
@@ -195,6 +201,10 @@ func (h *DIDHandlers) VerifyAuditBundle(c *gin.Context) {
 		Verbose:      c.Query("verbose") == "true",
 	}
 	result := afcli.VerifyProvenanceJSON(body, opts)
+	if !result.FormatValid {
+		c.JSON(http.StatusUnprocessableEntity, result)
+		return
+	}
 	c.JSON(http.StatusOK, result)
 }
 

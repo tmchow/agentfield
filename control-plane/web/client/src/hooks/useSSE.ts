@@ -19,6 +19,8 @@ interface SSEOptions {
   onConnectionChange?: (connected: boolean) => void;
   /** Callback for errors */
   onError?: (error: Event) => void;
+  /** Whether to accumulate events in the events array (default: false) */
+  trackEvents?: boolean;
 }
 
 /**
@@ -66,6 +68,8 @@ export function useSSE<T = any>(
     onConnectionChange,
     onError
   } = options;
+
+  const trackEvents = options?.trackEvents ?? false;
 
   const [state, setState] = useState<SSEState>({
     connected: false,
@@ -157,7 +161,7 @@ export function useSSE<T = any>(
       let actualEventType = eventType;
       if (data.type && typeof data.type === 'string') {
         actualEventType = data.type;
-        console.log('🔍 SSE: Extracted event type from data:', actualEventType);
+        if (import.meta.env.DEV) console.log('🔍 SSE: Extracted event type from data:', actualEventType);
       }
 
       const sseEvent: SSEEvent<T> = {
@@ -167,9 +171,11 @@ export function useSSE<T = any>(
         id: event.lastEventId || undefined
       };
 
-      console.log('🔄 SSE: Processing event:', { type: actualEventType, hasData: !!data });
+      if (import.meta.env.DEV) console.log('🔄 SSE: Processing event:', { type: actualEventType, hasData: !!data });
       setLatestEvent(sseEvent);
-      setEvents(prev => [...prev.slice(-99), sseEvent]); // Keep last 100 events
+      if (trackEvents) {
+        setEvents(prev => [...prev.slice(-99), sseEvent]); // Keep last 100 events
+      }
     } catch (error) {
       console.warn('🚨 SSE: Failed to parse event data:', error, 'Raw data:', event.data);
     }
@@ -181,7 +187,7 @@ export function useSSE<T = any>(
   const connect = useCallback(() => {
     if (!url || !mountedRef.current) return;
 
-    console.log('🔄 SSE: connect() called for URL:', url);
+    if (import.meta.env.DEV) console.log('🔄 SSE: connect() called for URL:', url);
     closeConnection();
 
     try {
@@ -194,12 +200,12 @@ export function useSSE<T = any>(
 
       const eventSource = new EventSource(finalUrl);
       eventSourceRef.current = eventSource;
-      console.log('🔌 SSE: EventSource created for URL:', finalUrl);
+      if (import.meta.env.DEV) console.log('🔌 SSE: EventSource created for URL:', finalUrl);
 
       eventSource.onopen = () => {
         if (!mountedRef.current) return;
 
-        console.log('✅ SSE: Connection opened for URL:', url);
+        if (import.meta.env.DEV) console.log('✅ SSE: Connection opened for URL:', url);
         setState(prev => ({
           ...prev,
           connected: true,
@@ -214,7 +220,7 @@ export function useSSE<T = any>(
       eventSource.onerror = (error) => {
         if (!mountedRef.current) return;
 
-        console.log('❌ SSE: Connection error for URL:', url, error);
+        if (import.meta.env.DEV) console.log('❌ SSE: Connection error for URL:', url, error);
         setState(prev => ({
           ...prev,
           connected: false,
@@ -227,7 +233,7 @@ export function useSSE<T = any>(
         // Only attempt reconnect if the connection was previously established
         // or if this is not a permanent failure
         if (eventSource.readyState === EventSource.CLOSED) {
-          console.log('🔄 SSE: Attempting reconnect for URL:', url);
+          if (import.meta.env.DEV) console.log('🔄 SSE: Attempting reconnect for URL:', url);
           attemptReconnect();
         }
       };
@@ -277,20 +283,20 @@ export function useSSE<T = any>(
 
   // Initialize connection when URL changes
   useEffect(() => {
-    console.log('🚀 SSE: Main useEffect triggered for URL:', url, 'Connected:', state.connected);
+    if (import.meta.env.DEV) console.log('🚀 SSE: Main useEffect triggered for URL:', url, 'Connected:', state.connected);
     if (url && !state.connected && !eventSourceRef.current) {
-      console.log('🔗 SSE: Calling connect() for URL:', url);
+      if (import.meta.env.DEV) console.log('🔗 SSE: Calling connect() for URL:', url);
       connect();
     } else if (!url) {
-      console.log('🔌 SSE: No URL, closing connection');
+      if (import.meta.env.DEV) console.log('🔌 SSE: No URL, closing connection');
       closeConnection();
       setState(prev => ({ ...prev, connected: false }));
     } else {
-      console.log('🔄 SSE: Skipping connect - already connected or connecting');
+      if (import.meta.env.DEV) console.log('🔄 SSE: Skipping connect - already connected or connecting');
     }
 
     return () => {
-      console.log('🧹 SSE: Cleanup called for URL:', url);
+      if (import.meta.env.DEV) console.log('🧹 SSE: Cleanup called for URL:', url);
       closeConnection();
     };
   }, [url]); // Only depend on URL changes, not the functions

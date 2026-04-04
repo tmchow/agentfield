@@ -76,34 +76,40 @@ func VerifyProvenanceJSON(vcData []byte, options VerifyOptions) VCVerificationRe
 	didResolutions := make(map[string]DIDResolutionInfo)
 	resolvedCount := 0
 
-	for _, did := range uniqueDIDs {
-		resolution, err := resolveDID(did, enhancedChain.DIDResolutionBundle, options)
-		didResult := DIDResolutionResult{
-			DID:    did,
-			Method: getDIDMethod(did),
-		}
-
-		if err != nil {
-			didResult.Success = false
-			didResult.Error = err.Error()
-		} else {
-			didResult.Success = true
-			didResult.ResolvedFrom = resolution.ResolvedFrom
-			if resolution.WebURL != "" {
-				didResult.WebURL = resolution.WebURL
+	if len(uniqueDIDs) == 0 {
+		step4.Success = true
+		step4.Details = "No DIDs to resolve"
+		result.VerificationSteps = append(result.VerificationSteps, step4)
+	} else {
+		for _, did := range uniqueDIDs {
+			resolution, err := resolveDID(did, enhancedChain.DIDResolutionBundle, options)
+			didResult := DIDResolutionResult{
+				DID:    did,
+				Method: getDIDMethod(did),
 			}
-			didResolutions[did] = resolution
-			resolvedCount++
-		}
-		result.DIDResolutions = append(result.DIDResolutions, didResult)
-	}
 
-	step4.Success = resolvedCount > 0
-	step4.Details = fmt.Sprintf("Resolved %d/%d DIDs", resolvedCount, len(uniqueDIDs))
-	if resolvedCount == 0 {
-		step4.Error = "Failed to resolve any DIDs"
+			if err != nil {
+				didResult.Success = false
+				didResult.Error = err.Error()
+			} else {
+				didResult.Success = true
+				didResult.ResolvedFrom = resolution.ResolvedFrom
+				if resolution.WebURL != "" {
+					didResult.WebURL = resolution.WebURL
+				}
+				didResolutions[did] = resolution
+				resolvedCount++
+			}
+			result.DIDResolutions = append(result.DIDResolutions, didResult)
+		}
+
+		step4.Success = resolvedCount > 0
+		step4.Details = fmt.Sprintf("Resolved %d/%d DIDs", resolvedCount, len(uniqueDIDs))
+		if resolvedCount == 0 {
+			step4.Error = "Failed to resolve any DIDs"
+		}
+		result.VerificationSteps = append(result.VerificationSteps, step4)
 	}
-	result.VerificationSteps = append(result.VerificationSteps, step4)
 
 	step5 := VerificationStep{Step: 5, Description: "Performing comprehensive verification"}
 	enhancedVerifier := NewEnhancedVCVerifier(didResolutions, options.Verbose)
@@ -116,6 +122,7 @@ func VerifyProvenanceJSON(vcData []byte, options VerifyOptions) VCVerificationRe
 		totalSignatures++
 	}
 
+	validCount := 0
 	for _, compResult := range comprehensiveResult.ComponentResults {
 		if compResult.SignatureValid {
 			validSignatures++
@@ -133,6 +140,9 @@ func VerifyProvenanceJSON(vcData []byte, options VerifyOptions) VCVerificationRe
 			Error:          compResult.Error,
 		}
 		result.ComponentResults = append(result.ComponentResults, legacyResult)
+		if compResult.Valid {
+			validCount++
+		}
 	}
 
 	step5.Success = comprehensiveResult.Valid
@@ -175,7 +185,7 @@ func VerifyProvenanceJSON(vcData []byte, options VerifyOptions) VCVerificationRe
 
 	result.Summary = VerificationSummary{
 		TotalComponents: len(enhancedChain.ExecutionVCs),
-		ValidComponents: len(result.ComponentResults),
+		ValidComponents: validCount,
 		TotalDIDs:       len(uniqueDIDs),
 		ResolvedDIDs:    resolvedCount,
 		TotalSignatures: totalSignatures,
@@ -293,9 +303,9 @@ func mergeDIDBundle(
 	existing map[string]DIDResolutionInfo,
 	entries map[string]types.DIDResolutionEntry,
 ) map[string]DIDResolutionInfo {
-	out := existing
-	if out == nil {
-		out = make(map[string]DIDResolutionInfo)
+	out := make(map[string]DIDResolutionInfo, len(existing)+len(entries))
+	for k, v := range existing {
+		out[k] = v
 	}
 	for did, ent := range entries {
 		var jwk map[string]interface{}
