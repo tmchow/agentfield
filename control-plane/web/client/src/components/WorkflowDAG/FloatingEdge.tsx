@@ -1,4 +1,4 @@
-import { getBezierPath, useInternalNode, EdgeLabelRenderer } from "@xyflow/react";
+import { getBezierPath, useInternalNode, EdgeLabelRenderer, Position } from "@xyflow/react";
 import { normalizeExecutionStatus } from "../../utils/status";
 import { getEdgeParams } from "./EdgeUtils";
 
@@ -8,6 +8,12 @@ interface FloatingEdgeProps {
   target: string;
   markerEnd?: string;
   style?: React.CSSProperties;
+  // React Flow always injects these default handle coords — use them as fallback
+  // when the internal node isn't measured yet.
+  sourceX?: number;
+  sourceY?: number;
+  targetX?: number;
+  targetY?: number;
   data?: {
     status?: string;
     duration?: number;
@@ -16,18 +22,25 @@ interface FloatingEdgeProps {
   };
 }
 
-function FloatingEdge({ id, source, target, style = {}, data }: FloatingEdgeProps) {
+function FloatingEdge({ id, source, target, style = {}, data, sourceX = 0, sourceY = 0, targetX = 0, targetY = 0 }: FloatingEdgeProps) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
 
-  if (!sourceNode || !targetNode) {
-    return null;
-  }
+  // Derive path coordinates: prefer floating intersection math when both
+  // internal nodes are available (gives cleaner edge routing), otherwise fall
+  // back to the default handle positions React Flow injects so edges are
+  // visible even before the first layout/measure cycle completes.
+  let sx: number, sy: number, tx: number, ty: number;
+  let sourcePos: Position, targetPos: Position;
 
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
-    sourceNode,
-    targetNode,
-  );
+  if (sourceNode && targetNode) {
+    const params = getEdgeParams(sourceNode, targetNode);
+    sx = params.sx; sy = params.sy; tx = params.tx; ty = params.ty;
+    sourcePos = params.sourcePos; targetPos = params.targetPos;
+  } else {
+    sx = sourceX; sy = sourceY; tx = targetX; ty = targetY;
+    sourcePos = Position.Bottom; targetPos = Position.Top;
+  }
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX: sx,
@@ -123,8 +136,8 @@ function FloatingEdge({ id, source, target, style = {}, data }: FloatingEdgeProp
     edgeStyle.filter = `${edgeStyle.filter || ''} drop-shadow(0 0 6px color-mix(in srgb, var(--status-info) 40%, transparent))`.trim();
   }
 
-  // Enhanced marker end
-  const markerKey = canonicalStatus;
+  // Use edge id in marker id to avoid duplicate-id conflicts across edges
+  const markerKey = `${id}-${canonicalStatus}`;
   const enhancedMarkerEnd = `url(#arrowclosed-${markerKey})`;
   const strokeColor = (edgeStyle.stroke as string) || "var(--muted-foreground)";
 

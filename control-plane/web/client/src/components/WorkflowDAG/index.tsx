@@ -168,6 +168,7 @@ function WorkflowDAGViewerInner({
   onSearchResultsChange,
   viewMode = "standard",
   onLayoutInfoChange,
+  onExecutionClick,
 }: WorkflowDAGViewerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
@@ -775,14 +776,19 @@ function decorateEdgesWithStatus(
     durationStats,
   ]);
 
-  // Handle node click to open sidebar - properly memoized
+  // Handle node click — delegate to parent via onExecutionClick when provided,
+  // otherwise fall back to the internal NodeDetailSidebar (legacy usage).
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       const nodeData = node.data as unknown as WorkflowDAGNode;
-      setSelectedNode(nodeData);
-      setSidebarOpen(true);
+      if (onExecutionClick && nodeData) {
+        onExecutionClick(nodeData);
+      } else {
+        setSelectedNode(nodeData);
+        setSidebarOpen(true);
+      }
     },
-    []
+    [onExecutionClick]
   );
 
   // Handle sidebar close
@@ -1212,15 +1218,18 @@ function decorateEdgesWithStatus(
   // Handler for DeckGL node clicks - convert DeckGL node type to local type
   const handleDeckNodeClick = useCallback(
     (node: any) => {
-      // Ensure workflow_id is set
       const localNode: WorkflowDAGNode = {
         ...node,
         workflow_id: node.workflow_id || workflowId,
       };
-      setSelectedNode(localNode);
-      setSidebarOpen(true);
+      if (onExecutionClick && localNode) {
+        onExecutionClick(localNode);
+      } else {
+        setSelectedNode(localNode);
+        setSidebarOpen(true);
+      }
     },
-    [workflowId]
+    [onExecutionClick, workflowId]
   );
 
   // Handler for DeckGL node hover
@@ -1285,12 +1294,14 @@ function decorateEdgesWithStatus(
           </div>
         </div>
 
-        {/* Node Detail Sidebar */}
-        <NodeDetailSidebar
-          node={selectedNode}
-          isOpen={sidebarOpen}
-          onClose={handleCloseSidebar}
-        />
+        {/* Node Detail Sidebar — only used when no parent onExecutionClick handler */}
+        {!onExecutionClick && (
+          <NodeDetailSidebar
+            node={selectedNode}
+            isOpen={sidebarOpen}
+            onClose={handleCloseSidebar}
+          />
+        )}
       </div>
     );
   }
@@ -1372,12 +1383,14 @@ function decorateEdgesWithStatus(
         </div>
       </div>
 
-      {/* Node Detail Sidebar - Rendered at root level with high z-index */}
-      <NodeDetailSidebar
-        node={selectedNode}
-        isOpen={sidebarOpen}
-        onClose={handleCloseSidebar}
-      />
+      {/* Node Detail Sidebar — only used when no parent onExecutionClick handler */}
+      {!onExecutionClick && (
+        <NodeDetailSidebar
+          node={selectedNode}
+          isOpen={sidebarOpen}
+          onClose={handleCloseSidebar}
+        />
+      )}
     </div>
   );
 }
