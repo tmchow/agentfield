@@ -14,14 +14,9 @@ import { EnhancedExecutionDetailPage } from "./pages/EnhancedExecutionDetailPage
 import { EnhancedWorkflowDetailPage } from "./pages/EnhancedWorkflowDetailPage";
 import { NodeDetailPage } from "./pages/NodeDetailPage";
 import { NodesPage } from "./pages/NodesPage";
-import { PackagesPage } from "./pages/PackagesPage";
 import { ReasonerDetailPage } from "./pages/ReasonerDetailPage.tsx";
 import { WorkflowsPage } from "./pages/WorkflowsPage.tsx";
-import { WorkflowDeckGLTestPage } from "./pages/WorkflowDeckGLTestPage";
-import { DIDExplorerPage } from "./pages/DIDExplorerPage";
-import { CredentialsPage } from "./pages/CredentialsPage";
 import { ObservabilityWebhookSettingsPage } from "./pages/ObservabilityWebhookSettingsPage";
-import { AuthorizationPage } from "./pages/AuthorizationPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 
@@ -31,10 +26,10 @@ function AgentsPage() {
   return (
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
-        <h2 className="text-heading-1 mb-2">
+        <h2 className="text-2xl font-semibold tracking-tight mb-2">
           My Agents
         </h2>
-        <p className="text-body">
+        <p className="text-sm">
           Your configured and running agents
         </p>
       </div>
@@ -46,10 +41,10 @@ function SettingsPage() {
   return (
     <div className="flex items-center justify-center h-64">
       <div className="text-center">
-        <h2 className="text-heading-1 mb-2">
+        <h2 className="text-2xl font-semibold tracking-tight mb-2">
           Settings
         </h2>
-        <p className="text-body">
+        <p className="text-sm">
           System configuration and preferences
         </p>
       </div>
@@ -94,14 +89,9 @@ function AppContent() {
                 path="/workflows/:workflowId"
                 element={<EnhancedWorkflowDetailPage />}
               />
-              <Route path="/packages" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><PackagesPage /></div>} />
               <Route path="/settings" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><SettingsPage /></div>} />
               <Route path="/agents" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AgentsPage /></div>} />
-              <Route path="/identity/dids" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><DIDExplorerPage /></div>} />
-              <Route path="/identity/credentials" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><CredentialsPage /></div>} />
               <Route path="/settings/observability-webhook" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><ObservabilityWebhookSettingsPage /></div>} />
-              <Route path="/authorization" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><AuthorizationPage /></div>} />
-              <Route path="/test/deckgl" element={<div className="p-4 md:p-6 lg:p-8 min-h-full"><WorkflowDeckGLTestPage /></div>} />
             </Routes>
           </main>
         </SidebarInset>
