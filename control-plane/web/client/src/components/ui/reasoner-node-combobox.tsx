@@ -159,37 +159,37 @@ export function ReasonerNodeCombobox({
           aria-label="Select agent node and skill"
           disabled={disabled || loading}
           className={cn(
-            "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+            "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm ring-offset-background",
             "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+            "disabled:cursor-not-allowed disabled:opacity-50",
             !selected && "text-muted-foreground",
             className
           )}
         >
-          <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-left">
+          <span className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-hidden text-left">
             {selected ? (
               <>
                 <span
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-muted-foreground"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-muted-foreground"
                   aria-hidden
                 >
                   <AgentNodeIcon className="size-3.5 shrink-0" />
                 </span>
-                <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
-                  <span className="truncate font-mono text-xs text-muted-foreground">
+                <span className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
+                  <span className="min-w-0 shrink truncate font-mono text-xs text-muted-foreground">
                     {selected.node_id}
                   </span>
                   <span className="shrink-0 text-muted-foreground" aria-hidden>
                     ·
                   </span>
-                  <span className="flex min-w-0 items-center gap-1.5 truncate">
+                  <span className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
                     <span
                       className="flex size-6 shrink-0 items-center justify-center rounded border border-border/80 bg-background text-muted-foreground"
                       aria-hidden
                     >
                       <ReasonerIcon className="size-3 shrink-0" />
                     </span>
-                    <span className="truncate font-medium text-foreground">
+                    <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                       {selected.name}
                     </span>
                   </span>

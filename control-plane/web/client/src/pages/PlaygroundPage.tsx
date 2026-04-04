@@ -338,26 +338,28 @@ export function PlaygroundPage() {
       </div>
 
       {/* ── Agent node · skill selector ─────────────────────────────────── */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Reasoner / skill:
         </span>
-        <ReasonerNodeCombobox
-          reasoners={reasonersData?.reasoners ?? []}
-          value={selectedId}
-          onValueChange={handleReasonerChange}
-          disabled={
-            loadingReasoners ||
-            (reasonersData?.reasoners?.length ?? 0) === 0
-          }
-          loading={loadingReasoners}
-          className="w-[min(100%,24rem)] max-w-md"
-          placeholder={
-            !loadingReasoners && (reasonersData?.reasoners?.length ?? 0) === 0
-              ? "No skills available"
-              : "Select agent node · skill"
-          }
-        />
+        <div className="min-w-0 w-full max-w-md sm:w-[min(100%,24rem)] sm:flex-1">
+          <ReasonerNodeCombobox
+            reasoners={reasonersData?.reasoners ?? []}
+            value={selectedId}
+            onValueChange={handleReasonerChange}
+            disabled={
+              loadingReasoners ||
+              (reasonersData?.reasoners?.length ?? 0) === 0
+            }
+            loading={loadingReasoners}
+            className="w-full"
+            placeholder={
+              !loadingReasoners && (reasonersData?.reasoners?.length ?? 0) === 0
+                ? "No skills available"
+                : "Select agent node · skill"
+            }
+          />
+        </div>
 
         {selectedReasoner && (
           <Badge variant="secondary" className="text-xs font-mono">
