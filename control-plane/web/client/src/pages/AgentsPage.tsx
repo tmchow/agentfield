@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { EndpointKindIconBox } from "@/components/ui/endpoint-kind-icon-box";
+import { EntityTag } from "@/components/ui/entity-tag";
 import {
   AgentNodeIcon,
   ChevronRight,
@@ -226,12 +227,12 @@ function NodeReasonerList({ nodeId, reasonerCount, skillCount }: NodeReasonerLis
             <>
               {showSectionLabels && (
                 <div
-                  className="sticky top-0 z-[1] flex items-center gap-2 bg-muted/30 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground backdrop-blur-sm"
+                  className="sticky top-0 z-[1] flex items-center gap-2 bg-muted/30 px-3 py-1.5 text-micro-plus font-medium uppercase tracking-wide text-muted-foreground backdrop-blur-sm"
                   role="presentation"
                 >
                   <ReasonerIcon className="size-3.5 opacity-80" aria-hidden />
                   Reasoners
-                  <span className="font-mono text-[10px] normal-case tracking-normal text-muted-foreground/80">
+                  <span className="font-mono text-micro normal-case tracking-normal text-muted-foreground/80">
                     ({filteredReasoners.length})
                   </span>
                 </div>
@@ -245,12 +246,12 @@ function NodeReasonerList({ nodeId, reasonerCount, skillCount }: NodeReasonerLis
             <>
               {showSectionLabels && (
                 <div
-                  className="sticky top-0 z-[1] flex items-center gap-2 bg-muted/30 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground backdrop-blur-sm"
+                  className="sticky top-0 z-[1] flex items-center gap-2 bg-muted/30 px-3 py-1.5 text-micro-plus font-medium uppercase tracking-wide text-muted-foreground backdrop-blur-sm"
                   role="presentation"
                 >
                   <SkillIcon className="size-3.5 opacity-80" aria-hidden />
                   Skills
-                  <span className="font-mono text-[10px] normal-case tracking-normal text-muted-foreground/80">
+                  <span className="font-mono text-micro normal-case tracking-normal text-muted-foreground/80">
                     ({filteredSkills.length})
                   </span>
                 </div>
@@ -323,29 +324,32 @@ function EndpointRow({ nodeId, row, onOpen }: EndpointRowProps) {
         className="mt-0.5"
       />
       <span className="min-w-0 flex-1 pt-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs font-medium text-foreground">{row.name}</span>
-          <span
-            className={cn(
-              "rounded-md border px-1.5 py-0 text-[10px] font-medium leading-none",
-              isSkill
-                ? "border-border/80 bg-muted/50 text-muted-foreground"
-                : "border-primary/25 bg-primary/5 text-primary"
-            )}
-          >
-            {isSkill ? "Skill" : "Reasoner"}
-          </span>
+        <span className="block font-mono text-xs font-medium leading-snug text-foreground">
+          {row.name}
         </span>
-        {row.description ? (
-          <span className="mt-0.5 block line-clamp-2 text-[11px] leading-snug text-muted-foreground">
-            {row.description}
+        <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
+          <EntityTag tone={isSkill ? "neutral" : "accent"}>
+            {isSkill ? "Skill" : "Reasoner"}
+          </EntityTag>
+          <span
+            className="select-none text-[0.625rem] leading-none text-muted-foreground/30"
+            aria-hidden
+          >
+            ·
           </span>
-        ) : (
-          <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground/80">{row.id}</span>
-        )}
+          {row.description ? (
+            <span className="min-w-0 max-w-full text-micro-plus leading-snug text-muted-foreground line-clamp-2">
+              {row.description}
+            </span>
+          ) : (
+            <span className="min-w-0 font-mono text-micro leading-snug text-muted-foreground/80">
+              {row.id}
+            </span>
+          )}
+        </span>
       </span>
       <span className="flex shrink-0 items-center gap-1.5 self-center text-muted-foreground">
-        <span className="hidden text-[11px] sm:inline">Playground</span>
+        <span className="hidden text-micro-plus sm:inline">Playground</span>
         <Play className="size-3.5 opacity-70" aria-hidden />
       </span>
     </button>
@@ -361,53 +365,53 @@ function AgentAuthTagStrip({ summary }: { summary: AgentTagSummary }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/50 bg-muted/15 px-4 py-2 pl-14 text-left">
-      <span className="w-full text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:w-auto">
+      <span className="w-full text-micro font-medium uppercase tracking-wide text-muted-foreground sm:w-auto">
         Auth tags
       </span>
       {!hasTags && (
-        <span className="text-[10px] text-muted-foreground">No tags recorded</span>
+        <span className="text-micro text-muted-foreground">No tags recorded</span>
       )}
       {granted.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] text-muted-foreground">Granted</span>
+          <span className="text-micro text-muted-foreground">Granted</span>
           {granted.slice(0, 8).map((t) => (
             <Badge
               key={`g-${t}`}
               variant="secondary"
               size="sm"
               showIcon={false}
-              className="max-w-[140px] truncate text-[10px]"
+              className="max-w-[140px] truncate text-micro"
             >
               {t}
             </Badge>
           ))}
           {granted.length > 8 && (
-            <span className="text-[10px] text-muted-foreground">+{granted.length - 8}</span>
+            <span className="text-micro text-muted-foreground">+{granted.length - 8}</span>
           )}
         </div>
       )}
       {requested.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] text-muted-foreground">Requested</span>
+          <span className="text-micro text-muted-foreground">Requested</span>
           {requested.slice(0, 8).map((t) => (
             <Badge
               key={`p-${t}`}
               variant="outline"
               size="sm"
               showIcon={false}
-              className="max-w-[140px] truncate text-[10px]"
+              className="max-w-[140px] truncate text-micro"
             >
               {t}
             </Badge>
           ))}
           {requested.length > 8 && (
-            <span className="text-[10px] text-muted-foreground">+{requested.length - 8}</span>
+            <span className="text-micro text-muted-foreground">+{requested.length - 8}</span>
           )}
         </div>
       )}
       <Link
         to="/access"
-        className="ml-auto text-[10px] font-medium text-primary hover:underline"
+        className="ml-auto text-micro font-medium text-primary hover:underline"
       >
         Access management
       </Link>
@@ -616,7 +620,7 @@ export function AgentsPage() {
               >
                 <span>All</span>
                 <span
-                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-[10px] font-medium tabular-nums text-muted-foreground shadow-sm"
+                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-micro font-medium tabular-nums text-muted-foreground shadow-sm"
                   aria-hidden
                 >
                   {totalAgents}
@@ -636,7 +640,7 @@ export function AgentsPage() {
                   Online
                 </span>
                 <span
-                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-[10px] font-medium tabular-nums text-muted-foreground shadow-sm"
+                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-micro font-medium tabular-nums text-muted-foreground shadow-sm"
                   aria-hidden
                 >
                   {onlineAgents}
@@ -656,7 +660,7 @@ export function AgentsPage() {
                   Offline
                 </span>
                 <span
-                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-[10px] font-medium tabular-nums text-muted-foreground shadow-sm"
+                  className="min-w-[1.25rem] rounded-md bg-background/60 px-1 py-px text-center text-micro font-medium tabular-nums text-muted-foreground shadow-sm"
                   aria-hidden
                 >
                   {offlineAgents}

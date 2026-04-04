@@ -420,7 +420,7 @@ const NodeCard = memo(
                     </span>
                   )}
                   {capabilitiesAvailable && (
-                    <span className="rounded-full bg-status-success/10 px-2 py-0.5 text-[10px] font-medium text-status-success">
+                    <span className="rounded-full bg-status-success/10 px-2 py-0.5 text-micro font-medium text-status-success">
                       Capabilities ready
                     </span>
                   )}

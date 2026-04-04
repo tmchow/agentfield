@@ -142,36 +142,42 @@ export function AppLayout() {
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 bg-background px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="min-w-0 flex-1">
+        <header className="flex h-16 min-w-0 shrink-0 items-center gap-2 overflow-hidden border-b border-border/60 bg-background px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <SidebarTrigger className="-ml-1 shrink-0" />
+          <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
+          <div className="min-w-0 flex-1 overflow-hidden pr-1">
             {header.mode === "hidden" ? (
               <div className="min-h-5" aria-hidden="true" />
             ) : (
               <>
                 {/* Narrow viewports: only the leaf — sidebar already shows section; saves space for status strip. */}
-                <Breadcrumb className="min-w-0 sm:hidden">
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="truncate">
+                <Breadcrumb className="min-w-0 overflow-hidden sm:hidden">
+                  <BreadcrumbList className="min-w-0">
+                    <BreadcrumbItem className="min-w-0 max-w-full">
+                      <BreadcrumbPage className="block truncate">
                         {header.crumbs[header.crumbs.length - 1]!.label}
                       </BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
                 </Breadcrumb>
-                <Breadcrumb className="hidden min-w-0 sm:block">
-                  <BreadcrumbList className="flex-nowrap">
+                <Breadcrumb className="hidden min-w-0 overflow-hidden sm:block">
+                  <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden">
                     {header.crumbs.map((crumb, i) => (
                       <span key={`${crumb.label}-${i}`} className="contents">
-                        {i > 0 ? <BreadcrumbSeparator /> : null}
-                        <BreadcrumbItem>
+                        {i > 0 ? <BreadcrumbSeparator className="shrink-0" /> : null}
+                        <BreadcrumbItem
+                          className={
+                            i === header.crumbs.length - 1
+                              ? "min-w-0 max-w-full"
+                              : "shrink-0"
+                          }
+                        >
                           {crumb.to && i < header.crumbs.length - 1 ? (
                             <BreadcrumbLink asChild>
                               <Link to={crumb.to}>{crumb.label}</Link>
                             </BreadcrumbLink>
                           ) : (
-                            <BreadcrumbPage className="truncate">
+                            <BreadcrumbPage className="block truncate">
                               {crumb.label}
                             </BreadcrumbPage>
                           )}
@@ -186,7 +192,7 @@ export function AppLayout() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <HealthStrip />
             <Separator orientation="vertical" className="hidden h-4 sm:block" />
-            <kbd className="hidden md:inline-flex h-5 shrink-0 items-center gap-1 rounded border border-border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
+            <kbd className="hidden md:inline-flex h-5 shrink-0 items-center gap-1 rounded border border-border bg-muted px-1.5 text-micro font-mono text-muted-foreground">
               ⌘K
             </kbd>
           </div>

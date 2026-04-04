@@ -31,11 +31,11 @@ const badgeVariants = cva(
         outline:
           "text-foreground border border-border bg-transparent hover:bg-accent shadow-sm",
         metadata:
-          "rounded-md bg-muted/40 text-muted-foreground border border-border/60 px-1.5 py-0.5 text-[10px] font-medium font-mono",
+          "rounded-md bg-muted/40 text-muted-foreground border border-border/60 px-1.5 py-0.5 text-micro font-medium font-mono",
         count:
-          "rounded-full bg-muted text-foreground border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+          "rounded-full bg-muted text-foreground border border-border px-2 py-0.5 text-micro font-semibold uppercase tracking-wide",
         pill:
-          "rounded-full bg-muted/30 text-foreground border border-border/40 px-2.5 py-0.5 text-[11px]",
+          "rounded-full bg-muted/30 text-foreground border border-border/40 px-2.5 py-0.5 text-micro-plus",
 
         // Tooltip variant – -style chip optimized for dark tooltip backgrounds
         tooltip:
@@ -58,7 +58,7 @@ const badgeVariants = cva(
           cn(getStatusBadgeClasses("neutral" satisfies StatusTone), "font-mono tracking-tight"),
       },
       size: {
-        sm: "px-1.5 py-0 text-[10px]",
+        sm: "px-1.5 py-0 text-micro",
         md: "px-2 py-0.5 text-xs",
         lg: "px-3 py-1 text-sm",
       },

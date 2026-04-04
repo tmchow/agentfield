@@ -412,23 +412,23 @@ export function PlaygroundPage() {
                     <div className="mt-2 space-y-2">
                       {selectedReasoner.input_schema && (
                         <div>
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                          <p className="text-micro font-medium text-muted-foreground uppercase tracking-wider mb-1">
                             Input Schema
                           </p>
                           <JsonHighlightedPre
                             data={selectedReasoner.input_schema}
-                            className="rounded-md bg-muted p-2 text-[10px] max-h-32 overflow-auto"
+                            className="rounded-md bg-muted p-2 text-micro max-h-32 overflow-auto"
                           />
                         </div>
                       )}
                       {selectedReasoner.output_schema && (
                         <div>
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                          <p className="text-micro font-medium text-muted-foreground uppercase tracking-wider mb-1">
                             Output Schema
                           </p>
                           <JsonHighlightedPre
                             data={selectedReasoner.output_schema}
-                            className="rounded-md bg-muted p-2 text-[10px] max-h-32 overflow-auto"
+                            className="rounded-md bg-muted p-2 text-micro max-h-32 overflow-auto"
                           />
                         </div>
                       )}

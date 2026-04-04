@@ -237,13 +237,13 @@ function TraceRow({
         }}
       >
         {/* Step number */}
-        <span className="text-[10px] text-muted-foreground/50 tabular-nums w-5 text-right shrink-0">
+        <span className="text-micro text-muted-foreground/50 tabular-nums w-5 text-right shrink-0">
           {index + 1}
         </span>
 
         {/* Tree connector — only for children */}
         {depth > 0 && (
-          <span className="text-muted-foreground/40 text-[10px] shrink-0 font-mono w-4">
+          <span className="text-muted-foreground/40 text-micro shrink-0 font-mono w-4">
             └─
           </span>
         )}
@@ -258,7 +258,7 @@ function TraceRow({
 
         {/* Group count badge */}
         {isFirstOfGroup && effectiveGroupCount > 1 && (
-          <span className="text-[9px] text-muted-foreground bg-muted rounded px-1 shrink-0">
+          <span className="text-nano text-muted-foreground bg-muted rounded px-1 shrink-0">
             ×{effectiveGroupCount}
           </span>
         )}
@@ -275,13 +275,13 @@ function TraceRow({
 
         {/* Relative start */}
         {relativeStart !== null && (
-          <span className="hidden text-[10px] text-muted-foreground/40 tabular-nums shrink-0 w-12 text-right sm:inline-block">
+          <span className="hidden text-micro text-muted-foreground/40 tabular-nums shrink-0 w-12 text-right sm:inline-block">
             {relativeStart}
           </span>
         )}
 
         {/* Duration text */}
-        <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap shrink-0 w-10 text-right">
+        <span className="text-micro text-muted-foreground tabular-nums whitespace-nowrap shrink-0 w-10 text-right">
           {formatDuration(node.duration_ms)}
         </span>
       </button>

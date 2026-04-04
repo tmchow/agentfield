@@ -622,7 +622,7 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
                     )}
                   >
                     {/* Rank Badge */}
-                    <div className="absolute left-3 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-background border border-border text-[10px] font-mono font-medium text-muted-foreground shadow-sm group-hover:border-primary/50 group-hover:text-primary transition-colors">
+                    <div className="absolute left-3 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-background border border-border text-micro font-mono font-medium text-muted-foreground shadow-sm group-hover:border-primary/50 group-hover:text-primary transition-colors">
                       {index + 1}
                     </div>
 
@@ -637,7 +637,7 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
                       </div>
 
                       <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <div className="flex justify-between text-micro text-muted-foreground">
                           <span>Success Rate</span>
                           <span className={cn(
                             "font-mono",
@@ -688,11 +688,11 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
                             {run.name || run.workflow_id}
                           </p>
                         </div>
-                        <span className="text-primary font-mono text-[10px] flex-shrink-0 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                        <span className="text-primary font-mono text-micro flex-shrink-0 bg-primary/10 px-1.5 py-0.5 rounded-full">
                           {formatDuration(run.elapsed_ms)}
                         </span>
                       </div>
-                      <p className="mt-1 pl-4 text-muted-foreground truncate font-mono text-[10px]">
+                      <p className="mt-1 pl-4 text-muted-foreground truncate font-mono text-micro">
                         {run.execution_id}
                       </p>
                     </Link>
@@ -724,13 +724,13 @@ function WorkflowInsightsPanel({ insights }: WorkflowInsightsPanelProps) {
                           {execution.name || execution.workflow_id}
                         </p>
                         <span className={cn(
-                          "font-mono text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0",
+                          "font-mono text-micro px-1.5 py-0.5 rounded-full flex-shrink-0",
                           execution.duration_ms > 60000 ? "bg-amber-500/10 text-amber-600" : "bg-muted text-muted-foreground"
                         )}>
                           {formatDuration(execution.duration_ms)}
                         </span>
                       </div>
-                      <p className="mt-1 text-muted-foreground truncate text-[10px]">
+                      <p className="mt-1 text-muted-foreground truncate text-micro">
                         Completed {formatTimestamp(execution.completed_at)}
                       </p>
                     </div>
@@ -800,7 +800,7 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
                         {incident.name || incident.workflow_id}
                       </p>
                     </div>
-                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-destructive">
+                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-micro uppercase tracking-wide text-destructive">
                       {incident.status}
                     </span>
                   </div>
@@ -812,7 +812,7 @@ function IncidentPanel({ incidents, className }: IncidentPanelProps) {
                       {incident.error}
                     </p>
                   )}
-                  <p className="ml-4 mt-2 text-[10px] text-muted-foreground">
+                  <p className="ml-4 mt-2 text-micro text-muted-foreground">
                     Started {formatTimestamp(incident.started_at)}
                   </p>
                 </Link>
@@ -926,7 +926,7 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
                 : "Idle"}
           </Badge>
         </div>
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-4 text-micro text-muted-foreground">
           <span>{reasoner.activeRuns} running</span>
           <span>{reasoner.incidentCount} incidents</span>
         </div>
@@ -937,12 +937,12 @@ function ReasonerRow({ reasoner }: { reasoner: ReasonerSummary }) {
           {reasoner.agents.map((agent) => (
             <span
               key={agent.id}
-              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-[10px]"
+              className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-micro"
             >
               <AgentNodeIcon className="h-3 w-3" />
               {agent.id}
               {agent.lastHeartbeat && (
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-nano text-muted-foreground">
                   · {formatTimestamp(agent.lastHeartbeat)}
                 </span>
               )}
@@ -970,7 +970,7 @@ function StatusCounter({ label, value, tone }: StatusCounterProps) {
 
   return (
     <div className="rounded-xl border border-border/40 bg-muted/30 px-2 py-2">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-micro text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-base font-semibold", toneClass)}>{value}</p>
     </div>
   );

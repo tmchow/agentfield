@@ -18,7 +18,10 @@ import { formatDurationHumanReadable } from "@/components/ui/data-formatters";
 import { useNavigate } from "react-router-dom";
 import type { WorkflowSummary } from "../../types/workflows";
 import { Button } from "../ui/button";
-import { CopyButton } from "../ui/copy-button";
+import {
+  CopyIdentifierChip,
+  truncateIdMiddle,
+} from "../ui/copy-identifier-chip";
 import { Badge } from "../ui/badge";
 import {
   AlertDialog,
@@ -142,12 +145,6 @@ function useLiveElapsed(startedAt?: string, status?: string): number | null {
   }, [startedAt, isActive, isPaused_]);
 
   return elapsed;
-}
-
-function truncateId(id: string, maxLen = 20): string {
-  if (id.length <= maxLen) return id;
-  const keep = Math.floor((maxLen - 1) / 2);
-  return `${id.slice(0, keep + 2)}\u2026${id.slice(-keep)}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -384,7 +381,7 @@ export function EnhancedWorkflowHeader({
 
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div className="flex flex-col gap-1">
-                        <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                        <span className="uppercase tracking-wide text-micro text-muted-foreground/80">
                           Nodes
                         </span>
                         <span className="text-sm font-medium text-foreground">
@@ -392,7 +389,7 @@ export function EnhancedWorkflowHeader({
                         </span>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                        <span className="uppercase tracking-wide text-micro text-muted-foreground/80">
                           Delivered
                         </span>
                         <span className="text-sm font-medium text-emerald-500">
@@ -400,7 +397,7 @@ export function EnhancedWorkflowHeader({
                         </span>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80">
+                        <span className="uppercase tracking-wide text-micro text-muted-foreground/80">
                           Failed
                         </span>
                         <span className={cn(
@@ -487,24 +484,12 @@ export function EnhancedWorkflowHeader({
               )}
 
               {/* Workflow ID + Copy (lg+ only) */}
-              <div className="hidden lg:flex items-center gap-1 flex-shrink-0 ml-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <code className="text-[11px] font-mono text-muted-foreground/70 px-1.5 py-0.5 rounded bg-muted/40 cursor-default">
-                      {truncateId(workflow.workflow_id)}
-                    </code>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <code className="text-xs font-mono">
-                      {workflow.workflow_id}
-                    </code>
-                  </TooltipContent>
-                </Tooltip>
-                <CopyButton
+              <div className="hidden lg:flex flex-shrink-0 ml-1">
+                <CopyIdentifierChip
                   value={workflow.workflow_id}
                   tooltip="Copy workflow ID"
                   copiedTooltip="Workflow ID copied"
-                  className="h-6 w-6 [&_svg]:!h-3 [&_svg]:!w-3"
+                  formatDisplay={(v) => truncateIdMiddle(v, 20)}
                 />
               </div>
             </div>
@@ -755,7 +740,7 @@ export function EnhancedWorkflowHeader({
             {workflow.display_name || "Unnamed Workflow"}
           </span>
           {rootAgentNodeId && rootAgentNodeId !== workflow.display_name && (
-            <code className="text-[11px] font-mono bg-muted text-muted-foreground px-1 py-0.5 rounded flex-shrink-0">
+            <code className="text-micro-plus font-mono bg-muted text-muted-foreground px-1 py-0.5 rounded flex-shrink-0">
               {rootAgentNodeId}
             </code>
           )}

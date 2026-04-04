@@ -89,7 +89,7 @@ export function FilterMultiCombobox({
           aria-label={label}
           disabled={disabled}
           className={cn(
-            "h-9 justify-between gap-2 px-3 font-normal shadow-sm",
+            "h-9 justify-between gap-1.5 px-3 font-normal shadow-xs",
             "min-w-[9.5rem] max-w-[14rem] text-xs sm:min-w-[10rem]",
             !isFiltered && "text-muted-foreground",
             className,
@@ -123,7 +123,7 @@ export function FilterMultiCombobox({
                   >
                     <span
                       className={cn(
-                        "mr-2 flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-primary/60",
+                        "mr-2 flex size-4 shrink-0 items-center justify-center rounded-sm border border-primary/60",
                         checked
                           ? "border-primary bg-primary text-primary-foreground"
                           : "bg-background opacity-80",

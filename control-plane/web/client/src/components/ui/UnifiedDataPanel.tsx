@@ -105,7 +105,7 @@ export function UnifiedDataPanel({
               {hasData && (
                 <>
                   {size && <span>•</span>}
-                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                  <Badge variant="secondary" className="text-micro h-4 px-1.5">
                     {typeof data === "object" && !Array.isArray(data)
                       ? `${Object.keys(data).length} keys`
                       : Array.isArray(data)
@@ -120,7 +120,7 @@ export function UnifiedDataPanel({
 
         <div className="flex items-center gap-2">
           {error && (
-            <Badge variant="destructive" className="text-[10px] h-5 px-2">
+            <Badge variant="destructive" className="text-micro h-5 px-2">
               Error
             </Badge>
           )}

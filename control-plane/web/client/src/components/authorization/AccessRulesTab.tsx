@@ -123,7 +123,7 @@ function SortableHead({
 }) {
   const active = sortBy === column;
   return (
-    <TableHead className="h-9 px-3 text-[11px] font-medium text-muted-foreground">
+    <TableHead className="h-9 px-3 text-micro-plus font-medium text-muted-foreground">
       <button
         type="button"
         onClick={() => onSort(column)}
@@ -305,19 +305,19 @@ export function AccessRulesTab({
             <TabsList variant="segmented" density="cosy" className="h-9 w-full sm:w-auto">
               <TabsTrigger variant="segmented" size="sm" value="all" className="gap-1">
                 All
-                <span className="tabular-nums text-[10px] text-muted-foreground">
+                <span className="tabular-nums text-micro text-muted-foreground">
                   {actionCounts.all}
                 </span>
               </TabsTrigger>
               <TabsTrigger variant="segmented" size="sm" value="allow" className="gap-1">
                 Allow
-                <span className="tabular-nums text-[10px] text-muted-foreground">
+                <span className="tabular-nums text-micro text-muted-foreground">
                   {actionCounts.allow}
                 </span>
               </TabsTrigger>
               <TabsTrigger variant="segmented" size="sm" value="deny" className="gap-1">
                 Deny
-                <span className="tabular-nums text-[10px] text-muted-foreground">
+                <span className="tabular-nums text-micro text-muted-foreground">
                   {actionCounts.deny}
                 </span>
               </TabsTrigger>
@@ -342,10 +342,10 @@ export function AccessRulesTab({
                   sortOrder={sortOrder}
                   onSort={handleSortChange}
                 />
-                <TableHead className="h-9 px-3 text-[11px] font-medium text-muted-foreground min-w-[12rem]">
+                <TableHead className="h-9 px-3 text-micro-plus font-medium text-muted-foreground min-w-[12rem]">
                   Rule
                 </TableHead>
-                <TableHead className="h-9 w-24 px-3 text-center text-[11px] font-medium text-muted-foreground">
+                <TableHead className="h-9 w-24 px-3 text-center text-micro-plus font-medium text-muted-foreground">
                   Action
                 </TableHead>
                 <SortableHead
@@ -355,7 +355,7 @@ export function AccessRulesTab({
                   sortOrder={sortOrder}
                   onSort={handleSortChange}
                 />
-                <TableHead className="h-9 w-24 px-3 text-right text-[11px] font-medium text-muted-foreground">
+                <TableHead className="h-9 w-24 px-3 text-right text-micro-plus font-medium text-muted-foreground">
                   {/* actions */}
                 </TableHead>
               </TableRow>
@@ -390,7 +390,7 @@ export function AccessRulesTab({
                     <div className="min-w-0">
                       <div className="truncate font-medium">{item.name}</div>
                       {item.description && (
-                        <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        <div className="mt-0.5 truncate text-micro-plus text-muted-foreground">
                           {item.description}
                         </div>
                       )}

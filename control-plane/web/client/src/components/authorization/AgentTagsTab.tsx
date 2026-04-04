@@ -94,7 +94,7 @@ function SortableHead({
 }) {
   const active = sortBy === column;
   return (
-    <TableHead className="h-9 px-3 text-[11px] font-medium text-muted-foreground">
+    <TableHead className="h-9 px-3 text-micro-plus font-medium text-muted-foreground">
       <button
         type="button"
         onClick={() => onSort(column)}
@@ -275,25 +275,25 @@ export function AgentTagsTab({
           <TabsList variant="segmented" density="cosy" className="h-9 flex-wrap">
             <TabsTrigger variant="segmented" size="sm" value="all" className="gap-1">
               All
-              <span className="tabular-nums text-[10px] text-muted-foreground">
+              <span className="tabular-nums text-micro text-muted-foreground">
                 {agents.length}
               </span>
             </TabsTrigger>
             <TabsTrigger variant="segmented" size="sm" value="pending" className="gap-1">
               Pending
-              <span className="tabular-nums text-[10px] text-muted-foreground">
+              <span className="tabular-nums text-micro text-muted-foreground">
                 {statusCounts.pending}
               </span>
             </TabsTrigger>
             <TabsTrigger variant="segmented" size="sm" value="approved" className="gap-1">
               Approved
-              <span className="tabular-nums text-[10px] text-muted-foreground">
+              <span className="tabular-nums text-micro text-muted-foreground">
                 {statusCounts.approved}
               </span>
             </TabsTrigger>
             <TabsTrigger variant="segmented" size="sm" value="other" className="gap-1">
               Other
-              <span className="tabular-nums text-[10px] text-muted-foreground">
+              <span className="tabular-nums text-micro text-muted-foreground">
                 {statusCounts.other}
               </span>
             </TabsTrigger>
@@ -314,13 +314,13 @@ export function AgentTagsTab({
                   sortOrder={sortOrder}
                   onSort={handleSortChange}
                 />
-                <TableHead className="h-9 px-3 text-[11px] font-medium text-muted-foreground">
+                <TableHead className="h-9 px-3 text-micro-plus font-medium text-muted-foreground">
                   Requested
                 </TableHead>
-                <TableHead className="h-9 px-3 text-[11px] font-medium text-muted-foreground">
+                <TableHead className="h-9 px-3 text-micro-plus font-medium text-muted-foreground">
                   Granted
                 </TableHead>
-                <TableHead className="h-9 w-28 px-3 text-center text-[11px] font-medium text-muted-foreground">
+                <TableHead className="h-9 w-28 px-3 text-center text-micro-plus font-medium text-muted-foreground">
                   Status
                 </TableHead>
                 <SortableHead
@@ -331,7 +331,7 @@ export function AgentTagsTab({
                   onSort={handleSortChange}
                 />
                 {!readOnly && (
-                  <TableHead className="h-9 w-36 px-3 text-right text-[11px] font-medium text-muted-foreground">
+                  <TableHead className="h-9 w-36 px-3 text-right text-micro-plus font-medium text-muted-foreground">
                     Actions
                   </TableHead>
                 )}

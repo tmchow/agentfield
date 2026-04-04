@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CopyButton } from "@/components/ui/copy-button";
+import { CopyIdentifierChip } from "@/components/ui/copy-identifier-chip";
 import {
   Tooltip,
   TooltipContent,
@@ -81,69 +81,7 @@ function truncateEnd(s: string, max: number): string {
   return `${s.slice(0, Math.max(0, max - 1))}…`;
 }
 
-/** Show leading ellipsis + last `visible` chars so long IDs stay compact. */
-function truncateIdTail(id: string, visible: number): string {
-  const v = Math.max(1, visible);
-  if (id.length <= v) return id;
-  return `…${id.slice(-v)}`;
-}
-
 const RUN_DETAIL_TITLE_MAX_CHARS = 42;
-
-/** Label + truncated id + copy — full value in clipboard and tooltips. */
-function HeaderCopyChip({
-  label,
-  value,
-  tooltip,
-  noValueMessage,
-  idTailVisible = 6,
-}: {
-  label: string;
-  value: string | undefined;
-  tooltip: string;
-  noValueMessage?: string;
-  /** How many characters of the id to show after the ellipsis (when truncated). */
-  idTailVisible?: number;
-}) {
-  if (!value) {
-    if (!noValueMessage) return null;
-    return (
-      <span
-        className="text-[10px] text-muted-foreground/70"
-        title="Verifiable credentials disabled or issuer DID not yet issued"
-      >
-        {noValueMessage}
-      </span>
-    );
-  }
-  const idDisplay = truncateIdTail(value, idTailVisible);
-  return (
-    <div
-      className={cn(
-        "inline-flex h-7 max-w-full items-center gap-1 rounded-md border border-border/70 bg-muted/35 pl-2 pr-0.5",
-        "text-[10px] text-muted-foreground",
-      )}
-      title={`${label}: ${value}`}
-    >
-      <span className="shrink-0 font-medium text-muted-foreground">{label}</span>
-      <span
-        className="min-w-0 truncate font-mono text-[10px] text-foreground/90"
-        title={value}
-      >
-        {idDisplay}
-      </span>
-      <CopyButton
-        value={value}
-        tooltip={tooltip}
-        copiedTooltip="Copied!"
-        variant="ghost"
-        size="icon"
-        title={value}
-        className="size-6 shrink-0 rounded-sm text-muted-foreground hover:text-foreground [&_svg]:size-3.5"
-      />
-    </div>
-  );
-}
 
 const ZERO_WEBHOOK_SUMMARY: WebhookRunSummary = {
   steps_with_webhook: 0,
@@ -171,7 +109,7 @@ function RunContextHint({
       </TooltipTrigger>
       <TooltipContent
         side="top"
-        className="max-w-[min(18rem,calc(100vw-1.5rem))] border border-border bg-popover px-2.5 py-2 text-left text-[11px] leading-snug text-popover-foreground shadow-md"
+        className="max-w-[min(18rem,calc(100vw-1.5rem))] border border-border bg-popover px-2.5 py-2 text-left text-micro-plus leading-snug text-popover-foreground shadow-md"
       >
         {children}
       </TooltipContent>
@@ -230,7 +168,7 @@ function RunContextNodesCard({
     >
       <CardContent className="p-3">
         <div className="mb-2 flex items-center gap-0.5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-micro font-medium uppercase tracking-wide text-muted-foreground">
             {heading}
           </p>
           <RunContextHint label={`About ${heading.toLowerCase()} on this run`}>
@@ -243,7 +181,7 @@ function RunContextNodesCard({
               <Badge
                 key={id}
                 variant="secondary"
-                className="max-w-full truncate font-mono text-[10px] font-normal"
+                className="max-w-full truncate font-mono text-micro font-normal"
                 title={id}
               >
                 {id}
@@ -325,7 +263,7 @@ function RunContextWebhooksCard({
     >
       <CardContent className={cn("p-3", empty && "py-2.5")}>
         <div className={cn("flex items-center gap-0.5", empty ? "mb-0.5" : "mb-1")}>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-micro font-medium uppercase tracking-wide text-muted-foreground">
             Webhooks
           </p>
           <RunContextHint label="About run-level webhook summary">
@@ -336,7 +274,7 @@ function RunContextWebhooksCard({
         </div>
 
         {empty ? (
-          <p className="text-[11px] leading-tight text-muted-foreground">
+          <p className="text-micro-plus leading-tight text-muted-foreground">
             No outbound webhooks—register a webhook URL on the reasoner to receive callbacks.
           </p>
         ) : pendingRegistrations ? (
@@ -356,7 +294,7 @@ function RunContextWebhooksCard({
         {failures.length > 0 ? (
           <div className="mt-2 space-y-1.5 border-t border-border/60 pt-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-micro font-medium uppercase tracking-wide text-muted-foreground">
                 Failed deliveries
               </p>
               {failures.length > 1 ? (
@@ -364,7 +302,7 @@ function RunContextWebhooksCard({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-6 gap-1 px-2 text-[10px]"
+                  className="h-6 gap-1 px-2 text-micro"
                   disabled={retryAllBusy}
                   onClick={() => void runRetryAll()}
                 >
@@ -387,13 +325,13 @@ function RunContextWebhooksCard({
                 return (
                   <li
                     key={f.execution_id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-[11px]"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-micro-plus"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-foreground" title={label}>
                         {label}
                       </p>
-                      <p className="truncate font-mono text-[10px] text-muted-foreground">
+                      <p className="truncate font-mono text-micro text-muted-foreground">
                         {f.event_type}
                         {f.http_status != null ? ` · HTTP ${f.http_status}` : ""}
                       </p>
@@ -403,7 +341,7 @@ function RunContextWebhooksCard({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 text-[10px]"
+                        className="h-6 px-2 text-micro"
                         onClick={() => onSelectStep(f.execution_id)}
                       >
                         Step
@@ -412,7 +350,7 @@ function RunContextWebhooksCard({
                         type="button"
                         variant="secondary"
                         size="sm"
-                        className="h-6 gap-1 px-2 text-[10px]"
+                        className="h-6 gap-1 px-2 text-micro"
                         disabled={busy}
                         onClick={() => void runRetry(f.execution_id)}
                       >
@@ -432,13 +370,13 @@ function RunContextWebhooksCard({
         ) : null}
 
         {retryErr ? (
-          <p className="mt-1.5 text-[10px] text-destructive">{retryErr}</p>
+          <p className="mt-1.5 text-micro text-destructive">{retryErr}</p>
         ) : null}
 
         {!empty ? (
           <p
             className={cn(
-              "mt-1.5 text-[10px] leading-snug text-muted-foreground",
+              "mt-1.5 text-micro leading-snug text-muted-foreground",
               failures.length === 0 && "opacity-80",
             )}
           >
@@ -508,11 +446,11 @@ export function RunDetailPage() {
       <div className="flex min-w-0 flex-col gap-4 h-[calc(100vh-8rem)]">
         <div className="flex flex-shrink-0 flex-col gap-2 border-b border-border/50 pb-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Skeleton className="h-7 w-36 sm:h-8 sm:w-48" />
-              <Skeleton className="h-7 w-[5.5rem] rounded-md" />
-              <Skeleton className="h-7 w-[6.5rem] rounded-md" />
-              <Skeleton className="h-5 w-14 rounded-full" />
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Skeleton className="h-8 w-36 sm:w-48" />
+              <Skeleton className="h-9 w-[6rem] rounded-lg" />
+              <Skeleton className="h-9 w-[7.25rem] rounded-lg" />
+              <Skeleton className="h-8 w-24 rounded-md" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Skeleton className="h-4 w-64 max-w-full" />
@@ -591,31 +529,33 @@ export function RunDetailPage() {
       {/* ─── Header ─────────────────────────────────────────────────────── */}
       <div className="mb-3 flex min-w-0 flex-shrink-0 flex-col gap-2 border-b border-border/50 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2">
             <h1
-              className="min-w-0 text-lg font-semibold tracking-tight text-foreground sm:text-xl"
+              className="min-w-0 text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl"
               title={runTitle !== runTitleDisplay ? runTitle : undefined}
             >
               {runTitleDisplay}
             </h1>
             {runId ? (
-              <HeaderCopyChip
+              <CopyIdentifierChip
                 label="Run"
                 value={runId}
                 tooltip="Copy run ID"
                 idTailVisible={6}
               />
             ) : null}
-            <HeaderCopyChip
+            <CopyIdentifierChip
               label="Identity"
               value={serverWorkflowIssuerDid}
               tooltip="Copy workflow issuer DID"
               noValueMessage="No issuer DID"
+              noValueTitle="Verifiable credentials disabled or issuer DID not yet issued"
               idTailVisible={8}
             />
             <Badge
               variant={statusVariant(dag.workflow_status)}
-              className="h-5 shrink-0 px-1.5 py-0 text-[10px] font-medium capitalize leading-none"
+              size="md"
+              className="shrink-0 px-2.5 py-1 text-xs font-medium capitalize leading-snug shadow-xs"
             >
               {dag.workflow_status}
             </Badge>
@@ -628,7 +568,7 @@ export function RunDetailPage() {
                 <>
                   {" · "}
                   <span
-                    className="font-mono text-[11px] text-muted-foreground/90"
+                    className="font-mono text-micro-plus text-muted-foreground/90"
                     title={sessionTrim}
                   >
                     Session {truncateEnd(sessionTrim, 28)}
@@ -639,7 +579,7 @@ export function RunDetailPage() {
                 <>
                   {" · "}
                   <span
-                    className="font-mono text-[11px] text-muted-foreground/90"
+                    className="font-mono text-micro-plus text-muted-foreground/90"
                     title={actorTrim}
                   >
                     Actor {truncateEnd(actorTrim, 24)}
@@ -650,7 +590,7 @@ export function RunDetailPage() {
 
             {workflowId && workflowId !== runId ? (
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:shrink-0">
-                <HeaderCopyChip
+                <CopyIdentifierChip
                   label="Flow"
                   value={workflowId}
                   tooltip="Copy workflow ID"
@@ -745,7 +685,7 @@ export function RunDetailPage() {
                 </span>
                 <span className="pl-6 text-xs text-muted-foreground">
                   Same shape as GET /workflows/…/vc-chain — use with{" "}
-                  <code className="text-[10px]">af verify</code>
+                  <code className="text-micro">af verify</code>
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

@@ -262,7 +262,7 @@ export function ReasonerNodeCombobox({
                         <span className="block w-full truncate font-mono text-xs">
                           {nodeId}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-micro text-muted-foreground">
                           {count} skill{count === 1 ? "" : "s"}
                         </span>
                       </span>
@@ -319,7 +319,7 @@ export function ReasonerNodeCombobox({
                           {r.name}
                         </span>
                       </span>
-                      <span className="w-full pl-[3.75rem] font-mono text-[11px] text-muted-foreground">
+                      <span className="w-full pl-15 font-mono text-micro-plus text-muted-foreground">
                         {r.reasoner_id}
                       </span>
                     </button>

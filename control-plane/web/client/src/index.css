@@ -12,6 +12,10 @@
   :root {
     --radius: 0.5rem;
 
+    /* Figma / shadcn create kit alignment (see docs/FIGMA_SHADCN_AUDIT.md) */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+    --command-list-max-height: 18.75rem; /* 300px */
+
     /*
      * Theme knobs (change these to re-tint the whole app).
      * --shell-*  = neutral slate chrome (backgrounds, borders, sidebar gray).

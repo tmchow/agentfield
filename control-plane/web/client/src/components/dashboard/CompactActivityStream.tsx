@@ -265,7 +265,7 @@ export function CompactActivityStream({ className }: CompactActivityStreamProps)
                     {execution.agent_name}
                   </span>
                 </div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-micro text-muted-foreground">
                   {label}
                 </div>
               </div>

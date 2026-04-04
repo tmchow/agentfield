@@ -273,7 +273,7 @@ export function EnhancedWorkflowOverview({
                     <span className="font-medium text-foreground truncate">
                       {node.agent_name || node.reasoner_id || 'Workflow step'}
                     </span>
-                    <Badge variant="outline" className="text-[10px] capitalize">
+                    <Badge variant="outline" className="text-micro capitalize">
                       {getStatusLabel(normalized)}
                     </Badge>
                   </div>
@@ -296,24 +296,24 @@ export function EnhancedWorkflowOverview({
         <CardContent>
           <ResponsiveGrid columns={{ base: 1, md: 2 }} gap="sm" align="start" className="text-sm text-muted-foreground">
             <div className="space-y-1">
-              <span className="uppercase tracking-wide text-[10px]">Workflow ID</span>
+              <span className="uppercase tracking-wide text-micro">Workflow ID</span>
               <code className="block text-xs font-mono bg-muted px-2 py-1 rounded text-foreground">
                 {workflow.workflow_id}
               </code>
             </div>
             <div className="space-y-1">
-              <span className="uppercase tracking-wide text-[10px]">Agent</span>
+              <span className="uppercase tracking-wide text-micro">Agent</span>
               <span className="text-sm font-medium text-foreground">{workflow.agent_name}</span>
             </div>
             {workflow.session_id && (
               <div className="space-y-1">
-                <span className="uppercase tracking-wide text-[10px]">Session</span>
+                <span className="uppercase tracking-wide text-micro">Session</span>
                 <span className="font-mono text-foreground">{workflow.session_id}</span>
               </div>
             )}
             {vcChain && (
               <div className="space-y-1">
-                <span className="uppercase tracking-wide text-[10px]">Verification</span>
+                <span className="uppercase tracking-wide text-micro">Verification</span>
                 <span className="text-sm text-foreground">VC chain available ({vcChain.component_vcs?.length || 0} credentials)</span>
               </div>
             )}

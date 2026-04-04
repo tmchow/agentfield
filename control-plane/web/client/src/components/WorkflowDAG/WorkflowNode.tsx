@@ -502,7 +502,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
                 style={{ width: `${Math.max(6, performanceIntensity * 100)}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="flex items-center justify-between text-micro text-muted-foreground">
               <span>Load {(performanceIntensity * 100).toFixed(0)}%</span>
               {data.duration_ms ? <span>{formatDuration(data.duration_ms)}</span> : null}
             </div>
@@ -510,7 +510,7 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
         )}
 
         {viewMode === 'debug' && (
-          <div className="mt-2 space-y-1 text-[10px] font-mono text-muted-foreground">
+          <div className="mt-2 space-y-1 text-micro font-mono text-muted-foreground">
             <div>ID: {data.execution_id}</div>
             {data.parent_execution_id && <div>Parent: {data.parent_execution_id.slice(0, 8)}…</div>}
             <div>
@@ -588,13 +588,13 @@ export const WorkflowNode = memo(({ data, selected }: WorkflowNodeProps) => {
 
           {/* Technical Details */}
           <div className="space-y-1 border-t border-border/60 pt-2">
-            <div className="flex justify-between gap-4 text-[10px] text-muted-foreground">
+            <div className="flex justify-between gap-4 text-micro text-muted-foreground">
               <span>Execution ID:</span>
               <span className="font-mono text-foreground">
                 {data.execution_id.slice(0, 8)}...
               </span>
             </div>
-            <div className="flex justify-between gap-4 text-[10px] text-muted-foreground">
+            <div className="flex justify-between gap-4 text-micro text-muted-foreground">
               <span>Workflow ID:</span>
               <span className="font-mono text-foreground">
                 {data.workflow_id.slice(0, 8)}...

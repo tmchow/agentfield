@@ -150,12 +150,12 @@ function StartedAtCell({ run }: { run: WorkflowSummary }) {
   }, [tick]);
 
   if (!iso) {
-    return <span className="text-[11px] text-muted-foreground">—</span>;
+    return <span className="text-micro-plus text-muted-foreground">—</span>;
   }
 
   const startedMs = new Date(iso).getTime();
   if (Number.isNaN(startedMs)) {
-    return <span className="text-[11px] text-muted-foreground">—</span>;
+    return <span className="text-micro-plus text-muted-foreground">—</span>;
   }
 
   const nowMs = tick ? now : Date.now();
@@ -173,18 +173,18 @@ function StartedAtCell({ run }: { run: WorkflowSummary }) {
         >
           <span
             className={cn(
-              "text-[11px]",
+              "text-micro-plus",
               liveGranular ? "text-sky-400/95" : "text-foreground/90",
             )}
           >
             {relative}
           </span>
-          <span className="text-[10px] text-muted-foreground">{absolute}</span>
+          <span className="text-micro text-muted-foreground">{absolute}</span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="left" className="max-w-xs text-xs">
         <p className="font-medium">Started</p>
-        <p className="mt-1 font-mono text-[11px] text-muted-foreground">{absolute}</p>
+        <p className="mt-1 font-mono text-micro-plus text-muted-foreground">{absolute}</p>
         <p className="mt-1 text-muted-foreground">
           {liveGranular
             ? "Live elapsed time (updates every second)."
@@ -247,7 +247,7 @@ function StatusDot({ status }: { status: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <div className={cn("size-1.5 rounded-full shrink-0", color)} />
-      <span className="text-[11px]">{label}</span>
+      <span className="text-micro-plus">{label}</span>
     </div>
   );
 }
@@ -290,7 +290,7 @@ function RunPreviewIoPanel({
             strokeWidth={2.25}
             aria-hidden
           />
-          <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="truncate text-micro font-semibold uppercase tracking-wide text-muted-foreground">
             {label}
           </span>
         </div>
@@ -315,7 +315,7 @@ function RunPreviewIoPanel({
       <JsonHighlightedPre
         text={body}
         className={cn(
-          "max-h-36 min-h-0 overflow-auto p-2 font-mono text-[10px] leading-snug",
+          "max-h-36 min-h-0 overflow-auto p-2 font-mono text-micro leading-snug",
         )}
       />
     </div>
@@ -343,7 +343,7 @@ function RunPreview({ rootExecutionId }: { rootExecutionId: string }) {
 
   if (!hasIn && !hasOut) {
     return (
-      <div className="px-3 py-4 text-center text-[11px] text-muted-foreground leading-snug">
+      <div className="px-3 py-4 text-center text-micro-plus text-muted-foreground leading-snug">
         No input or output payload on this run.
       </div>
     );
@@ -363,7 +363,7 @@ function RunPreview({ rootExecutionId }: { rootExecutionId: string }) {
           <RunPreviewIoPanel label="Input" direction="in" body={inputText} />
           <RunPreviewIoPanel label="Output" direction="out" body={outputText} />
         </div>
-        <p className="border-t border-border/60 px-2 py-1 text-[9px] leading-tight text-muted-foreground">
+        <p className="border-t border-border/60 px-2 py-1 text-nano leading-tight text-muted-foreground">
           Open run for full JSON and trace.
         </p>
       </div>
@@ -374,7 +374,7 @@ function RunPreview({ rootExecutionId }: { rootExecutionId: string }) {
     return (
       <div className="min-w-0 text-xs" role="region" aria-label="Input preview">
         <RunPreviewIoPanel label="Input" direction="in" body={inputText} />
-        <p className="border-t border-border/60 px-2 py-1 text-[9px] leading-tight text-muted-foreground">
+        <p className="border-t border-border/60 px-2 py-1 text-nano leading-tight text-muted-foreground">
           Open run for output and full trace.
         </p>
       </div>
@@ -384,7 +384,7 @@ function RunPreview({ rootExecutionId }: { rootExecutionId: string }) {
   return (
     <div className="min-w-0 text-xs" role="region" aria-label="Output preview">
       <RunPreviewIoPanel label="Output" direction="out" body={outputText} />
-      <p className="border-t border-border/60 px-2 py-1 text-[9px] leading-tight text-muted-foreground">
+      <p className="border-t border-border/60 px-2 py-1 text-nano leading-tight text-muted-foreground">
         Open run for full trace.
       </p>
     </div>
@@ -499,7 +499,7 @@ function RunsPaginationBar({
         placement === "bottom" && "pt-3",
       )}
     >
-      <p className="text-center text-[11px] text-muted-foreground sm:text-left tabular-nums">
+      <p className="text-center text-micro-plus text-muted-foreground sm:text-left tabular-nums">
         Showing{" "}
         <span className="font-medium text-foreground">
           {totalCount === 0 ? 0 : (page - 1) * pageSize + 1}
@@ -514,7 +514,7 @@ function RunsPaginationBar({
 
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
         <div className="flex items-center gap-2">
-          <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+          <span className="whitespace-nowrap text-micro-plus text-muted-foreground">
             Rows per page
           </span>
           <Select
@@ -807,7 +807,7 @@ export function RunsPage() {
       return (
         <TableHead
           className={cn(
-            "h-8 px-3 text-[11px] font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
+            "h-8 px-3 text-micro-plus font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
             className,
           )}
           onClick={() => handleSortClick(column)}
@@ -919,7 +919,7 @@ export function RunsPage() {
           <TableHeader>
             <TableRow>
               {/* Checkbox */}
-              <TableHead className="h-8 w-10 px-3 text-[11px] font-medium text-muted-foreground">
+              <TableHead className="h-8 w-10 px-3 text-micro-plus font-medium text-muted-foreground">
                 <Checkbox
                   checked={allSelected}
                   data-state={someSelected ? "indeterminate" : undefined}
@@ -931,7 +931,7 @@ export function RunsPage() {
               <SortableHead column="status" label="Status" className="w-24" />
               {/* Target + short run id (full id via copy) */}
               <TableHead
-                className="h-8 px-3 text-[11px] font-medium text-muted-foreground min-w-0"
+                className="h-8 px-3 text-micro-plus font-medium text-muted-foreground min-w-0"
                 title="Hover the input/output icon next to a reasoner to preview input / output without leaving the list."
               >
                 <span className="inline-flex items-center gap-1.5">

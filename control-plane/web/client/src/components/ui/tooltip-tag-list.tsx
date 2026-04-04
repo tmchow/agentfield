@@ -27,7 +27,7 @@ export function TooltipTagList({ groups }: TooltipTagListProps) {
       {groups.map((group, i) => (
         <div key={i}>
           {group.label && (
-            <div className="text-[10px] uppercase tracking-wider text-primary-foreground/60 mb-0.5">
+            <div className="text-micro uppercase tracking-wider text-primary-foreground/60 mb-0.5">
               {group.label}
             </div>
           )}
@@ -39,7 +39,7 @@ export function TooltipTagList({ groups }: TooltipTagListProps) {
                 </Badge>
               ))
             ) : (
-              <span className="text-primary-foreground/40 italic text-[10px]">
+              <span className="text-primary-foreground/40 italic text-micro">
                 any
               </span>
             )}

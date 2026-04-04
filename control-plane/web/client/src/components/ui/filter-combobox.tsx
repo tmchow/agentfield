@@ -57,7 +57,7 @@ export function FilterCombobox({
           aria-label={label}
           disabled={disabled}
           className={cn(
-            "h-9 justify-between gap-2 px-3 font-normal shadow-sm",
+            "h-9 justify-between gap-1.5 px-3 font-normal shadow-xs",
             "min-w-[9.5rem] max-w-[14rem] text-xs sm:min-w-[10rem]",
             !selected && "text-muted-foreground",
             className,

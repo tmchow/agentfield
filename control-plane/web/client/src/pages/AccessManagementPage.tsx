@@ -177,7 +177,7 @@ function AccessManagementPageInner() {
           <TabsTrigger value="agent-tags" variant="underline" className="gap-2">
             Agent tags
             {pendingCount > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-micro">
                 {pendingCount}
               </Badge>
             )}

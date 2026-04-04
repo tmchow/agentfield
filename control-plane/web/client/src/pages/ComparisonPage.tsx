@@ -159,7 +159,7 @@ function durationDeltaLabel(msA?: number, msB?: number): string | null {
 // ─── Step I/O diff section ────────────────────────────────────────────────────
 
 const compareJsonBlockClass =
-  "max-h-[min(42vh,22rem)] overflow-auto rounded-md border border-border/60 bg-muted/50 p-3 text-[11px] leading-relaxed";
+  "max-h-[min(42vh,22rem)] overflow-auto rounded-md border border-border/60 bg-muted/50 p-3 text-micro-plus leading-relaxed";
 
 function formatBytesCompact(n?: number): string | null {
   if (n == null || n <= 0) return null;
@@ -231,7 +231,7 @@ function CompareStepPanel({
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+            <Badge variant="outline" className="shrink-0 font-mono text-micro">
               Run {label}
             </Badge>
             {workflowName?.trim() ? (
@@ -244,7 +244,7 @@ function CompareStepPanel({
             ) : null}
           </div>
           <p
-            className="truncate font-mono text-[11px] text-muted-foreground"
+            className="truncate font-mono text-micro-plus text-muted-foreground"
             title={step?.reasoner_id}
           >
             {step?.reasoner_id ?? "—"}
@@ -252,7 +252,7 @@ function CompareStepPanel({
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="max-w-[min(100%,11rem)] shrink-0 truncate text-right font-mono text-[10px] text-muted-foreground">
+            <span className="max-w-[min(100%,11rem)] shrink-0 truncate text-right font-mono text-micro text-muted-foreground">
               {formatCompareRunId(runId)}
             </span>
           </TooltipTrigger>
@@ -273,19 +273,19 @@ function CompareStepPanel({
               status={runStatusToUiBadge(statusStr)}
               size="sm"
               showIcon={false}
-              className="h-5 text-[10px]"
+              className="h-5 text-micro"
             >
               {statusStr}
             </StatusBadge>
             {durationMs != null && durationMs > 0 ? (
-              <Badge variant="secondary" className="h-5 font-mono text-[10px] font-normal">
+              <Badge variant="secondary" className="h-5 font-mono text-micro font-normal">
                 {formatDuration(durationMs)}
               </Badge>
             ) : null}
             {formatStepWhen(startedAt) ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="h-5 max-w-[9rem] truncate text-[10px] font-normal">
+                  <Badge variant="outline" className="h-5 max-w-[9rem] truncate text-micro font-normal">
                     {formatStepWhen(startedAt)}
                     {completedAt ? ` → ${formatStepWhen(completedAt)}` : ""}
                   </Badge>
@@ -297,32 +297,32 @@ function CompareStepPanel({
               </Tooltip>
             ) : null}
             {ex?.agent_node_id ? (
-              <Badge variant="outline" className="h-5 max-w-[8rem] truncate text-[10px] font-normal">
+              <Badge variant="outline" className="h-5 max-w-[8rem] truncate text-micro font-normal">
                 {ex.agent_node_id}
               </Badge>
             ) : null}
             {ex?.workflow_depth != null && ex.workflow_depth > 0 ? (
-              <Badge variant="outline" className="h-5 text-[10px] font-normal">
+              <Badge variant="outline" className="h-5 text-micro font-normal">
                 depth {ex.workflow_depth}
               </Badge>
             ) : null}
             {ex != null && ex.retry_count > 0 ? (
-              <Badge variant="outline" className="h-5 text-[10px] font-normal">
+              <Badge variant="outline" className="h-5 text-micro font-normal">
                 retries {ex.retry_count}
               </Badge>
             ) : null}
             {inBytes ? (
-              <Badge variant="outline" className="h-5 text-[10px] font-normal">
+              <Badge variant="outline" className="h-5 text-micro font-normal">
                 in {inBytes}
               </Badge>
             ) : null}
             {outBytes ? (
-              <Badge variant="outline" className="h-5 text-[10px] font-normal">
+              <Badge variant="outline" className="h-5 text-micro font-normal">
                 out {outBytes}
               </Badge>
             ) : null}
             {usageHint ? (
-              <Badge variant="secondary" className="h-5 max-w-[14rem] truncate text-[10px] font-normal">
+              <Badge variant="secondary" className="h-5 max-w-[14rem] truncate text-micro font-normal">
                 {usageHint}
               </Badge>
             ) : null}
@@ -336,7 +336,7 @@ function CompareStepPanel({
 
           {hasEx && (layers.prose.length > 0 || layers.meta.length > 0) ? (
             <div className="rounded-lg border border-border/80 bg-muted/25 p-3">
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="mb-2 text-micro font-medium uppercase tracking-wide text-muted-foreground">
                 Reasoner context
               </p>
               {layers.meta.length > 0 ? (
@@ -344,7 +344,7 @@ function CompareStepPanel({
                   {layers.meta.map((m) => (
                     <Tooltip key={m.key}>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="h-5 max-w-[11rem] truncate text-[10px] font-normal">
+                        <Badge variant="outline" className="h-5 max-w-[11rem] truncate text-micro font-normal">
                           <span className="text-muted-foreground">{m.label}:</span>{" "}
                           <span className="font-mono">{m.value}</span>
                         </Badge>
@@ -357,7 +357,7 @@ function CompareStepPanel({
               <div className="flex flex-col gap-2">
                 {layers.prose.map((p) => (
                   <div key={p.key} className="min-w-0">
-                    <p className="text-[10px] font-medium text-muted-foreground">{p.label}</p>
+                    <p className="text-micro font-medium text-muted-foreground">{p.label}</p>
                     <div
                       className="mt-1 max-h-28 overflow-y-auto rounded-md border border-border/50 bg-background/80 px-2.5 py-2 text-xs leading-snug text-foreground"
                       title={p.text}
@@ -373,19 +373,19 @@ function CompareStepPanel({
           {hasEx ? (
           <Tabs defaultValue={defaultTab} className="min-w-0">
             <TabsList variant="soft" className="h-8 w-full justify-start gap-0.5 p-1 sm:w-auto">
-              <TabsTrigger variant="soft" size="sm" value="input" disabled={!hasEx} className="text-[11px]">
+              <TabsTrigger variant="soft" size="sm" value="input" disabled={!hasEx} className="text-micro-plus">
                 Input JSON
               </TabsTrigger>
-              <TabsTrigger variant="soft" size="sm" value="output" disabled={!hasEx} className="text-[11px]">
+              <TabsTrigger variant="soft" size="sm" value="output" disabled={!hasEx} className="text-micro-plus">
                 Output
               </TabsTrigger>
               {notes.length > 0 ? (
-                <TabsTrigger variant="soft" size="sm" value="notes" className="text-[11px]">
+                <TabsTrigger variant="soft" size="sm" value="notes" className="text-micro-plus">
                   Notes ({notes.length})
                 </TabsTrigger>
               ) : null}
               {hasErr ? (
-                <TabsTrigger variant="soft" size="sm" value="error" className="text-[11px] text-destructive">
+                <TabsTrigger variant="soft" size="sm" value="error" className="text-micro-plus text-destructive">
                   Error
                 </TabsTrigger>
               ) : null}
@@ -398,7 +398,7 @@ function CompareStepPanel({
             </TabsContent>
             <TabsContent value="output" className="mt-2">
               {hasErr ? (
-                <p className="mb-2 text-[11px] text-muted-foreground">
+                <p className="mb-2 text-micro-plus text-muted-foreground">
                   This step failed; open the Error tab for the message. Raw output (if any) below.
                 </p>
               ) : null}
@@ -417,7 +417,7 @@ function CompareStepPanel({
                   {note.tags?.length ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {note.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="h-4 text-[9px]">
+                        <Badge key={tag} variant="outline" className="h-4 text-nano">
                           {tag}
                         </Badge>
                       ))}
@@ -440,7 +440,7 @@ function CompareStepPanel({
           ) : null}
 
           {ex?.execution_id ? (
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-micro text-muted-foreground">
               <span className="font-medium text-foreground/80">Execution</span>{" "}
               <span className="font-mono">{ex.execution_id}</span>
             </p>
@@ -759,7 +759,7 @@ export function ComparisonPage() {
                       title={runIdA}
                     >
                       <span className="text-muted-foreground">A</span>
-                      <span className="ml-1 font-mono text-[10px] font-normal text-muted-foreground/80">
+                      <span className="ml-1 font-mono text-micro font-normal text-muted-foreground/80">
                         {formatCompareRunId(runIdA)}
                       </span>
                     </TableHead>
@@ -768,7 +768,7 @@ export function ComparisonPage() {
                       title={runIdB}
                     >
                       <span className="text-muted-foreground">B</span>
-                      <span className="ml-1 font-mono text-[10px] font-normal text-muted-foreground/80">
+                      <span className="ml-1 font-mono text-micro font-normal text-muted-foreground/80">
                         {formatCompareRunId(runIdB)}
                       </span>
                     </TableHead>
@@ -890,7 +890,7 @@ export function ComparisonPage() {
                                           Step comparison
                                         </span>
                                         <span className="text-muted-foreground/70"> · </span>
-                                        <span className="font-mono text-[11px]">
+                                        <span className="font-mono text-micro-plus">
                                           Step {i + 1} · {reasonerLabel}
                                         </span>
                                       </p>

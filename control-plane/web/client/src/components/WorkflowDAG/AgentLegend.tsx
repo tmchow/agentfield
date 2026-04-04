@@ -195,14 +195,14 @@ export function AgentLegend({
                 </div>
                 <Badge
                   variant="secondary"
-                  className="h-4 min-w-4 shrink-0 px-1 text-[9px] font-semibold tabular-nums sm:h-5 sm:text-[10px]"
+                  className="h-4 min-w-4 shrink-0 px-1 text-nano font-semibold tabular-nums sm:h-5 sm:text-micro"
                 >
                   {agentColors.length}
                 </Badge>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-2" align="start" sideOffset={6}>
-              <p className="mb-1.5 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="mb-1.5 px-1 text-micro-plus font-medium uppercase tracking-wide text-muted-foreground">
                 Agents
               </p>
               <div className="max-h-52 space-y-0.5 overflow-y-auto">
@@ -325,7 +325,7 @@ export function AgentLegend({
             <CardTitle className="truncate text-center text-sm font-semibold leading-none text-foreground">
               Agents
             </CardTitle>
-            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px] font-semibold tabular-nums">
+            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-micro font-semibold tabular-nums">
               {agentColors.length}
             </Badge>
           </div>
@@ -364,7 +364,7 @@ export function AgentLegend({
           <CardTitle className="text-center text-sm font-semibold leading-none text-foreground">
             Agents
           </CardTitle>
-          <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px] font-semibold tabular-nums">
+          <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-micro font-semibold tabular-nums">
             {agentColors.length}
           </Badge>
         </div>
@@ -484,7 +484,7 @@ export function AgentLegendMini({
         className,
       )}
     >
-      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="text-micro font-medium uppercase tracking-wide text-muted-foreground">
         Agents
       </span>
       <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/60" />
@@ -513,7 +513,7 @@ export function AgentLegendMini({
           </button>
         ))}
         {agentColors.length > 8 ? (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-micro">
             +{agentColors.length - 8}
           </Badge>
         ) : null}

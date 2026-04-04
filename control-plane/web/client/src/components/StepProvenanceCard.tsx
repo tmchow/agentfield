@@ -19,12 +19,12 @@ function CopyableLine({
   return (
     <div className="flex items-start justify-between gap-2 py-1.5 border-b border-border/60 last:border-0">
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-micro font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
         <p
           className={cn(
-            "mt-0.5 text-[11px] text-foreground break-all",
+            "mt-0.5 text-micro-plus text-foreground break-all",
             mono && "font-mono",
           )}
           title={value}
@@ -36,7 +36,7 @@ function CopyableLine({
         type="button"
         variant="ghost"
         size="sm"
-        className="h-7 shrink-0 px-2 text-[10px] text-muted-foreground"
+        className="h-7 shrink-0 px-2 text-micro text-muted-foreground"
         onClick={() => {
           void navigator.clipboard.writeText(value).then(() => {
             setCopied(true);
@@ -76,7 +76,7 @@ export function StepProvenanceCard({
 
   return (
     <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2">
-      <p className="text-[10px] font-medium text-muted-foreground mb-1">
+      <p className="text-micro font-medium text-muted-foreground mb-1">
         Provenance (VC)
       </p>
       <div className="divide-y-0">

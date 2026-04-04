@@ -7,6 +7,17 @@
 **Date:** 2026-04-04  
 **Tools:** Figma MCP (`get_metadata`, `get_design_context`, `search_design_system`). `get_variable_defs` was **not usable** in this session (Figma returned: *nothing selected* — requires an active selection in the desktop app).
 
+### Implementation log (code)
+
+Applied alignment pass across the web client:
+
+- **`src/index.css`:** `--shadow-xs`, `--command-list-max-height` (300px).
+- **`tailwind.config.js`:** `boxShadow.xs`, `maxHeight.command`, `fontSize` `nano` / `micro` / `micro-plus`, `spacing.15` (3.75rem).
+- **Primitives:** `button` (`gap-1.5`, `shadow-xs` on outline/secondary, `active:translate-y-px`); `badge` micro type tokens; `drawer` (`rounded-t-xl`, `w-24` handle); `segmented-control` (`p-1`, trigger gaps); combobox triggers (`gap-1.5`, `shadow-xs`); `chip-input` (`min-h-9`, `min-w-20`); `command` list `max-h-command`; `sidebar` rail `after:w-0.5`; `separator` `h-px`/`w-px`; `scroll-area` `p-px`; `reasoner-node-combobox` `pl-15`.
+- **Repo-wide:** Replaced `text-[9px]` / `text-[10px]` / `text-[11px]` with `text-nano` / `text-micro` / `text-micro-plus` across `src/**/*.tsx`.
+
+Remaining intentional arbitrary values include Radix dialog centering (`left-[50%]`, slide keyframes), `min()`/`max()` responsive widths, DAG geometry, and alert icon optical offset (`translate-y-[-3px]`).
+
 ---
 
 ## 1. MCP methodology and limitations

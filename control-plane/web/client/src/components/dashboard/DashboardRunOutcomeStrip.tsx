@@ -119,7 +119,7 @@ export function DashboardRunOutcomeStrip({
       <CardHeader className="space-y-0.5 pb-2">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5">
           <CardTitle className="text-sm font-medium">Run timeline</CardTitle>
-          <p className="text-[11px] text-muted-foreground tabular-nums leading-tight">{headerSummary}</p>
+          <p className="text-micro-plus text-muted-foreground tabular-nums leading-tight">{headerSummary}</p>
         </div>
         <CardDescription className="text-xs leading-snug">
           Last {ordered.length} by activity ({TIMELINE_LIMIT} max). Hover a segment for details; click to open
@@ -173,24 +173,24 @@ export function DashboardRunOutcomeStrip({
                   >
                     <div>
                       <p className="text-xs font-medium leading-tight text-foreground">{whenLabel}</p>
-                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 font-mono text-micro-plus text-muted-foreground">
                         {shortRunIdForDashboard(run.run_id)}
                       </p>
                     </div>
                     <div className="rounded-md border border-border bg-muted/25 px-2 py-1.5">
                       <p className="text-xs font-medium leading-tight">{getStatusLabel(run.status)}</p>
                       {run.terminal && run.duration_ms != null ? (
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 text-micro-plus text-muted-foreground">
                           Duration {formatDurationLabel(run.duration_ms)}
                         </p>
                       ) : !run.terminal ? (
-                        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                        <p className="mt-0.5 text-micro-plus leading-snug text-muted-foreground">
                           In flight · latest activity {formatRelativeTime(run.latest_activity)}
                         </p>
                       ) : null}
                     </div>
                     <Separator />
-                    <div className="space-y-1 text-[11px] leading-snug">
+                    <div className="space-y-1 text-micro-plus leading-snug">
                       <p className="font-medium text-muted-foreground">Details</p>
                       <p>
                         <span className="text-muted-foreground">Reasoner </span>
@@ -211,7 +211,7 @@ export function DashboardRunOutcomeStrip({
               );
             })}
           </div>
-          <div className="flex justify-between px-0.5 text-[10px] font-normal text-muted-foreground">
+          <div className="flex justify-between px-0.5 text-micro font-normal text-muted-foreground">
             <span>Oldest</span>
             <span>Newest</span>
           </div>

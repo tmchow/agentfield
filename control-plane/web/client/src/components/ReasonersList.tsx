@@ -41,7 +41,7 @@ const ReasonersList: React.FC<ReasonersListProps> = ({ reasoners }) => {
                   <Badge
                     key={`${reasoner.id}-${tag}`}
                     variant="outline"
-                    className="text-[10px] bg-background text-muted-foreground border-border"
+                    className="text-micro bg-background text-muted-foreground border-border"
                   >
                     #{tag}
                   </Badge>
@@ -49,14 +49,14 @@ const ReasonersList: React.FC<ReasonersListProps> = ({ reasoners }) => {
                 {reasoner.tags.length > 3 && (
                   <Badge
                     variant="outline"
-                    className="text-[10px] bg-background text-muted-foreground border-border"
+                    className="text-micro bg-background text-muted-foreground border-border"
                   >
                     +{reasoner.tags.length - 3}
                   </Badge>
                 )}
               </div>
             ) : (
-              <p className="mt-1 text-[11px] text-muted-foreground">No tags</p>
+              <p className="mt-1 text-micro-plus text-muted-foreground">No tags</p>
             )}
           </div>
         ))}

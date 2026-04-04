@@ -428,7 +428,7 @@ export function EnhancedWorkflowData({
           </div>
           <div className="flex items-center gap-1">
             {isSelectedInGraph && (
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-micro">
                 Graph
               </Badge>
             )}
@@ -442,12 +442,12 @@ export function EnhancedWorkflowData({
         </div>
         <div className="mt-2 flex items-center gap-1">
           {isLoading && (
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-micro uppercase tracking-wide text-muted-foreground">
               <InProgress className="h-3 w-3 animate-spin" /> Loading
             </span>
           )}
           {!isLoading && nodeError && (
-            <span className="text-[10px] uppercase tracking-wide text-destructive">
+            <span className="text-micro uppercase tracking-wide text-destructive">
               {nodeError}
             </span>
           )}
@@ -457,7 +457,7 @@ export function EnhancedWorkflowData({
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-[10px] uppercase tracking-wide flex items-center gap-1",
+                  "text-micro uppercase tracking-wide flex items-center gap-1",
                   webhookHasFailure
                     ? "border-destructive/40 text-destructive"
                     : webhookHasSuccess

@@ -200,7 +200,7 @@ export function VerifyProvenancePage() {
                   Resolve DIDs from web
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Matches <code className="text-[10px]">--resolve-web</code> on the CLI when the bundle
+                  Matches <code className="text-micro">--resolve-web</code> on the CLI when the bundle
                   lacks keys.
                 </p>
               </div>

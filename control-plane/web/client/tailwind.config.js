@@ -11,6 +11,24 @@ export default {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['SF Mono', 'Monaco', 'Inconsolata', 'monospace'],
       },
+      fontSize: {
+        /** 9px / 12px — graph badges / ultra-dense */
+        nano: ['0.5625rem', { lineHeight: '0.75rem' }],
+        /** 10px / 14px — dense labels (badges, shortcuts); on 4px rhythm */
+        micro: ['0.625rem', { lineHeight: '0.875rem' }],
+        /** 11px / 16px */
+        'micro-plus': ['0.6875rem', { lineHeight: '1rem' }],
+      },
+      boxShadow: {
+        xs: 'var(--shadow-xs)',
+      },
+      maxHeight: {
+        command: 'var(--command-list-max-height)',
+      },
+      spacing: {
+        /** 60px — tree / combobox row indent (was pl-[3.75rem]) */
+        15: '3.75rem',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

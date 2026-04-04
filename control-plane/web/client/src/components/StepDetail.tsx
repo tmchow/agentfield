@@ -62,7 +62,7 @@ function CopyCurlSnippet({
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 gap-1 px-1.5 pr-1 text-[10px] text-muted-foreground"
+        className="h-6 gap-1 px-1.5 pr-1 text-micro text-muted-foreground"
         onClick={handleClick}
         title={`Copy cURL: ${label}`}
       >
@@ -85,7 +85,7 @@ function CopyCurlSnippet({
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className="max-w-[min(20rem,calc(100vw-2rem))] border border-border bg-popover px-2.5 py-2 text-left text-[11px] leading-snug text-popover-foreground shadow-md"
+          className="max-w-[min(20rem,calc(100vw-2rem))] border border-border bg-popover px-2.5 py-2 text-left text-micro-plus leading-snug text-popover-foreground shadow-md"
         >
           {hint}
         </TooltipContent>
@@ -99,7 +99,7 @@ function CopyableWorkflowId({ workflowId }: { workflowId: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
-    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground/80">
+    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-muted-foreground/80">
       <span className="shrink-0 font-sans">Workflow ID:</span>
       <button
         type="button"
@@ -308,7 +308,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 gap-1.5 px-2 text-[10px] font-medium"
+                      className="h-7 gap-1.5 px-2 text-micro font-medium"
                     >
                       <Terminal className="size-3 shrink-0" />
                       Copy cURL
@@ -319,7 +319,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                     align="start"
                     className="w-[min(100vw-1.5rem,18rem)]"
                   >
-                    <DropdownMenuLabel className="text-[10px] font-normal leading-snug text-muted-foreground">
+                    <DropdownMenuLabel className="text-micro font-normal leading-snug text-muted-foreground">
                       Each item copies a ready-to-run curl. Descriptions below.
                     </DropdownMenuLabel>
                     {curlSnippets.map((s) => (
@@ -334,7 +334,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                           <Copy className="size-3.5 shrink-0 opacity-70" />
                           {s.label}
                         </span>
-                        <span className="pl-[1.375rem] text-[10px] leading-snug text-muted-foreground">
+                        <span className="pl-[1.375rem] text-micro leading-snug text-muted-foreground">
                           {s.hint}
                         </span>
                       </DropdownMenuItem>
@@ -437,7 +437,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="ml-1 text-[10px] py-0 h-4"
+                        className="ml-1 text-micro py-0 h-4"
                       >
                         {tag}
                       </Badge>
@@ -462,7 +462,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                   execution.webhook_events.map((event, i) => (
                     <div
                       key={event.id ?? i}
-                      className="flex items-center justify-between rounded-md bg-muted px-2 py-1.5 text-[11px]"
+                      className="flex items-center justify-between rounded-md bg-muted px-2 py-1.5 text-micro-plus"
                     >
                       <div className="flex items-center gap-2">
                         <div
@@ -499,7 +499,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-5 px-1.5 text-[10px] gap-1"
+                            className="h-5 px-1.5 text-micro gap-1"
                             onClick={() =>
                               retryExecutionWebhook(execution.execution_id).catch(
                                 console.error,
@@ -514,7 +514,7 @@ export function StepDetail({ executionId }: { executionId: string }) {
                     </div>
                   ))
                 ) : (
-                  <p className="text-[11px] text-muted-foreground px-1">
+                  <p className="text-micro-plus text-muted-foreground px-1">
                     Webhook registered but no delivery attempts yet.
                   </p>
                 )}
@@ -534,15 +534,15 @@ export function StepDetail({ executionId }: { executionId: string }) {
             </CardHeader>
             <CardContent className="px-3 pb-3 flex flex-col gap-2">
               {execution.approval_status && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-micro-plus text-muted-foreground">
                   Status:{" "}
-                  <Badge variant="outline" className="text-[10px] ml-1">
+                  <Badge variant="outline" className="text-micro ml-1">
                     {execution.approval_status}
                   </Badge>
                 </p>
               )}
               {execution.approval_requested_at && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-micro-plus text-muted-foreground">
                   Requested:{" "}
                   {new Date(execution.approval_requested_at).toLocaleString()}
                 </p>

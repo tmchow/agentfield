@@ -98,7 +98,7 @@ export function EnhancedWorkflowWebhooks({
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[10px] uppercase tracking-wide",
+                          "text-micro uppercase tracking-wide",
                           hasFailure
                             ? "border-destructive/40 text-destructive"
                             : successCount > 0
@@ -205,7 +205,7 @@ function SummaryCard({
         {icon}
       </div>
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+        <span className="text-micro uppercase tracking-wide text-muted-foreground/80">
           {label}
         </span>
         <span className={cn("text-sm font-semibold", toneClasses[tone])}>{value}</span>
