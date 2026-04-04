@@ -1,3 +1,5 @@
+import { useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import type { WorkflowDAGLightweightNode } from "@/types/workflows";
 
@@ -82,13 +84,81 @@ function formatRelativeStart(ms: number): string {
   return `+${hours}:${String(remMins).padStart(2, "0")}:${String(remSecs).padStart(2, "0")}`;
 }
 
-// ─── Flatten tree to ordered list for group-counting ─────────────────────────
+// ─── Flat step representation ─────────────────────────────────────────────────
 
-function flattenTree(node: TraceTreeNode): TraceTreeNode[] {
-  const result: TraceTreeNode[] = [node];
-  for (const child of node.children ?? []) {
-    result.push(...flattenTree(child));
+interface FlatStep {
+  node: TraceTreeNode;
+  depth: number;
+  index: number;
+  isFirstOfGroup: boolean;
+  effectiveGroupCount: number;
+  showSeparator: boolean;
+}
+
+function buildFlatSteps(root: TraceTreeNode): FlatStep[] {
+  const result: FlatStep[] = [];
+
+  // DFS traversal to produce ordered flat list
+  function visit(node: TraceTreeNode, depth: number) {
+    result.push({
+      node,
+      depth,
+      index: result.length,
+      isFirstOfGroup: false,
+      effectiveGroupCount: 0,
+      showSeparator: false,
+    });
+    for (const child of node.children ?? []) {
+      visit(child, depth + 1);
+    }
   }
+  visit(root, 0);
+
+  // Re-index
+  result.forEach((step, i) => {
+    step.index = i;
+  });
+
+  // Compute group separators and group count badges
+  // We need sibling context: for each node, find siblings (same parent)
+  const siblingMap = new Map<string | null | undefined, FlatStep[]>();
+  for (const step of result) {
+    const parentId = step.node.parent_execution_id ?? null;
+    if (!siblingMap.has(parentId)) {
+      siblingMap.set(parentId, []);
+    }
+    siblingMap.get(parentId)!.push(step);
+  }
+
+  for (const step of result) {
+    const parentId = step.node.parent_execution_id ?? null;
+    const siblings = siblingMap.get(parentId) ?? [];
+    const siblingIndex = siblings.findIndex(
+      (s) => s.node.execution_id === step.node.execution_id,
+    );
+    const prevSibling = siblingIndex > 0 ? siblings[siblingIndex - 1] : null;
+
+    // Separator: depth > 0 and previous flat node has different reasoner_id
+    const prevFlat = step.index > 0 ? result[step.index - 1] : null;
+    step.showSeparator =
+      step.depth > 0 &&
+      prevFlat !== null &&
+      prevFlat.node.reasoner_id !== step.node.reasoner_id;
+
+    // Group badge
+    const isFirstOfGroup =
+      prevSibling === null || prevSibling.node.reasoner_id !== step.node.reasoner_id;
+    step.isFirstOfGroup = isFirstOfGroup;
+
+    if (isFirstOfGroup) {
+      const groupCount = siblings
+        .slice(siblingIndex)
+        .findIndex((s) => s.node.reasoner_id !== step.node.reasoner_id);
+      step.effectiveGroupCount =
+        groupCount === -1 ? siblings.length - siblingIndex : groupCount;
+    }
+  }
+
   return result;
 }
 
@@ -106,35 +176,24 @@ function StatusDot({ status }: { status: string }) {
   return <span className={cn("size-1.5 rounded-full shrink-0 inline-block", color)} />;
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Single trace row ─────────────────────────────────────────────────────────
 
-interface RunTraceProps {
-  node: TraceTreeNode;
+interface TraceRowProps {
+  step: FlatStep;
   maxDuration: number;
   selectedId: string | null;
   onSelect: (executionId: string) => void;
-  depth?: number;
-  /** ISO string of the run's start time, used to compute relative step start offsets */
   runStartedAt?: string | null;
-  /** Internal: flat ordered list of all nodes, used for group separators */
-  _flatNodes?: TraceTreeNode[];
-  /** Internal: sequential index of this node in the flat list */
-  _index?: number;
 }
 
-export function RunTrace({
-  node,
+function TraceRow({
+  step,
   maxDuration,
   selectedId,
   onSelect,
-  depth = 0,
   runStartedAt,
-  _flatNodes,
-  _index = 0,
-}: RunTraceProps) {
-  // Build flat list once at the root level
-  const flatNodes = _flatNodes ?? flattenTree(node);
-  const index = _index;
+}: TraceRowProps) {
+  const { node, depth, index, isFirstOfGroup, effectiveGroupCount, showSeparator } = step;
 
   const barWidth =
     node.duration_ms != null
@@ -153,41 +212,12 @@ export function RunTrace({
             ? "bg-blue-500 animate-pulse"
             : "bg-muted-foreground/30";
 
-  // Relative start time
   let relativeStart: string | null = null;
   if (runStartedAt && node.started_at) {
     const runStartMs = new Date(runStartedAt).getTime();
     const stepStartMs = new Date(node.started_at).getTime();
     relativeStart = formatRelativeStart(stepStartMs - runStartMs);
   }
-
-  // Group separator: show a divider when reasoner_id changes from previous sibling
-  const prevNode = index > 0 ? flatNodes[index - 1] : null;
-  const showSeparator =
-    depth > 0 &&
-    prevNode !== null &&
-    prevNode.reasoner_id !== node.reasoner_id;
-
-  // Group count badge: count consecutive siblings with same reasoner_id
-  // Only show on the first node of a consecutive run
-  const siblings = flatNodes.filter(
-    (n) => n.parent_execution_id === node.parent_execution_id,
-  );
-  const siblingIndex = siblings.findIndex(
-    (n) => n.execution_id === node.execution_id,
-  );
-  const prevSibling = siblingIndex > 0 ? siblings[siblingIndex - 1] : null;
-  const isFirstOfGroup =
-    prevSibling === null || prevSibling.reasoner_id !== node.reasoner_id;
-  const groupCount = isFirstOfGroup
-    ? siblings
-        .slice(siblingIndex)
-        .findIndex((n) => n.reasoner_id !== node.reasoner_id)
-    : 0;
-  const effectiveGroupCount =
-    groupCount === -1
-      ? siblings.length - siblingIndex
-      : groupCount;
 
   return (
     <div>
@@ -255,26 +285,72 @@ export function RunTrace({
           {formatDuration(node.duration_ms)}
         </span>
       </button>
+    </div>
+  );
+}
 
-      {/* Children */}
-      {node.children?.map((child) => {
-        const childIndex = flatNodes.findIndex(
-          (n) => n.execution_id === child.execution_id,
-        );
-        return (
-          <RunTrace
-            key={child.execution_id}
-            node={child}
-            maxDuration={maxDuration}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            depth={depth + 1}
-            runStartedAt={runStartedAt}
-            _flatNodes={flatNodes}
-            _index={childIndex}
-          />
-        );
-      })}
+// ─── Main component ───────────────────────────────────────────────────────────
+
+interface RunTraceProps {
+  node: TraceTreeNode;
+  maxDuration: number;
+  selectedId: string | null;
+  onSelect: (executionId: string) => void;
+  /** ISO string of the run's start time, used to compute relative step start offsets */
+  runStartedAt?: string | null;
+}
+
+export function RunTrace({
+  node,
+  maxDuration,
+  selectedId,
+  onSelect,
+  runStartedAt,
+}: RunTraceProps) {
+  const flatSteps = useMemo(() => buildFlatSteps(node), [node]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: flatSteps.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 28,
+    overscan: 20,
+  });
+
+  return (
+    <div ref={parentRef} className="h-full overflow-auto">
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const step = flatSteps[virtualRow.index];
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <TraceRow
+                step={step}
+                maxDuration={maxDuration}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                runStartedAt={runStartedAt}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

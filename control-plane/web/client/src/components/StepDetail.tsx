@@ -9,8 +9,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ChevronDown } from "@/components/ui/icon-bridge";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ShieldAlert } from "lucide-react";
 import { formatDuration } from "./RunTrace";
 
 // ─── Simple JSON syntax highlighter ──────────────────────────────────────────
@@ -224,6 +230,80 @@ export function StepDetail({ executionId }: { executionId: string }) {
               </div>
             </CollapsibleContent>
           </Collapsible>
+        )}
+
+        {/* HITL Approval Section */}
+        {(execution.status === "waiting" || execution.approval_request_id) && (
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-xs font-medium flex items-center gap-1.5">
+                <ShieldAlert className="size-3.5 text-amber-500" />
+                Human Approval Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 flex flex-col gap-2">
+              {execution.approval_status && (
+                <p className="text-[11px] text-muted-foreground">
+                  Status:{" "}
+                  <Badge variant="outline" className="text-[10px] ml-1">
+                    {execution.approval_status}
+                  </Badge>
+                </p>
+              )}
+              {execution.approval_requested_at && (
+                <p className="text-[11px] text-muted-foreground">
+                  Requested:{" "}
+                  {new Date(execution.approval_requested_at).toLocaleString()}
+                </p>
+              )}
+              {execution.approval_request_id &&
+                execution.approval_status === "pending" && (
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={async () => {
+                        await fetch("/api/v1/webhooks/approval-response", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-API-Key":
+                              localStorage.getItem("agentfield_api_key") ?? "",
+                          },
+                          body: JSON.stringify({
+                            requestId: execution.approval_request_id,
+                            decision: "approved",
+                          }),
+                        });
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={async () => {
+                        await fetch("/api/v1/webhooks/approval-response", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-API-Key":
+                              localStorage.getItem("agentfield_api_key") ?? "",
+                          },
+                          body: JSON.stringify({
+                            requestId: execution.approval_request_id,
+                            decision: "rejected",
+                          }),
+                        });
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </ScrollArea>
