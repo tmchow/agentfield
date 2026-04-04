@@ -4,7 +4,6 @@ import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
-  ArrowUpDown,
   Copy,
   Play,
 } from "lucide-react";
@@ -62,6 +61,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSidebar } from "@/components/ui/sidebar";
+import { SortableHeaderCell } from "@/components/ui/CompactTable";
 import { getExecutionDetails } from "@/services/executionsApi";
 import {
   JsonHighlightedPre,
@@ -579,42 +579,7 @@ function RunsPaginationBar({
   );
 }
 
-// ─── SortableHead ──────────────────────────────────────────────────────────────
-
-interface SortableHeadProps {
-  column: string;
-  label: string;
-  sortBy: string;
-  sortOrder: string;
-  onSortClick: (column: string) => void;
-  className?: string;
-}
-
-function SortableHead({ column, label, sortBy, sortOrder, onSortClick, className }: SortableHeadProps) {
-  const active = sortBy === column;
-  return (
-    <TableHead
-      className={cn(
-        "h-8 px-3 text-micro-plus font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors",
-        className,
-      )}
-      onClick={() => onSortClick(column)}
-    >
-      <div className="flex items-center gap-1">
-        {label}
-        {active ? (
-          sortOrder === "asc" ? (
-            <ArrowUp className="size-3 text-foreground" />
-          ) : (
-            <ArrowDown className="size-3 text-foreground" />
-          )
-        ) : (
-          <ArrowUpDown className="size-3 opacity-30" />
-        )}
-      </div>
-    </TableHead>
-  );
-}
+// ─── SortableHead (delegates to shared SortableHeaderCell) ──────────────────
 
 // ─── main component ────────────────────────────────────────────────────────────
 
@@ -938,7 +903,7 @@ export function RunsPage() {
                 />
               </TableHead>
               {/* Status first — most scannable */}
-              <SortableHead column="status" label="Status" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-24" />
+              <TableHead className="h-8 px-3 w-24"><SortableHeaderCell field="status" label="Status" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
               {/* Target + short run id (full id via copy) */}
               <TableHead
                 className="h-8 px-3 text-micro-plus font-medium text-muted-foreground min-w-0"
@@ -953,11 +918,11 @@ export function RunsPage() {
                 </span>
               </TableHead>
               {/* Steps — complexity */}
-              <SortableHead column="total_executions" label="Steps" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-20" />
+              <TableHead className="h-8 px-3 w-20"><SortableHeaderCell field="total_executions" label="Steps" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
               {/* Duration — performance */}
-              <SortableHead column="duration_ms" label="Duration" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="w-24" />
+              <TableHead className="h-8 px-3 w-24"><SortableHeaderCell field="duration_ms" label="Duration" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
               {/* Started — when (relative) */}
-              <SortableHead column="latest_activity" label="Started" sortBy={sortBy} sortOrder={sortOrder} onSortClick={handleSortClick} className="min-w-[9.5rem] w-44" />
+              <TableHead className="h-8 px-3 min-w-[9.5rem] w-44"><SortableHeaderCell field="latest_activity" label="Started" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

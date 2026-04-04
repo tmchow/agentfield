@@ -8,6 +8,7 @@ import {
   X,
   Clock
 } from "@/components/ui/icon-bridge";
+import { formatCompactRelativeTime } from "@/utils/dateFormat";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
@@ -61,16 +62,7 @@ export function CompactWorkflowSummary({
     return `${(durationMs / 60000).toFixed(1)}m`;
   };
 
-  const formatRelativeTime = (timestamp: string) => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffMs = now.getTime() - time.getTime();
-
-    if (diffMs < 60000) return "now";
-    if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m`;
-    if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h`;
-    return `${Math.floor(diffMs / 86400000)}d`;
-  };
+  const formatRelativeTime = formatCompactRelativeTime;
 
   const formatStartedTime = (timestamp: string) => {
     const date = new Date(timestamp);

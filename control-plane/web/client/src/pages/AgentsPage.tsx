@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatCompactRelativeTime } from "@/utils/dateFormat";
 import { Link, useNavigate } from "react-router-dom";
 import { useAgents, useAgentTagSummaries } from "@/hooks/queries";
 import { getNodeDetails } from "@/services/api";
@@ -26,20 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(dateStr: string | undefined): string {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "—";
-  const diffMs = Date.now() - date.getTime();
-  if (diffMs < 0 || diffMs > 365 * 24 * 60 * 60 * 1000) return ">1y ago";
-  const secs = Math.floor(diffMs / 1000);
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+const formatRelativeTime = formatCompactRelativeTime;
 
 function getStatusDotColor(lifecycleStatus: LifecycleStatus | undefined): string {
   switch (lifecycleStatus) {

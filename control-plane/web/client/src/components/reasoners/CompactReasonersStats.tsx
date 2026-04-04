@@ -6,6 +6,7 @@ import {
   Renew
 } from "@/components/ui/icon-bridge";
 import { cn } from "../../lib/utils";
+import { formatCompactRelativeTime } from "@/utils/dateFormat";
 import { Button } from "../ui/button";
 import {
   HoverCard,
@@ -41,20 +42,7 @@ export function CompactReasonersStats({
   const safeNodesCount = nodesCount ?? 0;
   const safeLastRefresh = lastRefresh || new Date();
 
-  const formatRelativeTime = (timestamp: Date) => {
-    try {
-      const now = new Date();
-      const diffMs = now.getTime() - timestamp.getTime();
-
-      if (diffMs < 60000) return "now";
-      if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m`;
-      if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h`;
-      return `${Math.floor(diffMs / 86400000)}d`;
-    } catch (error) {
-      console.warn('Error formatting relative time:', error);
-      return "now";
-    }
-  };
+  const formatRelativeTime = formatCompactRelativeTime;
 
   const formatLastRefresh = (timestamp: Date) => {
     try {

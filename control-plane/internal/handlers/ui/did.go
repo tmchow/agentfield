@@ -2,19 +2,17 @@ package ui
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Agent-Field/agentfield/control-plane/internal/handlers"
 	"github.com/Agent-Field/agentfield/control-plane/internal/services"
 	"github.com/Agent-Field/agentfield/control-plane/internal/storage"
 	"github.com/Agent-Field/agentfield/control-plane/pkg/types"
 
-	afcli "github.com/Agent-Field/agentfield/control-plane/internal/cli"
 	"github.com/gin-gonic/gin"
 )
 
@@ -471,33 +469,7 @@ func (h *DIDHandler) VerifyVCHandler(c *gin.Context) {
 // POST /api/ui/v1/did/verify-audit
 // Query: resolve_web=true, did_resolver=<url>, verbose=true
 func (h *DIDHandler) VerifyAuditBundleHandler(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, afcli.MaxVerifyAuditBodyBytes)
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(err, &maxBytesErr) {
-			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "request body too large", "max_bytes": afcli.MaxVerifyAuditBodyBytes})
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
-		}
-		return
-	}
-	if len(body) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "empty body"})
-		return
-	}
-	opts := afcli.VerifyOptions{
-		OutputFormat: "json",
-		ResolveWeb:   c.Query("resolve_web") == "true",
-		Resolver:     c.Query("did_resolver"),
-		Verbose:      c.Query("verbose") == "true",
-	}
-	result := afcli.VerifyProvenanceJSON(body, opts)
-	if !result.FormatValid {
-		c.JSON(http.StatusUnprocessableEntity, result)
-		return
-	}
-	c.JSON(http.StatusOK, result)
+	handlers.HandleVerifyAuditBundle(c)
 }
 
 // VerifyExecutionVCComprehensiveHandler handles requests for comprehensive VC verification.
