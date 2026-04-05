@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ## [0.1.64-rc.6] - 2026-04-06
 
 
+### Added
+
+- Feat(sdk/python): add per-execution LLM cost tracking (#343)
+
 ### Other
 
 - Remove OpenCode serve+attach workaround for stateless CLI (#326)
