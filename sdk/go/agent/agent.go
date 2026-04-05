@@ -334,6 +334,9 @@ type Agent struct {
 	router      http.Handler
 	handlerOnce sync.Once
 
+	procLogRing *processLogRing
+	procLogOnce sync.Once
+
 	initMu        sync.Mutex
 	initialized   bool
 	leaseLoopOnce sync.Once
@@ -551,6 +554,8 @@ func (a *Agent) Initialize(ctx context.Context) error {
 	if a.initialized {
 		return nil
 	}
+
+	a.ensureProcessLogRing()
 
 	if a.client == nil {
 		return errors.New("AgentFieldURL is required when running in server mode")
@@ -813,6 +818,7 @@ func (a *Agent) handler() http.Handler {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/health", a.healthHandler)
 		mux.HandleFunc("/discover", a.handleDiscover)
+		mux.HandleFunc("/agentfield/v1/logs", a.handleAgentfieldLogs)
 		mux.HandleFunc("/execute", a.handleExecute)
 		mux.HandleFunc("/execute/", a.handleExecute)
 		mux.HandleFunc("/reasoners/", a.handleReasoner)
@@ -843,7 +849,7 @@ func (a *Agent) handler() http.Handler {
 func (a *Agent) originAuthMiddleware(next http.Handler, token string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		if path == "/health" || path == "/discover" {
+		if path == "/health" || path == "/discover" || path == "/agentfield/v1/logs" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -867,7 +873,7 @@ func (a *Agent) localVerificationMiddleware(next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		// Only verify execution endpoints
-		if path == "/health" || path == "/discover" {
+		if path == "/health" || path == "/discover" || path == "/agentfield/v1/logs" {
 			next.ServeHTTP(w, r)
 			return
 		}

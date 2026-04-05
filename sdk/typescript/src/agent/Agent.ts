@@ -41,6 +41,11 @@ import type { MCPToolRegistration } from '../types/mcp.js';
 import { MCPClientRegistry } from '../mcp/MCPClientRegistry.js';
 import { MCPToolRegistrar } from '../mcp/MCPToolRegistrar.js';
 import { LocalVerifier } from '../verification/LocalVerifier.js';
+import {
+  installStdioLogCapture,
+  ProcessLogRing,
+  registerAgentfieldLogsRoute
+} from './processLogs.js';
 
 class TargetNotFoundError extends Error {}
 
@@ -64,6 +69,7 @@ export class Agent {
   private readonly mcpToolRegistrar?: MCPToolRegistrar;
   private readonly localVerifier?: LocalVerifier;
   private readonly realtimeValidationFunctions = new Set<string>();
+  private readonly processLogRing = new ProcessLogRing();
 
   constructor(config: AgentConfig) {
     const mcp = config.mcp
@@ -115,6 +121,8 @@ export class Agent {
     }
 
     this.registerDefaultRoutes();
+    installStdioLogCapture(this.processLogRing);
+    registerAgentfieldLogsRoute(this.app, this.processLogRing);
   }
 
   reasoner<TInput = any, TOutput = any>(
