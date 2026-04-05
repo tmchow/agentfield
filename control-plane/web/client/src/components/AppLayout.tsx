@@ -21,7 +21,7 @@ import { SSESyncProvider } from "@/hooks/useSSEQuerySync";
 const routeNames: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/runs": "Runs",
-  "/agents": "Agents",
+  "/agents": "Agent nodes",
   "/playground": "Playground",
   "/verify": "Audit",
   "/access": "Access management",

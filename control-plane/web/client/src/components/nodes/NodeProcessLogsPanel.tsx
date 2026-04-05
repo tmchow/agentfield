@@ -9,6 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +23,7 @@ import {
   AlertCircle,
   Copy,
   Download,
+  MoreHorizontal,
   PauseCircle,
   Play,
   RefreshCw,
@@ -76,6 +83,18 @@ function levelBadgeVariant(
   if (l === "warn" || l === "warning") return "outline";
   if (l === "info" || l === "log") return "secondary";
   return "outline";
+}
+
+/** Hide level pill when it only repeats stdout/stderr semantics (SDK defaults). */
+function isRedundantLevel(
+  level: string | undefined,
+  ns: "stdout" | "stderr" | "other"
+): boolean {
+  const l = (level ?? "").toLowerCase();
+  return (
+    (l === "info" && ns === "stdout") ||
+    (l === "error" && ns === "stderr")
+  );
 }
 
 export interface NodeProcessLogsPanelProps {
@@ -235,91 +254,241 @@ export function NodeProcessLogsPanel({
 
   return (
     <Card className={cn("border-border/80 shadow-sm", className)}>
-      <CardHeader className="pb-3">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Terminal className="size-4 text-muted-foreground" aria-hidden />
-            <CardTitle className="text-sm font-medium">
-              Process logs
-            </CardTitle>
-            <Badge variant="outline" className="font-mono text-[10px]">
-              NDJSON
-            </Badge>
+      <CardHeader className="space-y-4 p-4 pb-3 sm:p-6 sm:pb-3">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Terminal className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <CardTitle className="text-base font-semibold leading-none sm:text-sm sm:font-medium">
+                Process logs
+              </CardTitle>
+              <Badge variant="outline" className="font-mono text-[10px]">
+                NDJSON
+              </Badge>
+            </div>
+            <CardDescription className="text-xs leading-relaxed text-muted-foreground">
+              NDJSON from the agent (UTC timestamps, seq, stdout/stderr). Filter
+              by stream, then search text, seq, level, or source when the SDK
+              emits them.
+            </CardDescription>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8"
-              disabled={loadingTail || live}
-              onClick={() => {
-                stopLive();
-                void loadTail();
-              }}
-            >
-              <RefreshCw
-                className={cn("size-3.5", loadingTail && "animate-spin")}
-              />
-              <span className="ml-1.5 text-xs">Refresh</span>
-            </Button>
-            <Button
-              type="button"
-              variant={live ? "secondary" : "default"}
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                if (live) {
+
+          {/* Narrow: 2×2 grid + overflow menu. md+: single toolbar row (shadcn button group). */}
+          <div className="flex w-full min-w-0 flex-col gap-2 lg:w-auto lg:shrink-0 lg:max-w-full">
+            <div className="hidden w-full grid-cols-2 gap-2 min-[400px]:grid md:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1.5 px-2"
+                disabled={loadingTail || live}
+                onClick={() => {
                   stopLive();
-                } else {
-                  sinceSeqRef.current = maxSeq(entries);
-                  setStreamError(null);
-                  setLive(true);
-                }
-              }}
-            >
-              {live ? (
-                <>
-                  <PauseCircle className="size-3.5" />
-                  <span className="ml-1.5 text-xs">Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="size-3.5" />
-                  <span className="ml-1.5 text-xs">Live</span>
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={copyVisible}
-              disabled={filtered.length === 0}
-            >
-              <Copy className="size-3.5" />
-              <span className="ml-1.5 text-xs">Copy</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={downloadVisible}
-              disabled={filtered.length === 0}
-            >
-              <Download className="size-3.5" />
-              <span className="ml-1.5 text-xs">Download</span>
-            </Button>
+                  void loadTail();
+                }}
+              >
+                <RefreshCw
+                  className={cn("size-3.5 shrink-0", loadingTail && "animate-spin")}
+                />
+                <span className="text-xs">Refresh</span>
+              </Button>
+              <Button
+                type="button"
+                variant={live ? "secondary" : "default"}
+                size="sm"
+                className="h-9 w-full justify-center gap-1.5 px-2"
+                onClick={() => {
+                  if (live) {
+                    stopLive();
+                  } else {
+                    sinceSeqRef.current = maxSeq(entries);
+                    setStreamError(null);
+                    setLive(true);
+                  }
+                }}
+              >
+                {live ? (
+                  <>
+                    <PauseCircle className="size-3.5 shrink-0" />
+                    <span className="text-xs">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-3.5 shrink-0" />
+                    <span className="text-xs">Live</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1.5 px-2"
+                onClick={copyVisible}
+                disabled={filtered.length === 0}
+              >
+                <Copy className="size-3.5 shrink-0" />
+                <span className="text-xs">Copy</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1.5 px-2"
+                onClick={downloadVisible}
+                disabled={filtered.length === 0}
+              >
+                <Download className="size-3.5 shrink-0" />
+                <span className="text-xs">Download</span>
+              </Button>
+            </div>
+
+            <div className="flex min-[400px]:hidden items-stretch gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 flex-1 gap-1.5"
+                disabled={loadingTail || live}
+                onClick={() => {
+                  stopLive();
+                  void loadTail();
+                }}
+              >
+                <RefreshCw
+                  className={cn("size-3.5", loadingTail && "animate-spin")}
+                />
+                <span className="text-xs">Refresh</span>
+              </Button>
+              <Button
+                type="button"
+                variant={live ? "secondary" : "default"}
+                size="sm"
+                className="h-9 flex-1 gap-1.5"
+                onClick={() => {
+                  if (live) {
+                    stopLive();
+                  } else {
+                    sinceSeqRef.current = maxSeq(entries);
+                    setStreamError(null);
+                    setLive(true);
+                  }
+                }}
+              >
+                {live ? (
+                  <>
+                    <PauseCircle className="size-3.5" />
+                    <span className="text-xs">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-3.5" />
+                    <span className="text-xs">Live</span>
+                  </>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    aria-label="More log actions"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    disabled={filtered.length === 0}
+                    onClick={() => copyVisible()}
+                  >
+                    <Copy className="mr-2 size-4" />
+                    Copy visible
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={filtered.length === 0}
+                    onClick={() => downloadVisible()}
+                  >
+                    <Download className="mr-2 size-4" />
+                    Download NDJSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="hidden items-center justify-end gap-1.5 md:flex md:flex-nowrap">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                disabled={loadingTail || live}
+                onClick={() => {
+                  stopLive();
+                  void loadTail();
+                }}
+              >
+                <RefreshCw
+                  className={cn("size-3.5", loadingTail && "animate-spin")}
+                />
+                <span className="text-xs">Refresh</span>
+              </Button>
+              <Button
+                type="button"
+                variant={live ? "secondary" : "default"}
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={() => {
+                  if (live) {
+                    stopLive();
+                  } else {
+                    sinceSeqRef.current = maxSeq(entries);
+                    setStreamError(null);
+                    setLive(true);
+                  }
+                }}
+              >
+                {live ? (
+                  <>
+                    <PauseCircle className="size-3.5" />
+                    <span className="text-xs">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-3.5" />
+                    <span className="text-xs">Live</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={copyVisible}
+                disabled={filtered.length === 0}
+              >
+                <Copy className="size-3.5" />
+                <span className="text-xs">Copy</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={downloadVisible}
+                disabled={filtered.length === 0}
+              >
+                <Download className="size-3.5" />
+                <span className="text-xs">Download</span>
+              </Button>
+            </div>
           </div>
         </div>
-        <CardDescription className="text-xs text-muted-foreground">
-          NDJSON from the agent (UTC timestamps, seq, stdout/stderr). Filter by
-          stream, then search text, seq, level, or source when the SDK emits them.
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-4 pb-4 pt-0 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div
             className="min-w-0 flex-1 space-y-1.5"
@@ -408,79 +577,93 @@ export function NodeProcessLogsPanel({
           ref={scrollRef}
           className="h-[min(420px,50vh)] w-full rounded-md border border-border/80 bg-muted/20"
         >
-          <div className="space-y-0 p-2 font-mono text-[11px] leading-relaxed">
+          <div className="p-1.5 text-[10px] leading-tight sm:text-[11px]">
             {filtered.length === 0 && !loadingTail ? (
               <p className="px-2 py-6 text-center text-muted-foreground text-xs">
                 No log lines yet. Try Refresh, or enable live tail if the agent
                 supports streaming.
               </p>
             ) : (
-              filtered.map((e, i) => {
-                const ns = normalizeStream(e.stream);
-                const dateHint = formatLogDate(e.ts);
-                const timeStr = formatLogTime(e.ts);
-                const title = `${e.ts ?? ""} · seq ${e.seq ?? "?"}${
-                  e.level ? ` · ${e.level}` : ""
-                }${e.source ? ` · ${e.source}` : ""}`;
-                return (
-                  <div
-                    key={`${e.seq}-${e.ts}-${i}`}
-                    title={title}
-                    className={cn(
-                      "flex flex-col gap-1 border-b border-border/40 py-1.5 last:border-0 sm:flex-row sm:items-start sm:gap-3",
-                      ns === "stderr" && "bg-destructive/[0.04]"
-                    )}
-                  >
-                    <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-0.5 tabular-nums text-[10px] text-muted-foreground sm:w-[7.25rem] sm:flex-col sm:items-start sm:gap-0.5">
-                      <time
-                        dateTime={e.ts}
-                        className="leading-tight sm:w-full"
-                      >
-                        {dateHint ? (
-                          <span className="block truncate text-[9px] text-muted-foreground/90">
-                            {dateHint}
+              <div
+                role="log"
+                aria-label="Process log lines"
+                className="min-w-0 font-mono"
+              >
+                {filtered.map((e, i) => {
+                  const ns = normalizeStream(e.stream);
+                  const dateHint = formatLogDate(e.ts);
+                  const timeStr = formatLogTime(e.ts);
+                  const title = `${e.ts ?? ""} · seq ${e.seq ?? "?"}${
+                    e.level ? ` · ${e.level}` : ""
+                  }${e.source ? ` · ${e.source}` : ""}`;
+                  const showLevel =
+                    e.level && !isRedundantLevel(e.level, ns);
+                  const showSource =
+                    e.source && e.source.toLowerCase() !== "process";
+
+                  return (
+                    <div
+                      key={`${e.seq}-${e.ts}-${i}`}
+                      title={title}
+                      className={cn(
+                        "grid grid-cols-1 items-start gap-x-2 gap-y-1 border-b border-border/30 py-1 last:border-b-0 sm:grid-cols-[9rem_min-content_minmax(0,1fr)] sm:gap-y-0 sm:py-0.5",
+                        ns === "stderr" && "bg-destructive/[0.04]"
+                      )}
+                    >
+                      {/* Time + seq — single line on sm+ */}
+                      <div className="flex min-w-0 max-w-full flex-nowrap items-baseline gap-x-1.5 truncate tabular-nums text-muted-foreground sm:w-full sm:max-w-[9rem]">
+                        <time
+                          dateTime={e.ts}
+                          className="min-w-0 shrink truncate text-muted-foreground"
+                        >
+                          {dateHint ? (
+                            <span className="mr-1 text-[9px] opacity-85">
+                              {dateHint}
+                            </span>
+                          ) : null}
+                          <span className="whitespace-nowrap">{timeStr}</span>
+                        </time>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/65">
+                          #{e.seq}
+                        </span>
+                      </div>
+
+                      {/* Stream / level — compact pills */}
+                      <div className="flex flex-wrap items-center gap-0.5 sm:self-start sm:pt-px">
+                        <Badge
+                          variant={ns === "stderr" ? "destructive" : "secondary"}
+                          className="h-4 shrink-0 px-1 py-0 text-[8px] font-normal uppercase leading-none"
+                        >
+                          {ns === "other" ? e.stream || "?" : ns}
+                        </Badge>
+                        {showLevel ? (
+                          <Badge
+                            variant={levelBadgeVariant(e.level)}
+                            className="h-4 max-w-[4.5rem] shrink-0 truncate px-1 py-0 text-[8px] font-normal capitalize leading-none"
+                          >
+                            {e.level}
+                          </Badge>
+                        ) : null}
+                      </div>
+
+                      {/* Message — multiline only here */}
+                      <div className="min-w-0 sm:pt-px">
+                        {showSource ? (
+                          <span className="mb-0.5 block truncate text-[9px] font-sans text-muted-foreground">
+                            {e.source}
                           </span>
                         ) : null}
-                        <span className="block font-medium text-muted-foreground">
-                          {timeStr}
+                        <span className="block whitespace-pre-wrap break-all font-mono text-[10px] leading-snug text-foreground/90 sm:text-[11px]">
+                          {e.line}
+                          {e.truncated ? (
+                            <span className="text-muted-foreground"> …</span>
+                          ) : null}
                         </span>
-                      </time>
-                      <span className="text-[10px] text-muted-foreground/70 sm:font-mono">
-                        #{e.seq}
-                      </span>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-1">
-                      <Badge
-                        variant={ns === "stderr" ? "destructive" : "secondary"}
-                        className="h-5 shrink-0 px-1.5 text-[9px] font-normal uppercase"
-                      >
-                        {ns === "other" ? e.stream || "?" : ns}
-                      </Badge>
-                      {e.level ? (
-                        <Badge
-                          variant={levelBadgeVariant(e.level)}
-                          className="h-5 max-w-[6rem] shrink-0 truncate px-1.5 text-[9px] font-normal capitalize"
-                        >
-                          {e.level}
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {e.source ? (
-                        <span className="mb-0.5 block truncate text-[10px] text-muted-foreground">
-                          {e.source}
-                        </span>
-                      ) : null}
-                      <span className="whitespace-pre-wrap break-all text-foreground/90">
-                        {e.line}
-                        {e.truncated ? (
-                          <span className="text-muted-foreground"> …</span>
-                        ) : null}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         </ScrollArea>

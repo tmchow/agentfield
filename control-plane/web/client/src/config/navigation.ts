@@ -29,7 +29,7 @@ export const navigation = [
     path: "/runs",
   },
   {
-    title: "Agents",
+    title: "Agent nodes",
     icon: Server,
     path: "/agents",
   },
