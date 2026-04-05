@@ -62,16 +62,40 @@ func isPrivateIP(ip net.IP) bool {
 	return false
 }
 
-// validateExternalURL ensures a URL is HTTPS and not pointing to metadata endpoints.
-func validateExternalURL(rawURL string) error {
+// validateExternalURL ensures a URL is HTTPS and structurally safe to fetch.
+func validateExternalURL(rawURL string) (*url.URL, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return fmt.Errorf("invalid URL: %v", err)
+		return nil, fmt.Errorf("invalid URL: %v", err)
 	}
 	if u.Scheme != "https" {
-		return fmt.Errorf("only HTTPS URLs are allowed, got %s", u.Scheme)
+		return nil, fmt.Errorf("only HTTPS URLs are allowed, got %s", u.Scheme)
 	}
-	return nil
+	if u.Host == "" || u.Hostname() == "" {
+		return nil, fmt.Errorf("URL must include a host")
+	}
+	if u.User != nil {
+		return nil, fmt.Errorf("embedded URL credentials are not allowed")
+	}
+	return u, nil
+}
+
+func fetchExternalURL(ctx context.Context, rawURL string) (*http.Response, *url.URL, error) {
+	parsedURL, err := validateExternalURL(rawURL)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedURL.String(), nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build request: %v", err)
+	}
+
+	resp, err := safeHTTPClient().Do(req)
+	if err != nil {
+		return nil, parsedURL, err
+	}
+	return resp, parsedURL, nil
 }
 
 // NewVCCommand creates the vc command with subcommands
@@ -160,17 +184,17 @@ type VerificationMetadata struct {
 
 // VCVerificationResult represents the comprehensive verification result
 type VCVerificationResult struct {
-	Valid             bool                    `json:"valid"`
-	Type              string                  `json:"type"`
-	WorkflowID        string                  `json:"workflow_id,omitempty"`
-	SignatureValid    bool                    `json:"signature_valid"`
-	FormatValid       bool                    `json:"format_valid"`
-	Message           string                  `json:"message"`
-	Error             string                  `json:"error,omitempty"`
-	VerifiedAt        string                  `json:"verified_at"`
-	ComponentResults  []ComponentVerification `json:"component_results,omitempty"`
-	DIDResolutions    []DIDResolutionResult   `json:"did_resolutions,omitempty"`
-	VerificationSteps []VerificationStep      `json:"verification_steps,omitempty"`
+	Valid             bool                             `json:"valid"`
+	Type              string                           `json:"type"`
+	WorkflowID        string                           `json:"workflow_id,omitempty"`
+	SignatureValid    bool                             `json:"signature_valid"`
+	FormatValid       bool                             `json:"format_valid"`
+	Message           string                           `json:"message"`
+	Error             string                           `json:"error,omitempty"`
+	VerifiedAt        string                           `json:"verified_at"`
+	ComponentResults  []ComponentVerification          `json:"component_results,omitempty"`
+	DIDResolutions    []DIDResolutionResult            `json:"did_resolutions,omitempty"`
+	VerificationSteps []VerificationStep               `json:"verification_steps,omitempty"`
 	Summary           VerificationSummary              `json:"summary"`
 	Comprehensive     *ComprehensiveVerificationResult `json:"comprehensive,omitempty"`
 }
@@ -317,12 +341,7 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 	}
 
 	didURL := fmt.Sprintf("https://%s%s", domain, path)
-
-	if err := validateExternalURL(didURL); err != nil {
-		return DIDResolutionInfo{}, fmt.Errorf("blocked did:web resolution: %v", err)
-	}
-
-	resp, err := safeHTTPClient().Get(didURL)
+	resp, parsedURL, err := fetchExternalURL(context.Background(), didURL)
 	if err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to fetch DID document: %v", err)
 	}
@@ -347,7 +366,7 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 		DID:          did,
 		Method:       "web",
 		PublicKeyJWK: publicKeyJWK,
-		WebURL:       didURL,
+		WebURL:       parsedURL.String(),
 		ResolvedFrom: "web",
 	}, nil
 }
@@ -364,12 +383,7 @@ func resolveFromWeb(did, resolver string) (DIDResolutionInfo, error) {
 
 func resolveFromCustom(did, resolver string) (DIDResolutionInfo, error) {
 	resolverURL := fmt.Sprintf("%s/%s", strings.TrimSuffix(resolver, "/"), did)
-
-	if err := validateExternalURL(resolverURL); err != nil {
-		return DIDResolutionInfo{}, fmt.Errorf("blocked custom resolver: %v", err)
-	}
-
-	resp, err := safeHTTPClient().Get(resolverURL)
+	resp, _, err := fetchExternalURL(context.Background(), resolverURL)
 	if err != nil {
 		return DIDResolutionInfo{}, fmt.Errorf("failed to resolve DID: %v", err)
 	}

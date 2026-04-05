@@ -33,18 +33,27 @@ async def test_ui_proxies_node_process_logs(async_http_client, make_test_agent):
         )
         assert exec_res.status_code == 200, exec_res.text
 
-        logs_res = await async_http_client.get(
-            "/api/ui/v1/nodes/" + node_id + "/logs",
-            params={"tail_lines": "200"},
-            timeout=30.0,
-        )
-        assert logs_res.status_code == 200, logs_res.text
+        deadline = asyncio.get_running_loop().time() + 5.0
+        last_joined = ""
+        while True:
+            logs_res = await async_http_client.get(
+                "/api/ui/v1/nodes/" + node_id + "/logs",
+                params={"tail_lines": "10000"},
+                timeout=30.0,
+            )
+            assert logs_res.status_code == 200, logs_res.text
 
-        lines = [ln for ln in logs_res.text.strip().split("\n") if ln.strip()]
-        assert lines, "expected NDJSON lines from log proxy"
+            lines = [ln for ln in logs_res.text.strip().split("\n") if ln.strip()]
+            assert lines, "expected NDJSON lines from log proxy"
 
-        parsed = [json.loads(ln) for ln in lines]
-        assert all("seq" in row and "stream" in row and "line" in row for row in parsed)
+            parsed = [json.loads(ln) for ln in lines]
+            assert all("seq" in row and "stream" in row and "line" in row for row in parsed)
 
-        joined = "\n".join(lines)
-        assert "log-proxy-marker-stdout" in joined
+            last_joined = "\n".join(lines)
+            if "log-proxy-marker-stdout" in last_joined:
+                break
+
+            if asyncio.get_running_loop().time() >= deadline:
+                pytest.fail(f"expected marker in proxied logs, got tail: {last_joined}")
+
+            await asyncio.sleep(0.5)
