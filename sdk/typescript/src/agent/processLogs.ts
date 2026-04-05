@@ -169,7 +169,7 @@ export function registerAgentfieldLogsRoute(
       for (const e of entries) {
         res.write(`${JSON.stringify(e)}\n`);
       }
-      (res as Response & { flush?: () => void }).flush?.();
+      (res as import('express').Response & { flush?: () => void }).flush?.();
     };
 
     writeLines(initial);
