@@ -611,6 +611,21 @@ class AgentAI:
 
             multimodal_response = detect_multimodal_response(resp)
 
+            # Record cost in tracker before schema parsing strips multimodal metadata.
+            if (
+                hasattr(self.agent, "cost_tracker")
+                and multimodal_response.cost_usd is not None
+            ):
+                model_name = getattr(resp, "model", "") or final_config.model or "unknown"
+                usage = multimodal_response.usage
+                self.agent.cost_tracker.record(
+                    model=model_name,
+                    prompt_tokens=usage.get("prompt_tokens", 0),
+                    completion_tokens=usage.get("completion_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                    cost_usd=multimodal_response.cost_usd,
+                )
+
             if schema:
                 try:
                     json_data = json.loads(str(multimodal_response.text))
