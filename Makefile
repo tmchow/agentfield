@@ -1,7 +1,14 @@
 SHELL := /usr/bin/env bash
 
 .PHONY: all install build test lint fmt tidy clean control-plane sdk-go sdk-python
-.PHONY: test-functional test-functional-local test-functional-postgres test-functional-cleanup test-functional-ci
+.PHONY: test-functional test-functional-local test-functional-postgres test-functional-cleanup test-functional-ci log-demo-up log-demo-down
+
+# Local UI stack: control plane + Python/Go/TS agents emitting NDJSON process logs (see tests/functional/docker/docker-compose.log-demo.yml).
+log-demo-up:
+	docker compose -f tests/functional/docker/docker-compose.log-demo.yml up --build -d
+
+log-demo-down:
+	docker compose -f tests/functional/docker/docker-compose.log-demo.yml down
 
 all: build
 

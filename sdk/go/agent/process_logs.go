@@ -27,16 +27,13 @@ type processLogRing struct {
 	entries     []processLogEntry
 	approxBytes int
 	maxBytes    int
-	notify      sync.Cond
 }
 
 func newProcessLogRing(maxBytes int) *processLogRing {
 	if maxBytes < 1024 {
 		maxBytes = 1024
 	}
-	r := &processLogRing{maxBytes: maxBytes}
-	r.notify.L = &r.mu
-	return r
+	return &processLogRing{maxBytes: maxBytes}
 }
 
 func processLogsMaxBytes() int {
@@ -107,7 +104,6 @@ func (r *processLogRing) appendLine(stream, line string, truncated bool) {
 		r.entries = r.entries[1:]
 		r.approxBytes -= len(old.Line) + 64
 	}
-	r.notify.Broadcast()
 	r.mu.Unlock()
 }
 

@@ -1,0 +1,33 @@
+# Log demo stack (UI + NDJSON process logs)
+
+Brings up the **control plane** (embedded UI on port **8080**) plus three agents that periodically write to **stdout/stderr**, captured as NDJSON and visible under **Agents → expand row → Process logs**.
+
+## Run
+
+From the **repository root**:
+
+```bash
+make log-demo-up
+# or:
+docker compose -f tests/functional/docker/docker-compose.log-demo.yml up --build -d
+```
+
+Open **http://localhost:8080/ui/agents** and expand:
+
+| Node id            | Runtime |
+|--------------------|---------|
+| `demo-python-logs` | Python (`examples/python_agent_nodes/docker_hello_world`) |
+| `demo-go-logs`     | Go (`examples/go_agent_nodes` via `Dockerfile.demo-go-agent`) |
+| `demo-ts-logs`     | Node (`tests/functional/docker/log-demo-node/log-demo.mjs`) |
+
+All services use `AGENTFIELD_AUTHORIZATION_INTERNAL_TOKEN=log-demo-internal-token` so the UI proxy can authenticate to each agent’s `GET /agentfield/v1/logs`.
+
+## Stop
+
+```bash
+make log-demo-down
+```
+
+## Automated check
+
+The functional suite includes `tests/functional/tests/test_ui_node_logs_proxy.py`, which starts a Python agent in-process and asserts the UI log proxy returns NDJSON containing a marker line after a reasoner runs.

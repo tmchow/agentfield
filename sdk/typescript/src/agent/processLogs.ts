@@ -1,5 +1,3 @@
-import type { Response } from 'express';
-
 type LogEntry = {
   v: number;
   seq: number;
