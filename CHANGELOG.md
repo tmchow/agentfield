@@ -6,6 +6,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.64-rc.2] - 2026-04-05
+
+
+### Fixed
+
+- Fix(sdk/python): replace deprecated datetime.utcnow() with timezone-a… (#332)
+
+* fix(sdk/python): replace deprecated datetime.utcnow() with timezone-aware alternative
+
+datetime.utcnow() is deprecated since Python 3.12 and scheduled for
+removal. It produces naive datetime objects with no timezone info,
+which causes DeprecationWarning on every test run across 5 files.
+
+Additionally, two call sites combined .isoformat() + 'Z' on a
+timezone-aware datetime, producing invalid ISO strings like:
+  '2026-04-05T01:30:20.584591+00:00Z'  ← double timezone suffix
+
+This caused test failures in test_vc_generator.py.
+
+Changes:
+- agentfield/did_manager.py: add timezone import, utcnow → now(timezone.utc)
+- agentfield/agent.py: utcnow → now(timezone.utc), fix isoformat+Z
+- agentfield/client.py: datetime.datetime.utcnow() → datetime.datetime.now(datetime.timezone.utc)
+- agentfield/vc_generator.py: add timezone import, utcnow → now(timezone.utc)
+- tests/test_vc_generator.py: add timezone import, utcnow → now(timezone.utc), fix isoformat+Z
+
+All 745 tests pass with 0 failures after this change.
+DeprecationWarnings reduced from 36 to 0.
+
+* fix(sdk/python): fix remaining naive timestamps in client.py registration payloads
+
+Per code review feedback from @santoshkumarradha:
+
+- Add _utc_now_iso() shared helper in client.py for consistent UTC
+  timestamp formatting across the file
+- Replace 4 remaining datetime.datetime.now().isoformat() + 'Z' calls
+  in the registration payloads (last_heartbeat, registered_at) with
+  the helper — these were producing naive local timestamps with a UTC
+  suffix incorrectly appended
+- Add TestUtcNowIso test class (5 tests) covering: string type, Z suffix,
+  valid ISO parse, no double-offset, millisecond precision
+
+All 745 tests pass. (265cf79)
+
 ## [0.1.64-rc.1] - 2026-04-05
 
 
