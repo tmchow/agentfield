@@ -348,7 +348,10 @@ function NodeDetailPageContent() {
         showError(errorMessage, error.message);
       }
 
-      console.error(`Failed to start agent ${nodeId}:`, error);
+      console.error("Failed to start agent", {
+        nodeId,
+        error,
+      });
     } finally {
       setActionLoading(null);
     }
@@ -376,7 +379,10 @@ function NodeDetailPageContent() {
         showError(errorMessage, error.message);
       }
 
-      console.error(`Failed to stop agent ${nodeId}:`, error);
+      console.error("Failed to stop agent", {
+        nodeId,
+        error,
+      });
     } finally {
       setActionLoading(null);
     }
@@ -401,7 +407,10 @@ function NodeDetailPageContent() {
         showError(errorMessage, error.message);
       }
 
-      console.error(`Failed to reconcile agent ${nodeId}:`, error);
+      console.error("Failed to reconcile agent", {
+        nodeId,
+        error,
+      });
     } finally {
       setActionLoading(null);
     }
