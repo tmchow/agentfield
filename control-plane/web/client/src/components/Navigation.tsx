@@ -59,9 +59,9 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
     },
     {
       id: "agents",
-      label: "My Agents",
+      label: "Agent nodes",
       icon: Network_3,
-      description: "Your configured and running agents",
+      description: "Registered nodes, endpoints, and process logs",
       disabled: false,
     },
     {

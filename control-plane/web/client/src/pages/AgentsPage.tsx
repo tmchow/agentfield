@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatCompactRelativeTime } from "@/utils/dateFormat";
 import { Link, useNavigate } from "react-router-dom";
 import { useAgents, useAgentTagSummaries } from "@/hooks/queries";
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { EndpointKindIconBox } from "@/components/ui/endpoint-kind-icon-box";
 import { EntityTag } from "@/components/ui/entity-tag";
+import { NodeProcessLogsPanel } from "@/components/nodes";
 import {
   AgentNodeIcon,
   ChevronRight,
@@ -20,6 +21,7 @@ import {
   RefreshCw,
   Search,
   SkillIcon,
+  Terminal,
 } from "@/components/ui/icon-bridge";
 import type { AgentNodeSummary, ReasonerDefinition, SkillDefinition, LifecycleStatus } from "@/types/agentfield";
 import type { AgentTagSummary } from "@/services/tagApprovalApi";
@@ -414,7 +416,20 @@ interface AgentRowProps {
 
 function AgentRow({ node, tagSummary }: AgentRowProps) {
   const [open, setOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<"endpoints" | "logs">(
+    "endpoints"
+  );
   const [restarting, setRestarting] = useState(false);
+
+  useEffect(() => {
+    if (!open) setDetailTab("endpoints");
+  }, [open]);
+
+  const openProcessLogs = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDetailTab("logs");
+    setOpen(true);
+  };
 
   const dotColor = getStatusDotColor(node.lifecycle_status);
   const statusTextColor = getStatusTextColor(node.lifecycle_status);
@@ -495,28 +510,84 @@ function AgentRow({ node, tagSummary }: AgentRowProps) {
           {formatRelativeTime(node.last_heartbeat)}
         </span>
 
-        {/* Restart button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6 flex-shrink-0 text-muted-foreground hover:text-foreground"
-          onClick={handleRestart}
-          disabled={restarting}
-          aria-label="Restart agent"
-        >
-          <RefreshCw className={cn("size-3", restarting && "animate-spin")} />
-        </Button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-6 text-muted-foreground hover:text-foreground"
+            onClick={openProcessLogs}
+            aria-label={`Open process logs for ${node.id}`}
+            title="Process logs"
+          >
+            <Terminal className="size-3" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-6 text-muted-foreground hover:text-foreground"
+            onClick={handleRestart}
+            disabled={restarting}
+            aria-label="Restart agent"
+          >
+            <RefreshCw className={cn("size-3", restarting && "animate-spin")} />
+          </Button>
+        </div>
       </button>
 
       {tagSummary ? <AgentAuthTagStrip summary={tagSummary} /> : null}
 
-      {/* Inline expanded reasoner rows */}
+      {/* Expanded: endpoints + process logs (match Node detail tab chrome: rounded-lg muted track, full width) */}
       {open && (
-        <NodeReasonerList
-          nodeId={node.id}
-          reasonerCount={node.reasoner_count}
-          skillCount={node.skill_count}
-        />
+        <div className="border-t border-border bg-muted/10">
+          <Tabs
+            value={detailTab}
+            onValueChange={(v) => setDetailTab(v as "endpoints" | "logs")}
+            className="w-full"
+          >
+            <div
+              className="border-b border-border/60 bg-muted/20 px-4 py-3"
+              role="presentation"
+            >
+              <TabsList
+                className="grid h-10 w-full grid-cols-2 gap-1 rounded-lg bg-muted/40 p-1 text-muted-foreground shadow-inner"
+                aria-label="Agent detail sections"
+              >
+                <TabsTrigger
+                  value="endpoints"
+                  className="group gap-2 rounded-md px-3 text-sm font-medium data-[state=active]:text-foreground"
+                >
+                  <ReasonerIcon
+                    className="size-4 shrink-0 opacity-60 group-data-[state=active]:opacity-100"
+                    aria-hidden
+                  />
+                  <span className="truncate">Endpoints</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="logs"
+                  className="group gap-2 rounded-md px-3 text-sm font-medium data-[state=active]:text-foreground"
+                >
+                  <Terminal
+                    className="size-4 shrink-0 opacity-60 group-data-[state=active]:opacity-100"
+                    aria-hidden
+                  />
+                  <span className="truncate">Process logs</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="endpoints" className="mt-0 focus-visible:outline-none">
+              <NodeReasonerList
+                nodeId={node.id}
+                reasonerCount={node.reasoner_count}
+                skillCount={node.skill_count}
+              />
+            </TabsContent>
+            <TabsContent value="logs" className="mt-0 border-t border-border/40 bg-card/30 px-4 pb-4 pt-3 focus-visible:outline-none">
+              <NodeProcessLogsPanel nodeId={node.id} />
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
     </>
   );
@@ -564,14 +635,39 @@ export function AgentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Subtitle only — breadcrumb handles page identity */}
-      <p className="text-sm text-muted-foreground">
-        {isLoading
-          ? "Loading agents…"
-          : nodes.length === 0
-            ? "No agents registered"
-            : `${nodes.length} agent node${nodes.length !== 1 ? "s" : ""} registered`}
-      </p>
+      <header className="space-y-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Agent nodes &amp; logs
+        </h1>
+        <div className="space-y-1 text-muted-foreground">
+          <p className="text-sm">
+            {isLoading ? (
+              "Loading agents…"
+            ) : nodes.length === 0 ? (
+              "No agents registered"
+            ) : (
+              <>
+                {nodes.length} agent node{nodes.length !== 1 ? "s" : ""}{" "}
+                registered
+              </>
+            )}
+          </p>
+          {!isLoading && nodes.length > 0 ? (
+            <p className="text-xs leading-relaxed text-muted-foreground/95">
+              Expand a row for{" "}
+              <span className="font-medium text-foreground/80">Endpoints</span>{" "}
+              and{" "}
+              <span className="font-medium text-foreground/80">Process logs</span>
+              , or click the{" "}
+              <Terminal
+                className="inline-block size-3.5 align-[-0.125em] opacity-90"
+                aria-hidden
+              />{" "}
+              icon beside restart to jump straight to logs.
+            </p>
+          ) : null}
+        </div>
+      </header>
 
       {/* Search + segmented connection filter (shadcn Tabs — Figma-style control) */}
       {!isLoading && !isError && nodes.length > 0 && (

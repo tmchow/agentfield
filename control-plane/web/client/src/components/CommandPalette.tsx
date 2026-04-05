@@ -59,7 +59,7 @@ export function CommandPalette() {
           </CommandItem>
           <CommandItem onSelect={() => runAction(() => navigate("/agents"))}>
             <Server className="mr-2 size-4" />
-            Agents
+            Agent nodes
           </CommandItem>
           <CommandItem
             onSelect={() => runAction(() => navigate("/playground"))}

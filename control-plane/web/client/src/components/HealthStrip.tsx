@@ -4,6 +4,7 @@ import {
   CircleAlert,
   CircleCheck,
   Layers,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,24 +21,23 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useLLMHealth, useQueueStatus, useAgents } from "@/hooks/queries";
+import { useSSESync } from "@/hooks/useSSEQuerySync";
 import { cn } from "@/lib/utils";
 import type { AgentNodeSummary } from "@/types/agentfield";
 
 type HealthStripProps = {
   className?: string;
-  sseConnected: boolean;
-  sseReconnecting: boolean;
 };
 
-export function HealthStrip({
-  className,
-  sseConnected,
-  sseReconnecting,
-}: HealthStripProps) {
+export function HealthStrip({ className }: HealthStripProps) {
   const llmHealth = useLLMHealth();
   const queueStatus = useQueueStatus();
   const agents = useAgents();
-
+  const {
+    execConnected: sseConnected,
+    reconnecting: sseReconnecting,
+    refreshAllLiveQueries,
+  } = useSSESync();
   const llmLoading = llmHealth.isLoading;
   const llmOk = llmHealth.data
     ? llmHealth.data.healthy &&
@@ -65,10 +65,10 @@ export function HealthStrip({
       : "Disconnected";
 
   const sseDetail = sseConnected
-    ? "Real-time updates active"
+    ? "Execution events streaming — run list and steps refresh on activity"
     : sseReconnecting
       ? "Attempting to restore live updates"
-      : "Live updates unavailable — pages will not auto-refresh";
+      : "Execution stream down — run list falls back to polling; use Refresh to resync";
 
   const compactTriggerClass = cn(
     "h-8 gap-1.5 px-2 text-xs",
@@ -195,6 +195,20 @@ export function HealthStrip({
                     </div>
                   </div>
                 </li>
+                {!sseConnected && !sseReconnecting ? (
+                  <li>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-1 w-full gap-2"
+                      onClick={() => refreshAllLiveQueries()}
+                    >
+                      <RefreshCw className="size-3.5 shrink-0" aria-hidden />
+                      Refresh data
+                    </Button>
+                  </li>
+                ) : null}
               </ul>
             </PopoverContent>
           </Popover>
@@ -309,6 +323,20 @@ export function HealthStrip({
             </TooltipTrigger>
             <TooltipContent>{sseDetail}</TooltipContent>
           </Tooltip>
+
+          {!sseConnected && !sseReconnecting ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 px-2 text-xs"
+              onClick={() => refreshAllLiveQueries()}
+              aria-label="Refresh runs, agents, and dashboard data"
+            >
+              <RefreshCw className="size-3.5 shrink-0" aria-hidden />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+          ) : null}
         </div>
       </div>
     </TooltipProvider>

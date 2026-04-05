@@ -16,12 +16,12 @@ import {
 import { AppSidebar } from "./AppSidebar";
 import { HealthStrip } from "./HealthStrip";
 import { CommandPalette } from "./CommandPalette";
-import { useSSEQuerySync } from "@/hooks/useSSEQuerySync";
+import { SSESyncProvider } from "@/hooks/useSSEQuerySync";
 
 const routeNames: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/runs": "Runs",
-  "/agents": "Agents",
+  "/agents": "Agent nodes",
   "/playground": "Playground",
   "/verify": "Audit",
   "/access": "Access management",
@@ -130,14 +130,17 @@ function resolveHeaderCrumbs(
 }
 
 export function AppLayout() {
+  return (
+    <SSESyncProvider>
+      <AppLayoutShell />
+    </SSESyncProvider>
+  );
+}
+
+function AppLayoutShell() {
   const location = useLocation();
   const params = useParams();
   const header = resolveHeaderCrumbs(location.pathname, params);
-
-  // Wire SSE events to TanStack Query cache invalidation so all pages
-  // auto-refresh when runs or agent status changes.
-  const { execConnected, execReconnecting } = useSSEQuerySync();
-
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
@@ -190,10 +193,7 @@ export function AppLayout() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <HealthStrip
-              sseConnected={execConnected}
-              sseReconnecting={execReconnecting}
-            />
+            <HealthStrip />
             <Separator orientation="vertical" className="hidden h-4 sm:block" />
             <kbd className="hidden md:inline-flex h-5 shrink-0 items-center gap-1 rounded border border-border bg-muted px-1.5 text-micro font-mono text-muted-foreground">
               ⌘K
