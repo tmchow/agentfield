@@ -546,7 +546,7 @@ function RecentRunsTable({ runs, loading, onRowClick }: RecentRunsTableProps) {
 
 export function NewDashboardPage() {
   const navigate = useNavigate();
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
 
   const runsQuery = useRuns({
     timeRange: "all",
@@ -563,7 +563,7 @@ export function NewDashboardPage() {
   const summaryQuery = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,
-    refetchInterval: anyConnected ? 30_000 : 15_000,
+    refetchInterval: execConnected ? 30_000 : 15_000,
   });
 
   const unhealthyEndpoints =

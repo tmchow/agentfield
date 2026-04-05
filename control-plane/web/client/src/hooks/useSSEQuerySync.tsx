@@ -49,13 +49,6 @@ export function useSSESync(): SSESyncContextValue {
   return useContext(SSESyncContext);
 }
 
-/**
- * @deprecated Prefer {@link SSESyncProvider} + {@link useSSESync}.
- */
-export function useSSEQuerySync(): SSESyncContextValue {
-  return useSSESync();
-}
-
 function useSSEQuerySyncCore(): SSESyncContextValue {
   const queryClient = useQueryClient();
 

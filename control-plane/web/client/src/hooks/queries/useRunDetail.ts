@@ -7,7 +7,7 @@ import { normalizeExecutionStatus } from "../../utils/status";
 import { useSSESync } from "../useSSEQuerySync";
 
 export function useRunDAG(runId: string | undefined) {
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
   return useQuery<WorkflowDAGLightweightResponse>({
     queryKey: ["run-dag", runId],
     queryFn: () => getWorkflowDAGLightweight(runId!),
@@ -15,7 +15,7 @@ export function useRunDAG(runId: string | undefined) {
     refetchInterval: (query) => {
       const status = query.state.data?.workflow_status;
       if (status === "running" || status === "pending") {
-        return anyConnected ? 2_500 : 1_500;
+        return execConnected ? 2_500 : 1_500;
       }
       return false;
     },
@@ -23,7 +23,7 @@ export function useRunDAG(runId: string | undefined) {
 }
 
 export function useStepDetail(executionId: string | undefined) {
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
   return useQuery<WorkflowExecution>({
     queryKey: ["step-detail", executionId],
     queryFn: () => getExecutionDetails(executionId!),
@@ -36,7 +36,7 @@ export function useStepDetail(executionId: string | undefined) {
         st === "queued" ||
         st === "waiting";
       if (!active) return false;
-      return anyConnected ? 2_500 : 1_500;
+      return execConnected ? 2_500 : 1_500;
     },
   });
 }

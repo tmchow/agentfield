@@ -35,7 +35,7 @@ export function HealthStrip({ className }: HealthStripProps) {
   const agents = useAgents();
 
   const {
-    anyConnected: sseConnected,
+    execConnected: sseConnected,
     reconnecting: sseReconnecting,
     refreshAllLiveQueries,
   } = useSSESync();
@@ -66,10 +66,10 @@ export function HealthStrip({ className }: HealthStripProps) {
       : "Disconnected";
 
   const sseDetail = sseConnected
-    ? "Real-time updates active"
+    ? "Execution events streaming — run list and steps refresh on activity"
     : sseReconnecting
       ? "Attempting to restore live updates"
-      : "Live updates unavailable — use refresh to resync, or polling will run more often";
+      : "Execution stream down — run list falls back to polling; use Refresh to resync";
 
   const compactTriggerClass = cn(
     "h-8 gap-1.5 px-2 text-xs",

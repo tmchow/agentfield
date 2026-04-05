@@ -9,10 +9,10 @@ interface NodesSummaryResponse {
 }
 
 export function useAgents() {
-  const { anyConnected } = useSSESync();
+  const { nodeConnected } = useSSESync();
   return useQuery<NodesSummaryResponse>({
     queryKey: ["agents"],
     queryFn: () => getNodesSummary(),
-    refetchInterval: anyConnected ? 10_000 : 5_000,
+    refetchInterval: nodeConnected ? 10_000 : 5_000,
   });
 }

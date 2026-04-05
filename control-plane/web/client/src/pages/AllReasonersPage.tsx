@@ -45,7 +45,8 @@ const VIEW_OPTIONS: ReadonlyArray<SegmentedControlOption> = [
 
 export function AllReasonersPage() {
   const navigate = useNavigate();
-  const { anyConnected } = useSSESync();
+  const { nodeConnected, reasonerConnected } = useSSESync();
+  const reasonersLive = nodeConnected || reasonerConnected;
   const [filters, setFilters] = useState<ReasonerFilters>({
     status: "online",
     limit: 50,
@@ -76,7 +77,7 @@ export function AllReasonersPage() {
       }
     },
     placeholderData: keepPreviousData,
-    refetchInterval: anyConnected ? false : 6_000,
+    refetchInterval: reasonersLive ? false : 6_000,
   });
 
   const {
@@ -177,13 +178,13 @@ export function AllReasonersPage() {
               hideLabel
             />
             <Badge
-              variant={anyConnected ? "success" : "failed"}
+              variant={reasonersLive ? "success" : "failed"}
               size="sm"
               showIcon={false}
               className="flex items-center gap-1"
             >
-              {anyConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
-              {anyConnected ? "Live Updates" : "Disconnected"}
+              {reasonersLive ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {reasonersLive ? "Live Updates" : "Disconnected"}
             </Badge>
             <Button
               variant="outline"
@@ -225,14 +226,13 @@ export function AllReasonersPage() {
         </Alert>
       ) : null}
 
-      {!anyConnected ? (
+      {!reasonersLive ? (
         <Alert>
           <WifiOff className="h-4 w-4" />
           <AlertTitle>Live updates unavailable</AlertTitle>
           <AlertDescription>
-            SSE is disconnected — this list polls every 6s and refreshes when
-            nodes or reasoners change once the connection is restored. Use
-            Refresh for an immediate pull.
+            Node or reasoner event streams are disconnected — this list polls
+            every 6s until they reconnect. Use Refresh for an immediate pull.
           </AlertDescription>
         </Alert>
       ) : null}

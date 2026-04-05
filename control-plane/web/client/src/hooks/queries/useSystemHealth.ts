@@ -51,19 +51,19 @@ async function fetchQueueStatus(): Promise<QueueStatusResponse> {
 }
 
 export function useLLMHealth() {
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
   return useQuery<LLMHealthResponse>({
     queryKey: ["llm-health"],
     queryFn: fetchLLMHealth,
-    refetchInterval: anyConnected ? 5_000 : 3_000,
+    refetchInterval: execConnected ? 5_000 : 3_000,
   });
 }
 
 export function useQueueStatus() {
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
   return useQuery<QueueStatusResponse>({
     queryKey: ["queue-status"],
     queryFn: fetchQueueStatus,
-    refetchInterval: anyConnected ? 5_000 : 3_000,
+    refetchInterval: execConnected ? 5_000 : 3_000,
   });
 }

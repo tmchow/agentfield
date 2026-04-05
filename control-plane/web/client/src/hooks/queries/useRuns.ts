@@ -20,7 +20,7 @@ export interface RunsFilters {
 }
 
 export function useRuns(filters: RunsFilters = {}) {
-  const { anyConnected } = useSSESync();
+  const { execConnected } = useSSESync();
   const {
     timeRange,
     status,
@@ -38,12 +38,12 @@ export function useRuns(filters: RunsFilters = {}) {
   const refetchInterval = useMemo(() => {
     if (explicitRefetch !== undefined) {
       if (typeof explicitRefetch === "number") {
-        return anyConnected ? explicitRefetch : Math.min(explicitRefetch, 5_000);
+        return execConnected ? explicitRefetch : Math.min(explicitRefetch, 5_000);
       }
       return explicitRefetch;
     }
-    return anyConnected ? false : 6_000;
-  }, [explicitRefetch, anyConnected]);
+    return execConnected ? false : 6_000;
+  }, [explicitRefetch, execConnected]);
 
   return useQuery<WorkflowsResponse>({
     queryKey: ["runs", filters],
