@@ -136,7 +136,7 @@ export function AppLayout() {
 
   // Wire SSE events to TanStack Query cache invalidation so all pages
   // auto-refresh when runs or agent status changes.
-  useSSEQuerySync();
+  const { execConnected, execReconnecting } = useSSEQuerySync();
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -190,7 +190,10 @@ export function AppLayout() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <HealthStrip />
+            <HealthStrip
+              sseConnected={execConnected}
+              sseReconnecting={execReconnecting}
+            />
             <Separator orientation="vertical" className="hidden h-4 sm:block" />
             <kbd className="hidden md:inline-flex h-5 shrink-0 items-center gap-1 rounded border border-border bg-muted px-1.5 text-micro font-mono text-muted-foreground">
               ⌘K

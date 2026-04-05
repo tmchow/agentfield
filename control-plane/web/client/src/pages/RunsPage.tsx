@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowDown,
   ArrowLeftRight,
@@ -585,6 +585,7 @@ function RunsPaginationBar({
 
 export function RunsPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const cancelMutation = useCancelExecution();
   const { state: sidebarState, isMobile } = useSidebar();
 
@@ -605,6 +606,7 @@ export function RunsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const statusParam = searchParams.get("status");
 
   const statusFilterKey = useMemo(
     () => [...selectedStatuses].sort().join("\0"),
@@ -635,6 +637,18 @@ export function RunsPage() {
       setPage(1);
     }, 300);
   }, []);
+
+  useEffect(() => {
+    const normalized = statusParam?.trim().toLowerCase();
+    if (!normalized) return;
+
+    setSelectedStatuses((prev) => {
+      if (prev.size === 1 && prev.has(normalized)) {
+        return prev;
+      }
+      return new Set([normalized]);
+    });
+  }, [statusParam]);
 
   // reset pagination when filters/sort change
   const prevFiltersRef = useRef({

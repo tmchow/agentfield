@@ -306,7 +306,10 @@ func resolveWebDID(did string) (DIDResolutionInfo, error) {
 		return DIDResolutionInfo{}, fmt.Errorf("invalid did:web format")
 	}
 
-	domain := parts[2]
+	domain, err := url.PathUnescape(parts[2])
+	if err != nil {
+		return DIDResolutionInfo{}, fmt.Errorf("invalid did:web domain: %w", err)
+	}
 	path := "/.well-known/did.json"
 
 	if len(parts) > 3 {

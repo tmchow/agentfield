@@ -183,28 +183,32 @@ export class MultimodalResponse {
   /**
    * Get raw image bytes from an ImageOutput.
    */
-  private getImageBytes(image: ImageOutput): Uint8Array {
+  private decodeBase64(data: string): Uint8Array {
+    return new Uint8Array(Buffer.from(data, 'base64'));
+  }
+
+  private async getUrlBytes(sourceUrl: string): Promise<Uint8Array> {
+    if (sourceUrl.startsWith('data:')) {
+      const base64Data = sourceUrl.split(',', 2)[1];
+      if (!base64Data) {
+        throw new Error('Invalid data URL');
+      }
+      return this.decodeBase64(base64Data);
+    }
+
+    const response = await fetch(sourceUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download multimodal asset: ${response.status} ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  }
+
+  private async getImageBytes(image: ImageOutput): Promise<Uint8Array> {
     if (image.b64Json) {
-      const binaryString = atob(image.b64Json);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return this.decodeBase64(image.b64Json);
     } else if (image.url) {
-      // For data URLs
-      if (image.url.startsWith('data:')) {
-        const base64Data = image.url.split(',', 2)[1];
-        if (base64Data) {
-          const binaryString = atob(base64Data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          return bytes;
-        }
-      }
-      throw new Error('URL download not implemented - provide b64Json instead');
+      return this.getUrlBytes(image.url);
     }
     throw new Error('No image data available');
   }
@@ -212,14 +216,12 @@ export class MultimodalResponse {
   /**
    * Get raw audio bytes from an AudioOutput.
    */
-  private getAudioBytes(audio: AudioOutput): Uint8Array {
+  private async getAudioBytes(audio: AudioOutput): Promise<Uint8Array> {
     if (audio.data) {
-      const binaryString = atob(audio.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return this.decodeBase64(audio.data);
+    }
+    if (audio.url) {
+      return this.getUrlBytes(audio.url);
     }
     throw new Error('No audio data available');
   }
@@ -227,14 +229,12 @@ export class MultimodalResponse {
   /**
    * Get raw file bytes from a FileOutput.
    */
-  private getFileBytes(file: FileOutput): Uint8Array {
+  private async getFileBytes(file: FileOutput): Promise<Uint8Array> {
     if (file.data) {
-      const binaryString = atob(file.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return this.decodeBase64(file.data);
+    }
+    if (file.url) {
+      return this.getUrlBytes(file.url);
     }
     throw new Error('No file data available');
   }
@@ -243,7 +243,7 @@ export class MultimodalResponse {
    * Save a single image to file.
    */
   async saveImage(image: ImageOutput, imagePath: string): Promise<void> {
-    const bytes = this.getImageBytes(image);
+    const bytes = await this.getImageBytes(image);
     await fs.mkdir(path.dirname(imagePath), { recursive: true });
     await fs.writeFile(imagePath, bytes);
   }
@@ -252,7 +252,7 @@ export class MultimodalResponse {
    * Save a single audio to file.
    */
   async saveAudio(audio: AudioOutput, audioPath: string): Promise<void> {
-    const bytes = this.getAudioBytes(audio);
+    const bytes = await this.getAudioBytes(audio);
     await fs.mkdir(path.dirname(audioPath), { recursive: true });
     await fs.writeFile(audioPath, bytes);
   }
@@ -261,7 +261,7 @@ export class MultimodalResponse {
    * Save a single file to disk.
    */
   async saveFile(file: FileOutput, filePath: string): Promise<void> {
-    const bytes = this.getFileBytes(file);
+    const bytes = await this.getFileBytes(file);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, bytes);
   }

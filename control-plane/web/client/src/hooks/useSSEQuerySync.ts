@@ -11,7 +11,11 @@ export function useSSEQuerySync() {
   const queryClient = useQueryClient();
 
   // ── Execution events ────────────────────────────────────────────────────────
-  const { latestEvent: execEvent, connected: execConnected } = useSSE(
+  const {
+    latestEvent: execEvent,
+    connected: execConnected,
+    reconnecting: execReconnecting,
+  } = useSSE(
     "/api/ui/v1/executions/events",
     {
       eventTypes: [
@@ -77,6 +81,7 @@ export function useSSEQuerySync() {
 
   return {
     execConnected,
+    execReconnecting,
     nodeConnected,
     /** True when at least one SSE channel is live */
     anyConnected: execConnected || nodeConnected,

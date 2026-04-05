@@ -206,8 +206,10 @@ export class File {
       guessMimeType(absolutePath) ||
       'application/octet-stream';
 
-    const fileUrl = `file://${absolutePath}`;
-    return new File({ url: fileUrl, mimeType: detectedMimeType });
+    const buffer = await readFile(absolutePath);
+    const base64Data = buffer.toString('base64');
+    const dataUrl = `data:${detectedMimeType};base64,${base64Data}`;
+    return new File({ url: dataUrl, mimeType: detectedMimeType });
   }
 
   /**

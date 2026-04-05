@@ -108,9 +108,7 @@ export async function verifyVC(vcDocument: any): Promise<VCVerificationResponse>
 }
 
 export interface VerifyProvenanceAuditOptions {
-  resolveWeb?: boolean;
   verbose?: boolean;
-  didResolver?: string;
 }
 
 /**
@@ -124,9 +122,7 @@ export async function verifyProvenanceAudit(
   const body =
     typeof document === 'string' ? document : JSON.stringify(document);
   const params = new URLSearchParams();
-  if (options?.resolveWeb) params.set('resolve_web', 'true');
   if (options?.verbose) params.set('verbose', 'true');
-  if (options?.didResolver) params.set('did_resolver', options.didResolver);
   const q = params.toString();
   const path = `/did/verify-audit${q ? `?${q}` : ''}`;
   return fetchWrapper<ProvenanceVerificationResponse>(path, {

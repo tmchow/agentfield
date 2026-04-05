@@ -34,7 +34,7 @@ async function fetchLLMHealth(): Promise<LLMHealthResponse> {
     headers["X-API-Key"] = apiKey;
   }
   const response = await fetch(`${API_BASE_URL}/llm/health`, { headers });
-  if (!response.ok) return { endpoints: [], healthy: true };
+  if (!response.ok) return { endpoints: [], healthy: false };
   return response.json();
 }
 

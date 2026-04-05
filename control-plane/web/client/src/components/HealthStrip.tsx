@@ -20,32 +20,28 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useLLMHealth, useQueueStatus, useAgents } from "@/hooks/queries";
-import { useSSE } from "@/hooks/useSSE";
 import { cn } from "@/lib/utils";
 import type { AgentNodeSummary } from "@/types/agentfield";
 
 type HealthStripProps = {
   className?: string;
+  sseConnected: boolean;
+  sseReconnecting: boolean;
 };
 
-export function HealthStrip({ className }: HealthStripProps) {
+export function HealthStrip({
+  className,
+  sseConnected,
+  sseReconnecting,
+}: HealthStripProps) {
   const llmHealth = useLLMHealth();
   const queueStatus = useQueueStatus();
   const agents = useAgents();
 
-  const { connected: sseConnected, reconnecting: sseReconnecting } = useSSE(
-    "/api/ui/v1/executions/events",
-    {
-      autoReconnect: true,
-      maxReconnectAttempts: 10,
-      reconnectDelayMs: 2000,
-      exponentialBackoff: true,
-    },
-  );
-
   const llmLoading = llmHealth.isLoading;
   const llmOk = llmHealth.data
-    ? !llmHealth.data.endpoints?.some((ep) => !ep.healthy)
+    ? llmHealth.data.healthy &&
+      !llmHealth.data.endpoints?.some((ep) => !ep.healthy)
     : undefined;
 
   const nodes: AgentNodeSummary[] = agents.data?.nodes ?? [];

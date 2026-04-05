@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -34,7 +33,6 @@ import { Upload, FileCheck2, AlertTriangle, Info } from "lucide-react";
 export function VerifyProvenancePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [jsonText, setJsonText] = useState("");
-  const [resolveWeb, setResolveWeb] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProvenanceVerificationResponse | null>(null);
@@ -80,7 +78,7 @@ export function VerifyProvenancePage() {
     }
     setLoading(true);
     try {
-      const res = await verifyProvenanceAudit(parsed, { resolveWeb });
+      const res = await verifyProvenanceAudit(parsed);
       setResult(res);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification request failed");
@@ -132,9 +130,8 @@ export function VerifyProvenancePage() {
                   VerifiableCredential JSON document.
                 </p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-medium text-foreground">Resolve DIDs from web</span> matches the
-                  CLI <span className="font-mono text-xs">--resolve-web</span> flag when your file does
-                  not include embedded DID keys.
+                  Browser verification stays offline and uses bundled DID data only. Use the CLI if
+                  you need remote DID resolution during verification.
                 </p>
               </div>
             </HoverCardContent>
@@ -194,22 +191,13 @@ export function VerifyProvenancePage() {
                 )}
               />
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-card px-3 py-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="resolve-web" className="text-sm font-medium">
-                  Resolve DIDs from web
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Matches <code className="text-micro">--resolve-web</code> on the CLI when the bundle
-                  lacks keys.
-                </p>
-              </div>
-              <Switch
-                id="resolve-web"
-                checked={resolveWeb}
-                onCheckedChange={setResolveWeb}
-              />
-            </div>
+            <Alert>
+              <AlertTitle>HTTP audit stays offline</AlertTitle>
+              <AlertDescription>
+                Browser verification uses bundled DID data only. If you need remote DID resolution,
+                run <code className="text-micro">af vc verify --resolve-web</code> locally.
+              </AlertDescription>
+            </Alert>
             <Button
               type="button"
               onClick={() => void onVerify()}

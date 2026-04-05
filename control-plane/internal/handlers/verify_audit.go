@@ -28,10 +28,14 @@ func HandleVerifyAuditBundle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "empty body"})
 		return
 	}
+	if c.Query("resolve_web") == "true" || c.Query("did_resolver") != "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "remote DID resolution is only supported in the CLI; upload a bundle with embedded DID data for HTTP verification",
+		})
+		return
+	}
 	opts := afcli.VerifyOptions{
 		OutputFormat: "json",
-		ResolveWeb:   c.Query("resolve_web") == "true",
-		Resolver:     c.Query("did_resolver"),
 		Verbose:      c.Query("verbose") == "true",
 	}
 	result := afcli.VerifyProvenanceJSON(body, opts)

@@ -19,6 +19,7 @@ export * from './mcp/MCPClientRegistry.js';
 export * from './mcp/MCPToolRegistrar.js';
 export * from './ai/RateLimiter.js';
 export * from './ai/multimodal.js';
+export * from './ai/MultimodalResponse.js';
 export * from './types/agent.js';
 export * from './types/reasoner.js';
 export * from './types/skill.js';
