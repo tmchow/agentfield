@@ -618,12 +618,16 @@ class AgentAI:
             ):
                 model_name = getattr(resp, "model", "") or final_config.model or "unknown"
                 usage = multimodal_response.usage
+                from agentfield.execution_context import get_current_context
+
+                ctx = get_current_context()
                 self.agent.cost_tracker.record(
                     model=model_name,
                     prompt_tokens=usage.get("prompt_tokens", 0),
                     completion_tokens=usage.get("completion_tokens", 0),
                     total_tokens=usage.get("total_tokens", 0),
                     cost_usd=multimodal_response.cost_usd,
+                    reasoner_name=ctx.reasoner_name if ctx else None,
                 )
 
             if schema:
