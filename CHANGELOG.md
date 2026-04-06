@@ -1689,6 +1689,10 @@ Co-authored-by: Abir Abbas <abirabbas1998@gmail.com> (3d2e4d7)
 ## [0.1.64-rc.6] - 2026-04-06
 
 
+### Added
+
+- Feat(sdk/python): add per-execution LLM cost tracking (#343)
+
 ### Other
 
 - Remove OpenCode serve+attach workaround for stateless CLI (#326)

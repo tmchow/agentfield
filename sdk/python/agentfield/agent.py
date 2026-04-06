@@ -49,6 +49,7 @@ from agentfield.memory_events import MemoryEventClient
 from agentfield.logger import log_debug, log_error, log_info, log_warn, set_cp_client
 from agentfield.router import AgentRouter
 from agentfield.connection_manager import ConnectionManager
+from agentfield.cost_tracker import CostTracker
 from agentfield.types import (
     AgentStatus,
     AIConfig,
@@ -634,6 +635,7 @@ class Agent(FastAPI):
         # Initialize AI and Memory configurations
         self.ai_config = ai_config if ai_config else AIConfig.from_env()
         self.harness_config = harness_config
+        self.cost_tracker = CostTracker()
         self.memory_config = (
             memory_config
             if memory_config
@@ -752,6 +754,11 @@ class Agent(FastAPI):
         if self._ai_handler is None:
             self._ai_handler = AgentAI(self)
         return self._ai_handler
+
+    @property
+    def execution_cost(self) -> dict:
+        """Get the current execution's cost summary."""
+        return self.cost_tracker.summary()
 
     @property
     def harness_runner(self) -> "HarnessRunner":
