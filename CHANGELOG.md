@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.65-rc.7] - 2026-04-07
+
+
+### Fixed
+
+- Fix: remediate CodeQL security alerts (#361) (f7f5abc)
+
 ## [0.1.65-rc.6] - 2026-04-07
 
 
