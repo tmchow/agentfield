@@ -133,7 +133,7 @@ features:
     exporter: "otlp-http"    # "otlp-http" or "otlp-grpc"
     endpoint: "localhost:4318"
     service_name: "agentfield"
-    insecure: true           # Set false when using TLS in production
+    insecure: false          # WARNING: Set true only for local dev; production must use TLS
   connector:
     enabled: true
     token: "test-connector-token-123"
