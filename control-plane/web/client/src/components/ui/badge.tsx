@@ -2,15 +2,16 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 import { getStatusBadgeClasses, statusTone, type StatusTone } from "../../lib/theme"
+import { getStatusTheme } from "../../utils/status"
 import {
-  CheckCircle,
+  CheckCircle2,
   XCircle,
-  SpinnerGap,
+  Loader2,
   Clock,
-  WarningDiamond,
-  Question,
-} from "@/components/ui/icon-bridge"
-import type { IconComponent } from "@/components/ui/icon-bridge"
+  AlertTriangle,
+  HelpCircle,
+  type LucideIcon,
+} from "lucide-react"
 
 const badgeVariants = cva(
   "inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-0.5 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -79,13 +80,13 @@ export interface BadgeProps
   showIcon?: boolean;
 }
 
-const statusIcons: Partial<Record<BadgeVariant, { icon: IconComponent }>> = {
-  success: { icon: CheckCircle },
+const statusIcons: Partial<Record<BadgeVariant, { icon: LucideIcon }>> = {
+  success: { icon: CheckCircle2 },
   failed: { icon: XCircle },
-  running: { icon: SpinnerGap },
+  running: { icon: Loader2 },
   pending: { icon: Clock },
-  degraded: { icon: WarningDiamond },
-  unknown: { icon: Question },
+  degraded: { icon: AlertTriangle },
+  unknown: { icon: HelpCircle },
   destructive: { icon: XCircle },
 };
 
@@ -104,6 +105,23 @@ function Badge({ className, variant, size, icon, showIcon = true, children, ...p
   const statusIconEntry = shouldShowIcon ? statusIcons[variant] : null;
   const StatusIconComponent = statusIconEntry?.icon;
   const iconTone = variant ? toneByVariant[variant] : undefined;
+  // Derive motion behaviour from StatusTheme so the single source of truth
+  // in utils/status.ts governs whether the icon spins. Only status variants
+  // that map to a canonical status with motion === "live" will spin; non-status
+  // variants (default, secondary, outline, etc.) resolve to "unknown" → "none".
+  const variantToCanonical: Partial<Record<BadgeVariant, string>> = {
+    success: "succeeded",
+    failed: "failed",
+    running: "running",
+    pending: "pending",
+    degraded: "paused",
+    unknown: "unknown",
+    destructive: "failed",
+  };
+  const canonicalForVariant = variant ? variantToCanonical[variant] : undefined;
+  const shouldSpinIcon = canonicalForVariant
+    ? getStatusTheme(canonicalForVariant).motion === "live"
+    : false;
 
   return (
     <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
@@ -112,8 +130,12 @@ function Badge({ className, variant, size, icon, showIcon = true, children, ...p
           size={12}
           className={cn(
             "flex-shrink-0",
-            iconTone ? statusTone[iconTone].accent : undefined
+            iconTone ? statusTone[iconTone].accent : undefined,
+            shouldSpinIcon && "motion-safe:animate-spin"
           )}
+          style={
+            shouldSpinIcon ? { animationDuration: "2.5s" } : undefined
+          }
         />
       ))}
       {children}

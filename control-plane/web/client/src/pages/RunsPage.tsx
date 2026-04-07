@@ -9,13 +9,40 @@ import {
   Play,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useRuns, useCancelExecution } from "@/hooks/queries";
+import {
+  useRuns,
+  useCancelExecution,
+  usePauseExecution,
+  useResumeExecution,
+} from "@/hooks/queries";
 import type { WorkflowSummary } from "@/types/workflows";
 import {
   getStatusLabel,
+  isTerminalStatus,
   normalizeExecutionStatus,
   type CanonicalStatus,
 } from "@/utils/status";
+import {
+  useErrorNotification,
+  useRunNotification,
+  useSuccessNotification,
+  useWarningNotification,
+} from "@/components/ui/notification";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  RunLifecycleMenu,
+  CANCEL_RUN_COPY,
+} from "@/components/runs/RunLifecycleMenu";
+import { StatusDot } from "@/components/ui/status-pill";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -97,8 +124,9 @@ function formatAbsoluteStarted(iso: string): string {
 
 /**
  * Human-readable time since `startedMs` relative to `nowMs`.
- * When `liveGranular` is true (running), uses second-level precision under 1h, then hours/minutes under 24h.
- * Other in-flight states still re-render on the same tick but use natural phrasing via RelativeTimeFormat.
+ * Motion is proportional to information: second-level only under 60s,
+ * minute-level up to 1h, hour-level above that. This keeps running rows
+ * from becoming a noisy clock at scale.
  */
 function formatRelativeStarted(
   startedMs: number,
@@ -110,11 +138,13 @@ function formatRelativeStarted(
 
   if (liveGranular) {
     if (s < 8) return "just now";
+    if (s < 60) return `${s}s ago`;
     if (s < 3600) {
-      if (s < 60) return `${s}s ago`;
+      // Minute granularity past the first minute — drop seconds to calm
+      // the motion. "5m ago" reads as live because it's running; the
+      // precise seconds aren't information a user needs.
       const m = Math.floor(s / 60);
-      const rs = s % 60;
-      return `${m}m ${rs}s ago`;
+      return `${m}m ago`;
     }
     if (s < 86400) {
       const h = Math.floor(s / 3600);
@@ -140,18 +170,49 @@ function formatRelativeStarted(
   return rtf.format(-Math.max(1, years), "year");
 }
 
+/**
+ * Returns the tick interval (ms) appropriate for a given run age, or null
+ * if the cell should not tick at all. Motion is proportional to
+ * information: fast for the first minute, slow as the run ages, frozen
+ * past an hour.
+ */
+function liveTickIntervalMs(ageMs: number): number | null {
+  if (ageMs < 60_000) return 1000; // <1m → 1s tick, show seconds
+  if (ageMs < 5 * 60_000) return 5_000; // 1–5m → 5s tick
+  if (ageMs < 60 * 60_000) return 30_000; // 5m–1h → 30s tick
+  return null; // >=1h → frozen, no motion
+}
+
 function StartedAtCell({ run }: { run: WorkflowSummary }) {
   const iso = run.started_at;
-  const canonical = normalizeExecutionStatus(run.status);
-  const tick = !run.terminal;
-  const liveGranular = tick && canonical === "running";
+  // Use the ROOT execution status, not the aggregate — a cancelled or
+  // paused root should freeze this cell even when children are still in
+  // flight (backend cancel semantics).
+  const effective = run.root_execution_status ?? run.status;
+  const liveGranular = effective === "running";
+  const tick = liveGranular; // only genuinely running runs tick
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!tick) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [tick]);
+    if (!tick || !iso) return;
+    const startedMs = new Date(iso).getTime();
+    if (Number.isNaN(startedMs)) return;
+
+    let id: number | undefined;
+    const schedule = () => {
+      const ageMs = Date.now() - startedMs;
+      const interval = liveTickIntervalMs(ageMs);
+      if (interval == null) return; // age past 1h, freeze
+      id = window.setTimeout(() => {
+        setNow(Date.now());
+        schedule(); // re-schedule so the interval can widen as the run ages
+      }, interval);
+    };
+    schedule();
+    return () => {
+      if (id != null) window.clearTimeout(id);
+    };
+  }, [tick, iso]);
 
   if (!iso) {
     return <span className="text-micro-plus text-muted-foreground">—</span>;
@@ -208,9 +269,18 @@ function formatDuration(ms: number | undefined, terminal?: boolean): string {
   const secs = ms / 1000;
   if (secs < 60) return `${secs.toFixed(1)}s`;
   const mins = Math.floor(secs / 60);
-  if (mins < 60) {
+  if (mins < 5) {
+    // Under 5 minutes we still want second-level precision for a live
+    // running run — the user is watching something short and the seconds
+    // matter.
     const rem = Math.round(secs % 60);
     return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
+  }
+  if (mins < 60) {
+    // Past 5 minutes drop seconds — the tick interval widens to 30s so
+    // sub-minute updates are already invisible, and "12m 47s" reads as
+    // over-precise when the bar is changing slowly.
+    return `${mins}m`;
   }
   const hours = Math.floor(mins / 60);
   if (hours < 24) {
@@ -222,39 +292,83 @@ function formatDuration(ms: number | undefined, terminal?: boolean): string {
   return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
 }
 
-function StatusDot({ status }: { status: string }) {
-  const canonical = normalizeExecutionStatus(status);
-  const color =
-    canonical === "succeeded"
-      ? "bg-green-500"
-      : canonical === "failed" || canonical === "timeout"
-        ? "bg-red-500"
-        : canonical === "running"
-          ? "bg-blue-500"
-          : "bg-muted-foreground";
+/**
+ * Live-updating duration cell. For terminal runs we show the recorded
+ * duration_ms straight from the API. For in-flight runs (running, paused,
+ * queued, etc.) we compute elapsed time from started_at every second so
+ * the user sees how long the run has been alive — same pattern as
+ * StartedAtCell.
+ *
+ * Uses the root execution status (not the children-aggregated one) so the
+ * cell stops ticking in blue as soon as the user pauses, even if
+ * stragglers are still in flight.
+ */
+function DurationCell({ run }: { run: WorkflowSummary }) {
+  const effectiveStatus = run.root_execution_status ?? run.status;
+  const isTerminal = isTerminalStatus(effectiveStatus);
+  // Only a truly running root drives motion. Paused / cancelled / terminal
+  // all freeze the duration at whatever the backend last reported, avoiding
+  // the "dead run still counting" noise.
+  const isRunning = effectiveStatus === "running";
+  const tick = isRunning;
+  const [now, setNow] = useState(() => Date.now());
 
-  const label =
-    canonical === "succeeded"
-      ? "ok"
-      : canonical === "failed"
-        ? "failed"
-        : canonical === "running"
-          ? "running"
-          : canonical === "timeout"
-            ? "timeout"
-            : canonical === "cancelled"
-              ? "cancelled"
-              : canonical === "pending" || canonical === "queued"
-                ? "pending"
-                : canonical;
+  useEffect(() => {
+    if (!tick || !run.started_at) return;
+    const startedMs = new Date(run.started_at).getTime();
+    if (Number.isNaN(startedMs)) return;
 
+    let id: number | undefined;
+    const schedule = () => {
+      const ageMs = Date.now() - startedMs;
+      const interval = liveTickIntervalMs(ageMs);
+      if (interval == null) return;
+      id = window.setTimeout(() => {
+        setNow(Date.now());
+        schedule();
+      }, interval);
+    };
+    schedule();
+    return () => {
+      if (id != null) window.clearTimeout(id);
+    };
+  }, [tick, run.started_at]);
+
+  if (isTerminal) {
+    return (
+      <span className="text-xs tabular-nums text-muted-foreground">
+        {formatDuration(run.duration_ms, true)}
+      </span>
+    );
+  }
+
+  // Non-terminal: live elapsed from started_at. If we have no start time
+  // yet (e.g. queued and never dispatched), fall back to the dash.
+  const startedMs = run.started_at ? new Date(run.started_at).getTime() : NaN;
+  if (Number.isNaN(startedMs)) {
+    return <span className="text-xs tabular-nums text-muted-foreground">—</span>;
+  }
+  const elapsed = Math.max(0, now - startedMs);
   return (
-    <div className="flex items-center gap-1.5">
-      <div className={cn("size-1.5 rounded-full shrink-0", color)} />
-      <span className="text-micro-plus">{label}</span>
-    </div>
+    <span
+      className={cn(
+        "text-xs tabular-nums",
+        isRunning ? "text-sky-400/95" : "text-muted-foreground",
+      )}
+      title={
+        isRunning
+          ? "Live elapsed time — updates every second"
+          : "Elapsed since the run started"
+      }
+    >
+      {formatDuration(elapsed, false)}
+    </span>
   );
 }
+
+// StatusDot / StatusPill / StatusIcon now live in @/components/ui/status-pill
+// and are the single source of truth for status visuals across the app.
+// See components/ui/status-pill.tsx for the primitive.
 
 // ─── RunPreview ────────────────────────────────────────────────────────────────
 
@@ -420,21 +534,7 @@ const FILTER_STATUS_CANONICAL = [
 ] as const satisfies readonly CanonicalStatus[];
 
 function StatusMenuDot({ canonical }: { canonical: CanonicalStatus }) {
-  const color =
-    canonical === "succeeded"
-      ? "bg-green-500"
-      : canonical === "failed" || canonical === "timeout"
-        ? "bg-red-500"
-        : canonical === "running"
-          ? "bg-blue-500"
-          : "bg-muted-foreground";
-
-  return (
-    <span
-      className={cn("inline-flex size-2 shrink-0 rounded-full", color)}
-      aria-hidden
-    />
-  );
+  return <StatusDot status={canonical} label={false} />;
 }
 
 /** Page numbers to render (1-based), with ellipsis when there are gaps. */
@@ -588,7 +688,140 @@ export function RunsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cancelMutation = useCancelExecution();
+  const pauseMutation = usePauseExecution();
+  const resumeMutation = useResumeExecution();
+  const showSuccess = useSuccessNotification();
+  const showError = useErrorNotification();
+  const showWarning = useWarningNotification();
+  const showRunNotification = useRunNotification();
   const { state: sidebarState, isMobile } = useSidebar();
+
+  // Per-row mutation tracking — keyed by root_execution_id so each row can
+  // render an individual spinner and the bulk bar can disable itself while
+  // any selected run has an in-flight mutation.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
+
+  const markPending = useCallback((id: string) => {
+    setPendingIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearPending = useCallback((id: string) => {
+    setPendingIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  /** Human-readable label for a run — e.g. `demo-runs.slow_task`. */
+  const runDisplayLabel = useCallback((run: WorkflowSummary) => {
+    const reasoner = run.root_reasoner || run.display_name || "run";
+    return run.agent_id ? `${run.agent_id}.${reasoner}` : reasoner;
+  }, []);
+
+  const handlePauseRun = useCallback(
+    async (run: WorkflowSummary) => {
+      const execId = run.root_execution_id;
+      if (!execId) return;
+      markPending(execId);
+      try {
+        await pauseMutation.mutateAsync(execId);
+        showRunNotification({
+          type: "success",
+          eventKind: "pause",
+          title: "Paused",
+          message: `${runDisplayLabel(run)} is now paused. In-flight steps will finish; no new steps will start until you resume.`,
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } catch (err) {
+        showRunNotification({
+          type: "error",
+          eventKind: "error",
+          title: "Pause failed",
+          message: err instanceof Error ? err.message : "Unable to pause run.",
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } finally {
+        clearPending(execId);
+      }
+    },
+    [pauseMutation, showRunNotification, markPending, clearPending, runDisplayLabel],
+  );
+
+  const handleResumeRun = useCallback(
+    async (run: WorkflowSummary) => {
+      const execId = run.root_execution_id;
+      if (!execId) return;
+      markPending(execId);
+      try {
+        await resumeMutation.mutateAsync(execId);
+        showRunNotification({
+          type: "success",
+          eventKind: "resume",
+          title: "Resumed",
+          message: `${runDisplayLabel(run)} is running again.`,
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } catch (err) {
+        showRunNotification({
+          type: "error",
+          eventKind: "error",
+          title: "Resume failed",
+          message: err instanceof Error ? err.message : "Unable to resume run.",
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } finally {
+        clearPending(execId);
+      }
+    },
+    [resumeMutation, showRunNotification, markPending, clearPending, runDisplayLabel],
+  );
+
+  const handleCancelRun = useCallback(
+    async (run: WorkflowSummary) => {
+      const execId = run.root_execution_id;
+      if (!execId) return;
+      markPending(execId);
+      try {
+        await cancelMutation.mutateAsync(execId);
+        showRunNotification({
+          type: "success",
+          eventKind: "cancel",
+          title: "Cancelled",
+          message: `${runDisplayLabel(run)} will stop after its current step finishes. In-flight work will be discarded.`,
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } catch (err) {
+        showRunNotification({
+          type: "error",
+          eventKind: "error",
+          title: "Cancel failed",
+          message: err instanceof Error ? err.message : "Unable to cancel run.",
+          runId: run.run_id,
+          runLabel: runDisplayLabel(run),
+        });
+      } finally {
+        clearPending(execId);
+      }
+    },
+    [cancelMutation, showRunNotification, markPending, clearPending, runDisplayLabel],
+  );
+
+  // Bulk confirmation dialog state — a single shared AlertDialog for the
+  // floating bar (rows handle their own confirmation inside the kebab).
+  const [bulkCancelOpen, setBulkCancelOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   /** Match main content horizontal inset (sidebar + p-6) so the bar centers over the table column, not the viewport. */
   const bulkContentInset = useMemo(() => {
@@ -755,7 +988,7 @@ export function RunsPage() {
     let rows = pageRows;
     if (selectedStatuses.size > 1) {
       rows = rows.filter((r) =>
-        selectedStatuses.has(normalizeExecutionStatus(r.status)),
+        selectedStatuses.has(normalizeExecutionStatus(r.root_execution_status ?? r.status)),
       );
     }
     return rows;
@@ -938,24 +1171,29 @@ export function RunsPage() {
               <TableHead className="h-8 px-3 w-24"><SortableHeaderCell field="duration_ms" label="Duration" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
               {/* Started — when (relative) */}
               <TableHead className="h-8 px-3 min-w-[9.5rem] w-44"><SortableHeaderCell field="latest_activity" label="Started" sortBy={sortBy} sortOrder={sortOrder as "asc" | "desc"} onSortChange={handleSortClick} /></TableHead>
+              {/* Lifecycle actions (kebab) — right-anchored, no header label */}
+              <TableHead
+                className="h-8 w-10 px-2 text-right"
+                aria-label="Row actions"
+              />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loadingInitial ? (
               <TableRow>
-                <TableCell colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
+                <TableCell colSpan={7} className="p-8 text-center text-muted-foreground text-xs">
                   Loading runs…
                 </TableCell>
               </TableRow>
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={6} className="p-8 text-center text-destructive text-xs">
+                <TableCell colSpan={7} className="p-8 text-center text-destructive text-xs">
                   {error instanceof Error ? error.message : "Failed to load runs"}
                 </TableCell>
               </TableRow>
             ) : filteredRuns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="p-8">
+                <TableCell colSpan={7} className="p-8">
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Play className="size-8 text-muted-foreground/30 mb-3" />
                     <p className="text-sm font-medium text-muted-foreground">No runs found</p>
@@ -975,8 +1213,16 @@ export function RunsPage() {
                   key={run.run_id}
                   run={run}
                   isSelected={selected.has(run.run_id)}
+                  isPending={
+                    run.root_execution_id
+                      ? pendingIds.has(run.root_execution_id)
+                      : false
+                  }
                   onRowClick={handleRowClick}
                   onToggleSelect={toggleSelect}
+                  onPauseRun={handlePauseRun}
+                  onResumeRun={handleResumeRun}
+                  onCancelRun={handleCancelRun}
                 />
               ))
             )}
@@ -999,75 +1245,348 @@ export function RunsPage() {
 
       {/* Floating bulk bar: fixed strip matches main content width; card centered within that strip (over the table). */}
       {selected.size > 0 ? (
-        <div
-          className="pointer-events-none fixed z-50 flex justify-center"
-          style={{
-            ...bulkContentInset,
-            bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+        <BulkActionBar
+          selected={selected}
+          filteredRuns={filteredRuns}
+          bulkContentInset={bulkContentInset}
+          bulkBusy={bulkBusy}
+          pendingIds={pendingIds}
+          onCompare={() => {
+            const ids = Array.from(selected);
+            if (ids.length === 2) {
+              navigate(`/runs/compare?a=${ids[0]}&b=${ids[1]}`);
+            }
           }}
-        >
-          <Card
-            variant="default"
-            interactive={false}
-            className="pointer-events-auto w-full max-w-2xl border-border bg-card text-card-foreground shadow-lg"
-            role="toolbar"
-            aria-label="Bulk actions for selected runs"
+          onBulkPause={async () => {
+            const targets = [...selected]
+              .map((id) => filteredRuns.find((r) => r.run_id === id))
+              .filter(
+                (r): r is WorkflowSummary =>
+                  !!r &&
+                  (r.root_execution_status ?? r.status) === "running" &&
+                  !!r.root_execution_id,
+              );
+            await runBulkMutation({
+              targets,
+              run: async (r) => {
+                markPending(r.root_execution_id!);
+                try {
+                  await pauseMutation.mutateAsync(r.root_execution_id!);
+                } finally {
+                  clearPending(r.root_execution_id!);
+                }
+              },
+              verb: "paused",
+              label: "Pause",
+              setBusy: setBulkBusy,
+              showSuccess,
+              showWarning,
+              showError,
+            });
+          }}
+          onBulkResume={async () => {
+            const targets = [...selected]
+              .map((id) => filteredRuns.find((r) => r.run_id === id))
+              .filter(
+                (r): r is WorkflowSummary =>
+                  !!r &&
+                  (r.root_execution_status ?? r.status) === "paused" &&
+                  !!r.root_execution_id,
+              );
+            await runBulkMutation({
+              targets,
+              run: async (r) => {
+                markPending(r.root_execution_id!);
+                try {
+                  await resumeMutation.mutateAsync(r.root_execution_id!);
+                } finally {
+                  clearPending(r.root_execution_id!);
+                }
+              },
+              verb: "resumed",
+              label: "Resume",
+              setBusy: setBulkBusy,
+              showSuccess,
+              showWarning,
+              showError,
+            });
+          }}
+          onBulkCancelRequest={() => setBulkCancelOpen(true)}
+        />
+      ) : null}
+
+      {/* Shared bulk cancel confirmation dialog — lives at page level so it
+          can reference the current selection and fire Promise.allSettled
+          across all non-terminal rows when confirmed. */}
+      <AlertDialog open={bulkCancelOpen} onOpenChange={setBulkCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {(() => {
+                const cancellable = [...selected]
+                  .map((id) => filteredRuns.find((r) => r.run_id === id))
+                  .filter(
+                    (r): r is WorkflowSummary =>
+                      !!r &&
+                      !isTerminalStatus(r.root_execution_status ?? r.status) &&
+                      !!r.root_execution_id,
+                  );
+                return CANCEL_RUN_COPY.title(cancellable.length);
+              })()}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {CANCEL_RUN_COPY.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>
+              {CANCEL_RUN_COPY.keepLabel}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={bulkBusy}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const targets = [...selected]
+                  .map((id) => filteredRuns.find((r) => r.run_id === id))
+                  .filter(
+                    (r): r is WorkflowSummary =>
+                      !!r &&
+                      !isTerminalStatus(r.root_execution_status ?? r.status) &&
+                      !!r.root_execution_id,
+                  );
+                setBulkCancelOpen(false);
+                await runBulkMutation({
+                  targets,
+                  run: async (r) => {
+                    markPending(r.root_execution_id!);
+                    try {
+                      await cancelMutation.mutateAsync(r.root_execution_id!);
+                    } finally {
+                      clearPending(r.root_execution_id!);
+                    }
+                  },
+                  verb: "cancelled",
+                  label: "Cancel",
+                  setBusy: setBulkBusy,
+                  showSuccess,
+                  showWarning,
+                  showError,
+                });
+                setSelected(new Set());
+              }}
+            >
+              {(() => {
+                const cancellable = [...selected]
+                  .map((id) => filteredRuns.find((r) => r.run_id === id))
+                  .filter(
+                    (r): r is WorkflowSummary =>
+                      !!r &&
+                      !isTerminalStatus(r.root_execution_status ?? r.status) &&
+                      !!r.root_execution_id,
+                  );
+                return CANCEL_RUN_COPY.confirmLabel(cancellable.length);
+              })()}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bulk action helpers
+   ═══════════════════════════════════════════════════════════════ */
+
+interface BulkMutationOptions {
+  targets: WorkflowSummary[];
+  run: (run: WorkflowSummary) => Promise<void>;
+  /** Past-tense verb for the success toast, e.g. "cancelled". */
+  verb: string;
+  /** Capitalized label for the error toast, e.g. "Cancel". */
+  label: string;
+  setBusy: (busy: boolean) => void;
+  showSuccess: (title: string, message?: string) => unknown;
+  showWarning: (title: string, message?: string) => unknown;
+  showError: (title: string, message?: string) => unknown;
+}
+
+/**
+ * Runs a mutation across many runs via Promise.allSettled and surfaces a
+ * single summary notification — success, partial failure, or full failure.
+ */
+async function runBulkMutation({
+  targets,
+  run,
+  verb,
+  label,
+  setBusy,
+  showSuccess,
+  showWarning,
+  showError,
+}: BulkMutationOptions) {
+  if (targets.length === 0) {
+    showWarning(
+      `Nothing to ${label.toLowerCase()}`,
+      `No selected runs are eligible for ${label.toLowerCase()}.`,
+    );
+    return;
+  }
+
+  setBusy(true);
+  try {
+    const results = await Promise.allSettled(targets.map((r) => run(r)));
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - succeeded;
+    if (failed === 0) {
+      showSuccess(
+        `${succeeded} run${succeeded === 1 ? "" : "s"} ${verb}`,
+        succeeded === 1
+          ? undefined
+          : `All selected runs were ${verb} successfully.`,
+      );
+    } else if (succeeded === 0) {
+      showError(
+        `${label} failed`,
+        `Could not ${label.toLowerCase()} any of the ${failed} selected run${failed === 1 ? "" : "s"}.`,
+      );
+    } else {
+      showWarning(
+        `${succeeded} of ${results.length} ${verb}`,
+        `${failed} run${failed === 1 ? "" : "s"} could not be ${verb} (likely already in a terminal state).`,
+      );
+    }
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BulkActionBar — floating card, shown when >=1 row is selected
+   ═══════════════════════════════════════════════════════════════ */
+
+interface BulkActionBarProps {
+  selected: Set<string>;
+  filteredRuns: WorkflowSummary[];
+  bulkContentInset: { left: string; right: string };
+  bulkBusy: boolean;
+  pendingIds: Set<string>;
+  onCompare: () => void;
+  onBulkPause: () => void;
+  onBulkResume: () => void;
+  onBulkCancelRequest: () => void;
+}
+
+function BulkActionBar({
+  selected,
+  filteredRuns,
+  bulkContentInset,
+  bulkBusy,
+  pendingIds,
+  onCompare,
+  onBulkPause,
+  onBulkResume,
+  onBulkCancelRequest,
+}: BulkActionBarProps) {
+  const selectedRuns = useMemo(
+    () =>
+      [...selected]
+        .map((id) => filteredRuns.find((r) => r.run_id === id))
+        .filter((r): r is WorkflowSummary => !!r),
+    [selected, filteredRuns],
+  );
+
+  const effective = (r: WorkflowSummary) => r.root_execution_status ?? r.status;
+  const hasRunning = selectedRuns.some(
+    (r) => effective(r) === "running" && !!r.root_execution_id,
+  );
+  const hasPaused = selectedRuns.some(
+    (r) => effective(r) === "paused" && !!r.root_execution_id,
+  );
+  const hasCancellable = selectedRuns.some(
+    (r) => !isTerminalStatus(effective(r)) && !!r.root_execution_id,
+  );
+  const anyPending =
+    bulkBusy ||
+    selectedRuns.some(
+      (r) => r.root_execution_id && pendingIds.has(r.root_execution_id),
+    );
+
+  return (
+    <div
+      className="pointer-events-none fixed z-50 flex justify-center"
+      style={{
+        ...bulkContentInset,
+        bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <Card
+        variant="default"
+        interactive={false}
+        className="pointer-events-auto w-full max-w-3xl border-border bg-card text-card-foreground shadow-lg"
+        role="toolbar"
+        aria-label="Bulk actions for selected runs"
+      >
+        <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p
+            className="text-center text-sm text-muted-foreground sm:text-left"
+            aria-live="polite"
+            aria-atomic="true"
           >
-            <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <p
-                className="text-center text-sm text-muted-foreground sm:text-left"
-                aria-live="polite"
-                aria-atomic="true"
-              >
+            {bulkBusy ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-1.5 animate-pulse rounded-full bg-foreground" />
+                Working on {selected.size} run{selected.size === 1 ? "" : "s"}…
+              </span>
+            ) : (
+              <>
                 <span className="font-medium tabular-nums text-foreground">
                   {selected.size}
                 </span>{" "}
                 run{selected.size === 1 ? "" : "s"} selected
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-                <Button
-                  size="sm"
-                  variant={selected.size === 2 ? "default" : "secondary"}
-                  className="h-8 text-xs"
-                  disabled={selected.size !== 2}
-                  onClick={() => {
-                    const ids = Array.from(selected);
-                    if (ids.length === 2) {
-                      navigate(`/runs/compare?a=${ids[0]}&b=${ids[1]}`);
-                    }
-                  }}
-                >
-                  Compare selected ({selected.size})
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="h-8 text-xs"
-                  disabled={cancelMutation.isPending}
-                  onClick={async () => {
-                    try {
-                      await Promise.all(
-                        [...selected].map((runId) => {
-                          const run = filteredRuns.find((r) => r.run_id === runId);
-                          return run?.root_execution_id &&
-                            (run.status === "running" || run.status === "pending")
-                            ? cancelMutation.mutateAsync(run.root_execution_id)
-                            : Promise.resolve();
-                        })
-                      );
-                      setSelected(new Set());
-                    } catch (err) {
-                      console.error('Bulk cancel failed:', err);
-                    }
-                  }}
-                >
-                  Cancel running
-                </Button>
-              </div>
-            </div>
-          </Card>
+              </>
+            )}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            <Button
+              size="sm"
+              variant={selected.size === 2 ? "default" : "secondary"}
+              className="h-8 text-xs"
+              disabled={selected.size !== 2 || anyPending}
+              onClick={onCompare}
+            >
+              Compare selected ({selected.size})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={!hasPaused || anyPending}
+              onClick={onBulkResume}
+            >
+              Resume
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={!hasRunning || anyPending}
+              onClick={onBulkPause}
+            >
+              Pause
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 text-xs"
+              disabled={!hasCancellable || anyPending}
+              onClick={onBulkCancelRequest}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
-      ) : null}
+      </Card>
     </div>
   );
 }
@@ -1077,18 +1596,31 @@ export function RunsPage() {
 interface RunRowProps {
   run: WorkflowSummary;
   isSelected: boolean;
+  isPending: boolean;
   onRowClick: (run: WorkflowSummary) => void;
   onToggleSelect: (runId: string, e: React.MouseEvent) => void;
+  onPauseRun: (run: WorkflowSummary) => void;
+  onResumeRun: (run: WorkflowSummary) => void;
+  onCancelRun: (run: WorkflowSummary) => void;
 }
 
-function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
+function RunRow({
+  run,
+  isSelected,
+  isPending,
+  onRowClick,
+  onToggleSelect,
+  onPauseRun,
+  onResumeRun,
+  onCancelRun,
+}: RunRowProps) {
   const agentLabel = run.agent_id || run.agent_name || "";
   const reasonerLabel = run.root_reasoner || run.display_name || "—";
   const [copied, setCopied] = useState(false);
 
   return (
     <TableRow
-      className="cursor-pointer"
+      className="group/run-row cursor-pointer"
       data-state={isSelected ? "selected" : undefined}
       tabIndex={0}
       role="link"
@@ -1108,9 +1640,10 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
           onCheckedChange={() => {}}
         />
       </TableCell>
-      {/* Status dot */}
+      {/* Status dot — prefer the root execution status so pause/cancel are
+          reflected immediately, even when stragglers are still in-flight */}
       <TableCell className="px-3 py-1.5 w-24">
-        <StatusDot status={run.status} />
+        <StatusDot status={run.root_execution_status ?? run.status} />
       </TableCell>
       {/* Target name, then inline copy-chip for run id (no sub-column) */}
       <TableCell
@@ -1188,9 +1721,9 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
       <TableCell className="px-3 py-1.5 text-xs tabular-nums w-20">
         {run.total_executions ?? 1}
       </TableCell>
-      {/* Duration */}
-      <TableCell className="px-3 py-1.5 text-xs tabular-nums text-muted-foreground w-24">
-        {formatDuration(run.duration_ms, run.terminal)}
+      {/* Duration — live elapsed for in-flight rows, recorded value for terminal */}
+      <TableCell className="px-3 py-1.5 w-24">
+        <DurationCell run={run} />
       </TableCell>
       {/* Started — relative + absolute; live seconds for running */}
       <TableCell
@@ -1198,6 +1731,19 @@ function RunRow({ run, isSelected, onRowClick, onToggleSelect }: RunRowProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <StartedAtCell run={run} />
+      </TableCell>
+      {/* Lifecycle actions — kebab menu with Pause / Resume / Cancel */}
+      <TableCell
+        className="w-10 px-2 py-1.5 text-right"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <RunLifecycleMenu
+          run={run}
+          isPending={isPending}
+          onPause={onPauseRun}
+          onResume={onResumeRun}
+          onCancel={onCancelRun}
+        />
       </TableCell>
     </TableRow>
   );
