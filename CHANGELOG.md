@@ -6,6 +6,195 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.65-rc.11] - 2026-04-08
+
+
+### Documentation
+
+- Docs(skill): meta-philosophy rewrite + async curl + post-mortem hardenings
+
+Rewrites the agentfield-multi-reasoner-builder skill to teach principles
+instead of prescribing specific shapes, switches the canonical smoke test
+to the async endpoint, and folds in hard-learned lessons about framework
+contracts, cross-boundary data, and live validation.
+
+All changes are to the skill's markdown — no Go code, no templates, no
+install flow changes. The skill_data/ copy under control-plane/internal/
+skillkit/ is the embedded mirror of skills/ and is kept in sync via
+scripts/sync-embedded-skills.sh.
+
+## Meta-philosophy rewrite (SKILL.md + architecture-patterns.md)
+
+The previous version pushed HUNT->PROVE and specific shape templates
+(loan-underwriting, medical-triage, customer-support triage, etc.) too
+hard. Coding agents were cargo-culting adversarial verifiers into problems
+where false positives had no real cost, burning LLM budget on steel-men
+that never fired.
+
+Rewritten to teach the five foundational principles from the composite-
+intelligence philosophy directly — granular decomposition, guided
+autonomy, dynamic orchestration, contextual fidelity, asynchronous
+parallelism — and lets the topology emerge from applying them to the
+problem. Removes:
+
+- All four hardcoded "Shape A/B/C/D" examples (sequential cascade /
+  fan-out / dynamic router / HUNT-PROVE) with their named product types
+- The "Problem -> pattern mapping" table in architecture-patterns.md
+  that mapped specific product domains to specific patterns
+- The "Examples of real compositions" table with named systems
+- Prescriptive language like "use HUNT-PROVE only for medical/legal/
+  financial" — replaced with principle-level framing (discovery frame
+  must be structurally separated from verification frame)
+- Shape examples embedded in pattern 8 (Composition Cascade) that
+  hardcoded adversarial-committee / linear-refinement / dynamic-router
+  shapes
+
+Replaces with:
+
+- The five principles applied to the problem in order, with the question
+  each one asks
+- A single generic "bad shape = flat star" example as the thing the
+  principles reject
+- A list of non-negotiable invariants (depth >= 3, one place where shape
+  depends on intermediate state, flat outputs, provenance, etc.)
+- A section in architecture-patterns.md framing the 9 named patterns as
+  "emergent consequences of the principles" rather than a menu to pick
+  from, with guidance on which patterns tend to emerge when
+- A meta-capability section in scaffold-recipe.md explaining that
+  reasoners compose like normal function calls at any depth, conditionally,
+  recursively, dynamically — this is the thing a hand-authored static DAG
+  cannot express and where AgentField earns its place
+
+## Async curl as the canonical smoke test
+
+Multi-reasoner compositions routinely exceed the control plane's 90s
+sync timeout. The previous canonical curl used the sync endpoint and
+users were hitting "execution timeout after 1m30s" on builds that worked
+fine but just needed more wall-clock time.
+
+Switches the canonical smoke test everywhere (SKILL.md non-negotiable
+promise, SKILL.md output contract section 7, verification.md smoke-test
+contract, scaffold-recipe.md live smoke test) to the async flow:
+
+  POST /api/v1/execute/async/<target>  -> returns execution_id
+  GET  /api/v1/executions/<id>         -> poll until succeeded|failed
+
+With a clean bash poll loop the user can copy-paste as-is. The sync
+endpoint is still documented but explicitly marked as only appropriate
+when the whole pipeline provably finishes in under 60s.
+
+## Post-mortem hardenings — five meta-rules, all abstracted
+
+Five real failures surfaced in a codex build against the skill. Each one
+is a specific instance of a general framework-interaction rule that
+belongs in the skill regardless of this specific story.
+
+### 1. Framework surface contracts are narrower than prose descriptions
+
+The skill had said "AgentRouter proxies every agent attribute" — the word
+"every" was aspirational; the proxy is actually a fixed set of callables
+(ai, call, memory, harness). Attempting to use router.node_id raised
+AttributeError at runtime.
+
+Replaced the prose description in choosing-primitives.md with an
+enumerated table: which attributes proxy, which do not, and how to access
+the non-proxied ones (read NODE_ID from env inside router files). Added
+the general principle: when a framework description uses "every" or
+"all" or "transparently forwards", mentally replace with "a specific
+documented subset" and verify the exact attribute before writing code
+against it.
+
+### 2. Data does not auto-reconstitute across serialization boundaries
+
+The skill implied that type hints on a receiving reasoner would
+reconstruct Pydantic instances from incoming payloads. They don't — the
+SDK validates shape on the wire but the receiver still gets plain dicts.
+A parameter declared `list[MyModel]` arrives as `list[dict]`, and any
+downstream `obj.field_name` access crashes.
+
+Added a new section in choosing-primitives.md titled "Cross-boundary
+data does NOT auto-reconstitute" that explains the principle (type hints
+are shape contracts on the wire, not type contracts in memory), the two
+valid ways to handle it (explicit reconstruction with Model(**payload)
+on the receiving side, or render-to-prose on the caller side for LLM-to-
+LLM boundaries), the red flags (AttributeError, TypeError, Pydantic
+ValidationError on list payloads), and the general rule (anything that
+crosses a serialization boundary loses runtime type identity).
+
+Added a matching row to SKILL.md's hard rejections table that catches
+the pattern at write-time.
+
+### 3. Reasoners compose like function calls — embrace deep dynamic graphs
+
+Added a "Reasoners compose like normal function calls" section to
+scaffold-recipe.md. Reframes app.call as "you are calling a function
+or hitting a REST endpoint" and explicitly encourages building deep,
+conditional, recursive, dynamic call graphs that a static DAG cannot
+express. Notes that the call graph emerges at runtime from intermediate
+reasoner decisions, which is the thing AgentField does that hand-
+authored DAGs and CrewAI-style fixed topologies cannot. Includes the
+cross-boundary gotcha as a parenthetical, not a named pattern.
+
+### 4. Introspection endpoints have version-dependent behaviour
+
+The skill recommended GET /api/v1/nodes?health_status=any as a
+registration check. That query returned empty on a freshly-registered
+agent because the staging control plane interpreted the filter
+differently than production.
+
+Replaced the nodes-based registration check everywhere with
+GET /api/v1/discovery/capabilities as the primary durable check — its
+response shape is stable across control-plane builds. Added the general
+rule: when introspecting a framework, prefer the endpoint whose
+semantics are stable across versions and deployments. "Does my reasoner
+exist?" is a durable question. "Is my node healthy according to filter
+X?" is a version-dependent one. Always use the durable question as the
+primary gate.
+
+Also fixed the jq paths to match the real discovery response shape
+(.capabilities[].reasoners[].id, not .reasoners[].name).
+
+### 5. Static validation is necessary but not sufficient
+
+py_compile, docker compose config, and visual-invariant checklists
+cannot catch runtime contract drift between reasoners. The post-mortem
+builds passed static validation and crashed on first live execution
+because of bug 1 and bug 2 above.
+
+Added a new "Mandatory live smoke test before handoff" section to
+SKILL.md that makes running the canonical async curl against the live
+stack a required step. Added a matching expanded validation section to
+scaffold-recipe.md with a complete bash recipe: bring the stack up,
+wait for registration via discovery, fire the async execute, poll for
+completion, check status == succeeded, tear down. If status == failed,
+read the error + agent logs, fix, retry — do NOT hand off on static
+checks alone. Listed the two most common runtime failures that only
+surface in the live test (cross-boundary reconstitution, non-proxied
+router attributes) with pointers to their respective sections.
+
+## Memory, vectors, and events surface
+
+Added a compact section in choosing-primitives.md documenting the
+memory API at the user's request: four scopes (global / agent / session
+/ run), basic key-value API, vector memory (set_vector / search_vectors),
+event memory (app.memory.events.*). Includes a short "when NOT to use
+memory" list so agents don't reach for it when a local variable or a
+pass-through kwarg would be simpler. Framed as "rule of thumb: memory
+is for state that crosses call boundaries OR must survive the current
+execution; everything else is a local variable."
+
+## Rejection of specific product examples
+
+Throughout the rewrite, every specific product name or domain example
+was removed. No "loan-underwriting", no "medical-triage", no "customer-
+support triage", no "web research agent", no "meeting summarizer". The
+skill now teaches at the meta level so it generalizes to any problem
+the user brings — the coding agent derives the shape from first
+principles for the specific problem in front of it, not by matching
+the problem to a catalog row.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (1f0c887)
+
 ## [0.1.65-rc.10] - 2026-04-08
 
 
