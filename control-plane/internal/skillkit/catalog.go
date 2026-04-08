@@ -24,8 +24,8 @@ type Skill struct {
 var Catalog = []Skill{
 	{
 		Name:        "agentfield-multi-reasoner-builder",
-		Version:     "0.2.0",
-		Description: "Architect and ship complete multi-agent backends on AgentField — composite intelligence patterns, deep DAG composition, scaffold-to-curl in one workflow.",
+		Version:     "0.3.0",
+		Description: "Architect and ship complete multi-agent backends on AgentField — composite intelligence from five foundational principles, deep dynamic call graphs, async-first smoke tests, and hard runtime-contract rules.",
 		EmbedRoot:   "skill_data/agentfield-multi-reasoner-builder",
 		EntryFile:   "SKILL.md",
 	},
