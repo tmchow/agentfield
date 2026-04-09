@@ -1,68 +1,186 @@
 # Coverage Guide
 
-This repository now has two distinct local quality entry points:
+AgentField assumes most of its code is written, tested, and reviewed by
+AI coding agents. The coverage infrastructure is therefore designed
+around two goals:
 
-- `./scripts/test-all.sh` for a broad local regression pass
-- `./scripts/coverage-summary.sh` for per-surface coverage artifacts and badge inputs
+1. Give an agent a single, unambiguous answer to "is my change allowed to
+   land?" — via a CI gate with a machine-readable status file.
+2. Give the same agent the exact shell command to fix any regression it
+   causes, without needing a human to explain the repo layout.
 
-## What `test-all.sh` covers
+This file is the ground truth. If anything below contradicts a README
+badge or an Actions step summary, this file wins.
 
-`./scripts/test-all.sh` runs:
+## The two entry points
 
-- control-plane Go tests
-- Go SDK tests
-- Python SDK tests via `python3 -m pytest`
-- TypeScript SDK core tests
-- control-plane web UI tests
+- `./scripts/test-all.sh` — broad local regression pass (all surfaces, no
+  coverage reporting). Use this when you just want to know "did the
+  tests still pass after my change?"
+- `./scripts/coverage-summary.sh` — measures coverage on every tracked
+  surface, writes artifacts to `test-reports/coverage/`, and is what the
+  `Coverage Summary` GitHub Actions workflow runs on every PR.
 
-The TypeScript SDK core suite excludes MCP tests and `tests/harness_functional.test.ts`, which is a live provider test file that requires external agent CLIs and real API calls.
+## Surfaces
 
-Web UI lint is intentionally opt-in for `test-all.sh` via `AGENTFIELD_RUN_UI_LINT=1` because the repo still carries existing lint debt that would otherwise make the broad regression entrypoint unreliable.
+Coverage is tracked per runtime surface, not rolled up into a single
+magic number, because the repo is a polyglot monorepo:
 
-It is intended to answer a single question quickly: "did the core local test surfaces still pass after my change?"
+| Surface | Root | Toolchain |
+| --- | --- | --- |
+| `control-plane`  | `control-plane/internal/...`       | Go  (`go test -coverprofile`) |
+| `sdk-go`         | `sdk/go/...`                       | Go  (`go test -coverprofile`) |
+| `sdk-python`     | `sdk/python/agentfield/...`        | Python (`pytest --cov`) |
+| `sdk-typescript` | `sdk/typescript/src/...`           | TypeScript (`vitest --coverage`) |
+| `web-ui`         | `control-plane/web/client/src/...` | TypeScript (`vitest --coverage`) |
 
-## What `coverage-summary.sh` covers
+`./scripts/coverage-summary.sh` writes five per-surface numbers **and** a
+weighted aggregate. The aggregate is the number the README badge uses; it
+is weighted by source size so a tiny helper package cannot move the
+needle.
 
-`./scripts/coverage-summary.sh` writes artifacts to `test-reports/coverage/` for:
+## The coverage gate
 
-- control-plane Go coverage
-- Go SDK coverage
-- Python SDK coverage across the tracked modules configured in `sdk/python/pyproject.toml`
-- TypeScript SDK coverage across `sdk/typescript/src/**/*.ts`, excluding the MCP slice while MCP removal is in progress
-- control-plane web UI coverage across `control-plane/web/client/src/**/*.{ts,tsx}`
+Every PR runs `./scripts/coverage-gate.py`, which compares the current
+numbers to a baseline checked into the repo:
 
-The script produces:
+- Config:   [`.coverage-gate.toml`](../.coverage-gate.toml)
+- Baseline: [`coverage-baseline.json`](../coverage-baseline.json)
 
-- `summary.md` for humans
-- `summary.json` for automation
-- `badge.json` for a Shields-compatible gist endpoint
-- raw coverage outputs (`.coverprofile`, `.xml`, `.json`)
+The gate enforces five rules, all loaded from `.coverage-gate.toml`:
 
-## Why the summary is per-surface
+| Rule | Current value | Enforced by |
+| --- | --- | --- |
+| `min_surface` — absolute floor for every single surface | **86.0%** | `scripts/coverage-gate.py` |
+| `min_aggregate` — absolute floor for the weighted aggregate | **88.5%** | `scripts/coverage-gate.py` |
+| `max_surface_drop` — biggest per-surface regression allowed vs baseline | **1.0 pp** | `scripts/coverage-gate.py` |
+| `max_aggregate_drop` — biggest aggregate regression allowed vs baseline | **0.5 pp** | `scripts/coverage-gate.py` |
+| `min_patch` — coverage required on lines the PR actually touches, per surface | **80.0%** | `scripts/patch-coverage-gate.sh` (diff-cover vs `origin/main`) |
 
-AgentField is a monorepo with separate runtimes, toolchains, and test semantics. A single blended percentage is easy to market and hard to defend.
+The aggregate rules protect the repo from slow drift; the **patch** rule is
+the single most effective regression signal and matches the default used by
+codecov, vitest, rust-lang, and grafana — aggregates move slowly, but
+untested *new* code shows up immediately.
 
-The coverage workflow therefore reports one number per surface and treats the monorepo as a set of independently measurable areas.
+If any rule fails, the `Coverage Summary` job fails, two sticky PR comments
+titled **"📊 Coverage gate"** and **"📐 Patch coverage gate"** are posted
+with the tables and exact reproduce commands, and both JSON verdicts are
+written to `test-reports/coverage/` (`gate-status.json` and
+`patch-gate-status.json`) for programmatic consumers.
 
-Functional tests remain separate from these percentages. They are validated in `.github/workflows/functional-tests.yml` and provide trust in cross-service behavior that statement coverage alone cannot capture.
+## Branch protection
 
-## GitHub Actions
+The required-check configuration for `main` is version-controlled in
+[`.github/rulesets/main.json`](../.github/rulesets/main.json) and pushed to
+GitHub by the [Sync Rulesets](../.github/workflows/sync-rulesets.yml)
+workflow. The ruleset requires:
 
-`.github/workflows/coverage.yml` runs the coverage summary on pull requests and pushes to `main`, uploads the generated artifacts, and publishes the Markdown table into the Actions step summary.
+- `Coverage Summary / coverage-summary` must pass before merge
+- The branch must be up to date with `main` (strict mode)
+- 1 approving review, stale reviews dismissed on push
+- No force-pushes, no deletions
 
-On pushes to `main`, the workflow can also update a Shields-compatible gist if these secrets are configured:
+Any change to branch protection happens in a PR that edits
+`.github/rulesets/main.json`, reviewed like any other code change.
+
+## For AI coding agents
+
+This section is written for you, not for a human.
+
+When the `Coverage Summary` check is red on your PR, here is the loop:
+
+1. **Read the canonical status file, not the PR comment.** The comment is
+   a rendering; the ground truth is `test-reports/coverage/gate-status.json`
+   from the workflow artifact `coverage-summary`. Download it with:
+
+   ```bash
+   gh run download --name coverage-summary --dir /tmp/coverage
+   cat /tmp/coverage/gate-status.json
+   ```
+
+2. **Iterate over `violations[]`.** Each entry has a `rule`, a `surface`,
+   the `value` that failed, the `threshold`, a human-readable `message`,
+   and most importantly a `reproduce` shell command.
+
+3. **Run the reproduce command for that surface locally.** It is
+   designed to print the lowest-coverage functions/files first so you
+   can target your tests.
+
+4. **Add tests in the same PR that cover the specific uncovered code
+   paths you just identified.** Tests must exercise real behaviour. A
+   test that only imports the module to bump a coverage counter will be
+   detected and rejected on review.
+
+5. **Re-run the gate locally before pushing** so you know whether your
+   next CI run will pass:
+
+   ```bash
+   ./scripts/coverage-summary.sh
+   ./scripts/coverage-gate.py \
+       --summary  test-reports/coverage/summary.json \
+       --baseline coverage-baseline.json \
+       --config   .coverage-gate.toml
+   echo $?   # 0 = passed, 1 = violations, 2 = usage error
+   ```
+
+6. **Do not lower thresholds or baseline numbers to silence the gate.**
+   `.coverage-gate.toml` and `coverage-baseline.json` are
+   the contract between this repo and every agent working in it. If you
+   believe a regression is legitimate (for example, dead code was
+   deleted and the file shrank), say so explicitly in the PR description
+   and update the relevant file as a separate, reviewable change —
+   ideally in its own commit with a message like
+   `chore(coverage): lower web-ui baseline to 78.2% after page X removal`.
+
+7. **If you are blocked**, request human review by commenting on the PR.
+   Do not merge around the gate.
+
+The gate never runs `git commit` or `git push` for you. It only reads
+files and writes a report.
+
+## Badge
+
+The README coverage badge is a shields.io endpoint backed by a GitHub
+Gist that `coverage.yml` updates on every push to `main`. The endpoint
+JSON lives at `test-reports/coverage/badge.json` during a run and is
+copied into the gist only from `main`, so the badge always reflects
+`main`'s current aggregate.
+
+If you need to configure the gist for a fork or a self-hosted mirror,
+the two required secrets are documented in `.github/workflows/coverage.yml`:
 
 - `GIST_TOKEN`
 - `COVERAGE_GIST_ID`
 
-Once configured, a README badge can point at the raw `badge.json` endpoint from that gist.
+## Why a single blended number at all
 
-## Recommended public positioning
+AgentField historically reported only per-surface numbers because a
+single monorepo percentage is easy to game. That is still the canonical
+view — the table in every PR comment lists every surface with a colour
+and an arrow.
 
-Until the lowest-tested surfaces materially improve, prefer:
+The aggregate exists on top of the per-surface table for exactly two
+reasons:
 
-- "coverage tracked"
-- "coverage reports published"
-- "cross-language CI + functional tests"
+1. A single number is the only thing a shields.io badge can display.
+2. An AI coding agent needs a single global "am I making the repo
+   better or worse?" signal it can sort PRs by.
 
-Avoid a single numeric monorepo coverage badge unless you are willing to defend how that number is calculated and why it is representative.
+The weighting in `.coverage-gate.toml` intentionally matches the source
+size of each surface so the aggregate cannot be inflated by adding
+exhaustive tests to a 50-line helper package.
+
+## Non-goals
+
+- Branch coverage, path coverage, or MC/DC: we only enforce statement
+  coverage today because that is what every surface's toolchain reports
+  out of the box. If a surface starts reporting branch coverage we will
+  add a separate rule for it.
+- Patch (diff) coverage: tracked as `min_patch` in
+  `.coverage-gate.toml` but **not yet enforced** because per-language
+  diff-cover tooling is not wired up on every surface. Safe to turn on
+  once the Python and Go surfaces have diff-cover in CI.
+- Functional / end-to-end tests: those live in
+  `.github/workflows/functional-tests.yml` and are never counted toward
+  the statement coverage numbers above. They provide cross-service
+  confidence that statement coverage cannot.

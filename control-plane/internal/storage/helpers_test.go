@@ -15,6 +15,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func ptrString(s string) *string {
+	return &s
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
+}
+
+func ptrInt64(i int64) *int64 {
+	return &i
+}
+
 func TestSQLDatabaseHelpers(t *testing.T) {
 	t.Run("nil database guards and rebinding", func(t *testing.T) {
 		var nilDB *sqlDatabase

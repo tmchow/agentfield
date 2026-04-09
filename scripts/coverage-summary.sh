@@ -59,6 +59,24 @@ echo "==> Running Go SDK coverage"
 )
 write_go_cover_report "$ROOT_DIR/sdk/go" "$REPORT_DIR/sdk-go.coverprofile" "$REPORT_DIR/sdk-go.cover.txt"
 
+# Cobertura XML for Go surfaces — consumed by diff-cover to enforce
+# per-PR patch coverage. We install gocover-cobertura on demand so CI
+# and local runs work from a clean checkout.
+if ! command -v gocover-cobertura >/dev/null 2>&1; then
+  echo "==> Installing gocover-cobertura"
+  GO111MODULE=on go install github.com/boumenot/gocover-cobertura@latest
+fi
+GOBIN="$(go env GOPATH)/bin"
+export PATH="$GOBIN:$PATH"
+(
+  cd "$ROOT_DIR/control-plane"
+  gocover-cobertura < "$REPORT_DIR/control-plane.coverprofile" > "$REPORT_DIR/control-plane-cobertura.xml"
+)
+(
+  cd "$ROOT_DIR/sdk/go"
+  gocover-cobertura < "$REPORT_DIR/sdk-go.coverprofile" > "$REPORT_DIR/sdk-go-cobertura.xml"
+)
+
 echo "==> Running Python SDK coverage"
 (
   cd "$ROOT_DIR/sdk/python"
@@ -73,6 +91,9 @@ echo "==> Running TypeScript SDK coverage"
   CI=1 npm run test:coverage:core
 )
 cp "$ROOT_DIR/sdk/typescript/coverage/coverage-summary.json" "$REPORT_DIR/sdk-typescript-coverage-summary.json"
+if [[ -f "$ROOT_DIR/sdk/typescript/coverage/cobertura-coverage.xml" ]]; then
+  cp "$ROOT_DIR/sdk/typescript/coverage/cobertura-coverage.xml" "$REPORT_DIR/sdk-typescript-cobertura.xml"
+fi
 
 echo "==> Running control plane web UI coverage"
 (
@@ -80,6 +101,11 @@ echo "==> Running control plane web UI coverage"
   CI=1 npm run test:coverage
 )
 cp "$ROOT_DIR/control-plane/web/client/coverage/coverage-summary.json" "$REPORT_DIR/web-ui-coverage-summary.json"
+if [[ -f "$ROOT_DIR/control-plane/web/client/coverage/cobertura-coverage.xml" ]]; then
+  cp "$ROOT_DIR/control-plane/web/client/coverage/cobertura-coverage.xml" "$REPORT_DIR/web-ui-cobertura.xml"
+fi
+# Python already emits cobertura XML directly (see the sdk-python-coverage.xml
+# path below) — no extra copy needed.
 
 CONTROL_PLANE_TOTAL="$(extract_go_total "$ROOT_DIR/control-plane" "$REPORT_DIR/control-plane.coverprofile")"
 SDK_GO_TOTAL="$(extract_go_total "$ROOT_DIR/sdk/go" "$REPORT_DIR/sdk-go.coverprofile")"
@@ -136,18 +162,58 @@ surfaces = [
     },
 ]
 
+def badge_color(pct: float) -> str:
+    # Shields.io style thresholds
+    if pct >= 90: return "brightgreen"
+    if pct >= 80: return "green"
+    if pct >= 70: return "yellowgreen"
+    if pct >= 60: return "yellow"
+    if pct >= 50: return "orange"
+    return "red"
+
+# Weighted average across the covered surfaces. Weights chosen to match the
+# relative size (lines of source) of each surface so the aggregate isn't
+# gamed by a tiny package hitting 100%. Adjust surface_weights below when
+# the repo's surface sizes shift materially.
+# NOTE: the repo's long-standing convention (see docs/COVERAGE.md) is to
+# report per-surface numbers rather than a single blended monorepo score.
+# This aggregate is intended as a single convenience signal for the README
+# badge ONLY; the per-surface table below remains the source of truth.
+surface_weights = {
+    "control-plane": 24326,   # go statements
+    "sdk-go":         1,       # placeholder, unknown statement count
+    "sdk-python":     1,       # placeholder
+    "sdk-typescript": 1,       # placeholder
+    "web-ui":         41693,   # ts lines
+}
+total_w = 0.0
+total_cov = 0.0
+for s in surfaces:
+    w = surface_weights.get(s["name"], 1)
+    total_w += w
+    total_cov += w * s["coverage_percent"]
+aggregate_pct = (total_cov / total_w) if total_w else 0.0
+
 summary = {
     "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z"),
     "surfaces": surfaces,
+    "aggregate": {
+        "coverage_percent": round(aggregate_pct, 2),
+        "method": "weighted average over surfaces (control-plane + web-ui dominate)",
+        "notes": (
+            "Per-surface percentages remain the source of truth; see "
+            "docs/COVERAGE.md. This aggregate exists for the README badge only."
+        ),
+    },
     "badge": {
         "schemaVersion": 1,
         "label": "coverage",
-        "message": "tracked",
-        "color": "4c1",
+        "message": f"{aggregate_pct:.1f}%",
+        "color": badge_color(aggregate_pct),
     },
     "notes": [
         "Functional tests run in a separate Docker-based workflow and are not part of these percentages.",
-        "Percentages are reported per surface rather than collapsed into a misleading single monorepo number.",
+        "Per-surface numbers remain canonical; the aggregate is a convenience signal.",
     ],
 }
 
@@ -156,6 +222,8 @@ summary = {
 
 lines = [
     "# Coverage Summary",
+    "",
+    f"**Aggregate: {aggregate_pct:.2f}%** (weighted average; per-surface numbers below are canonical)",
     "",
     "| Surface | Coverage | Notes |",
     "| --- | ---: | --- |",
