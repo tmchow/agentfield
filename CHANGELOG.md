@@ -6,6 +6,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.65-rc.18] - 2026-04-09
+
+
+### Chores
+
+- Chore(deps): bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp from 1.32.0 to 1.43.0 in /control-plane in the go_modules group across 1 directory (#370)
+
+* chore(deps): bump go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
+
+Bumps the go_modules group with 1 update in the /control-plane directory: [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp](https://github.com/open-telemetry/opentelemetry-go).
+
+
+Updates `go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp` from 1.32.0 to 1.43.0
+- [Release notes](https://github.com/open-telemetry/opentelemetry-go/releases)
+- [Changelog](https://github.com/open-telemetry/opentelemetry-go/blob/main/CHANGELOG.md)
+- [Commits](https://github.com/open-telemetry/opentelemetry-go/compare/v1.32.0...v1.43.0)
+
+---
+updated-dependencies:
+- dependency-name: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
+  dependency-version: 1.43.0
+  dependency-type: direct:production
+  dependency-group: go_modules
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+* chore(deps): pin otel otlptracehttp to v1.41.0 for Go 1.24 compat
+
+otel v1.42+ requires Go 1.25, but the control-plane module and CI/Docker
+still target Go 1.24. Pin the otel family (otel, sdk, trace, metric,
+otlptrace, otlptracehttp) to v1.41.0 — the highest release line that still
+declares `go 1.24.0` in its go.mod — and revert the go directive back to
+1.24.0 so go.mod stays consistent with the rest of the repo.
+
+* chore(deps): bump Go 1.24->1.25 and otel to v1.43.0 (closes #121, #122)
+
+Accepts the otel v1.43.0 upgrade to fix two Dependabot security alerts:
+- GHSA (moderate): otlptracehttp unbounded HTTP response body reads
+- GHSA (high): otel/sdk BSD kenv PATH hijacking
+
+otel v1.43.0 requires Go 1.25, so bump the toolchain across the repo:
+control-plane/go.mod, all four Dockerfiles, and the three GitHub
+workflows (control-plane, coverage, release). SDK (sdk/go) is left on
+Go 1.21 since it does not depend on otel.
+
+---------
+
+Signed-off-by: dependabot[bot] <support@github.com>
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Co-authored-by: Santosh <santosh@agentfield.ai> (656c46a)
+
 ## [0.1.65-rc.17] - 2026-04-09
 
 
