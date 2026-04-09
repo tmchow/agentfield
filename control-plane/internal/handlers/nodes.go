@@ -552,8 +552,17 @@ func RegisterNodeHandler(storageProvider storage.StorageProvider, uiService *ser
 				// The SDK never sends approved_tags (only proposed_tags), so without
 				// this the UPSERT would overwrite approved_tags with an empty array,
 				// forcing re-approval after every CP restart or re-registration.
+				//
+				// IMPORTANT: We deliberately do NOT preserve existingNode.LifecycleStatus
+				// here. The lifecycle state machine owns that field — a stale terminal
+				// status (stopping/offline) from a previous shutdown would otherwise
+				// leak into the fresh registration, causing the re-registered agent to
+				// appear mid-shutdown, which breaks downstream status inference
+				// (e.g. webhook event type determination, health monitoring, and the
+				// docs-quick-start execution webhook contract test). The fallback
+				// below resets empty/offline to AgentStatusStarting, and the state
+				// machine takes it from there.
 				newNode.ApprovedTags = existingNode.ApprovedTags
-				newNode.LifecycleStatus = existingNode.LifecycleStatus
 
 				// Carry over per-reasoner and per-skill approved tags.
 				if len(existingNode.ApprovedTags) > 0 {
@@ -1458,9 +1467,15 @@ func RegisterServerlessAgentHandler(storageProvider storage.StorageProvider, uiS
 			}
 
 			// Preserve existing approval state so re-registration does not clear
-			// approved tags or lifecycle status during the UPSERT.
+			// approved tags during the UPSERT.
+			//
+			// IMPORTANT: We deliberately do NOT preserve existingNode.LifecycleStatus
+			// here. The serverless node is constructed above with
+			// LifecycleStatus = AgentStatusReady, which is the correct state for a
+			// serverless agent that just completed discovery. Overwriting with a
+			// stale terminal status from a previous row would break downstream
+			// status inference (webhook event type, health monitoring, etc.).
 			newNode.ApprovedTags = existingNode.ApprovedTags
-			newNode.LifecycleStatus = existingNode.LifecycleStatus
 
 			if len(existingNode.ApprovedTags) > 0 {
 				approvedSet := make(map[string]struct{})
