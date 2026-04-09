@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.65-rc.17] - 2026-04-09
+
+
+### Fixed
+
+- Fix: block execution of agents in pending_approval lifecycle state (#371)
+
+The ExecuteReasonerHandler and ExecuteSkillHandler did not check for
+pending_approval status, allowing agents awaiting tag approval to be
+invoked. The permission middleware had this check but only runs when
+DID authorization is enabled — leaving a gap in the default path.
+
+Adds pending_approval guards to both handlers and excludes
+pending_approval agents from the versioned-agent fallback selection.
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com> (cd375ec)
+
 ## [0.1.65-rc.16] - 2026-04-08
 
 
