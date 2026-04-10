@@ -41,6 +41,63 @@ def _get_litellm():
     return _litellm
 
 
+def _reset_litellm_http_clients(litellm_module: Any) -> None:
+    """
+    Reset litellm's cached httpx clients after a timeout.
+
+    Why this exists: when a litellm.acompletion call hangs and we cancel it,
+    the underlying httpx connection is left in a half-closed state. The next
+    call grabs the same pooled connection and hangs forever — a true deadlock
+    that py-spy reveals as 'all asyncio worker threads idle'.
+
+    By clearing litellm's module-level client caches we force the next call to
+    open a fresh pool, breaking the cycle. This is a defensive cleanup; harmless
+    if the pool is healthy.
+    """
+    if litellm_module is None:
+        return
+    try:
+        # litellm caches AsyncHTTPHandler / HTTPHandler instances in several
+        # module-level attributes. Reset every one we know about; missing
+        # attributes are silently ignored.
+        for attr in (
+            "module_level_client",
+            "module_level_aclient",
+            "aclient_session",
+            "client_session",
+            "in_memory_llm_clients_cache",
+        ):
+            if hasattr(litellm_module, attr):
+                try:
+                    val = getattr(litellm_module, attr)
+                    if hasattr(val, "clear") and callable(val.clear):
+                        val.clear()
+                    else:
+                        setattr(litellm_module, attr, None)
+                except Exception:
+                    pass
+
+        # litellm.llms.custom_httpx.http_handler holds class-level shared
+        # clients keyed by config. Best-effort: clear those caches too.
+        try:
+            from litellm.llms.custom_httpx import http_handler as _hh
+
+            for attr in ("_DEFAULT_ASYNC_HANDLER", "_DEFAULT_HANDLER", "httpx_client"):
+                if hasattr(_hh, attr):
+                    try:
+                        setattr(_hh, attr, None)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        log_warn(
+            "Reset litellm HTTP client cache after timeout — next call will use a fresh connection pool"
+        )
+    except Exception as exc:  # pragma: no cover
+        log_debug(f"litellm client reset failed: {exc}")
+
+
 def _get_openai():
     """Lazy import of openai - only loads when AI features are used."""
     global _openai
@@ -425,6 +482,18 @@ class AgentAI:
         # Ensure messages are always included in the final params
         litellm_params["messages"] = messages
 
+        # CRITICAL: Pass an HTTP-level timeout to litellm so httpx itself
+        # aborts the underlying socket, not just the asyncio coroutine wrapper.
+        # Without this, asyncio.wait_for cancels the coroutine but leaves the
+        # underlying httpx connection in a half-closed state. Subsequent calls
+        # then grab the stale pooled connection and hang forever — a silent
+        # deadlock that py-spy reveals as 'all worker threads idle'.
+        # litellm forwards `timeout` to httpx as a request-level timeout.
+        _litellm_call_timeout = getattr(
+            self.agent.async_config, "llm_call_timeout", 120.0
+        )
+        litellm_params.setdefault("timeout", _litellm_call_timeout)
+
         if schema:
             # Convert Pydantic model to JSON schema format for LiteLLM
             # This workaround prevents "Object of type ModelMetaclass is not JSON serializable" error
@@ -472,15 +541,24 @@ class AgentAI:
 
                 async def _make_call():
                     timeout = getattr(self.agent.async_config, "llm_call_timeout", 120.0)
+                    # Ensure litellm/httpx itself enforces the timeout at the
+                    # socket level, so cancelled requests don't poison the
+                    # connection pool for subsequent calls.
+                    params.setdefault("timeout", timeout)
+                    # asyncio.wait_for is a safety net at 2x the litellm timeout
+                    # in case litellm fails to honor its own timeout.
                     try:
                         return await asyncio.wait_for(
                             litellm_module.acompletion(**params),
-                            timeout=timeout,
+                            timeout=timeout * 2,
                         )
                     except asyncio.TimeoutError:
                         model_name = params.get("model", "unknown")
+                        # Reset litellm's cached HTTP clients so the next call
+                        # gets a fresh connection pool.
+                        _reset_litellm_http_clients(litellm_module)
                         raise TimeoutError(
-                            f"LLM call to {model_name} timed out after {timeout}s"
+                            f"LLM call to {model_name} timed out after {timeout * 2}s (asyncio safety net)"
                         )
 
                 async def _call_with_fallbacks():
@@ -541,15 +619,22 @@ class AgentAI:
                     "litellm is not installed. Please install it with `pip install litellm`."
                 )
             timeout = getattr(self.agent.async_config, "llm_call_timeout", 120.0)
+            # litellm/httpx already gets `timeout` via litellm_params (set
+            # earlier). asyncio.wait_for is a safety net at 2x in case litellm
+            # fails to honor its own timeout.
             try:
                 return await asyncio.wait_for(
                     litellm_module.acompletion(**litellm_params),
-                    timeout=timeout,
+                    timeout=timeout * 2,
                 )
             except asyncio.TimeoutError:
                 model_name = litellm_params.get("model", "unknown")
+                # Reset litellm's cached HTTP clients so the next call gets
+                # a fresh connection pool — the previous client is likely
+                # holding a stuck connection that will hang forever.
+                _reset_litellm_http_clients(litellm_module)
                 raise TimeoutError(
-                    f"LLM call to {model_name} timed out after {timeout}s"
+                    f"LLM call to {model_name} timed out after {timeout * 2}s (asyncio safety net)"
                 )
 
         async def _execute_with_fallbacks():
