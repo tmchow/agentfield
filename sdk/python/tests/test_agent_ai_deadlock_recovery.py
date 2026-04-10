@@ -599,7 +599,10 @@ def test_reset_does_not_clobber_unrelated_module_attrs():
     fake_litellm.suppress_debug_info = True
     fake_litellm.set_verbose = False
     fake_litellm.api_key = "sk-keep-me"
-    sentinel_callback = lambda: None
+
+    def sentinel_callback():
+        return None
+
     fake_litellm.success_callback = sentinel_callback
 
     _reset_litellm_http_clients(fake_litellm)
@@ -689,8 +692,7 @@ async def test_tool_calling_loop_recovers_from_hang(monkeypatch, fast_timeout_ag
         "must apply the same fix."
     )
 
-    # Second invocation through the tool loop must succeed.
+    # Second invocation through the tool loop must succeed and not raise.
     never_set.set()
-    result = await ai.ai("hello again", tools=[])
-    # Result is a ToolCallResponse wrapping the underlying response.
+    await ai.ai("hello again", tools=[])
     assert call_count["n"] == 2
