@@ -32,7 +32,7 @@ jobs:
           echo "number=$PR" >> "$GITHUB_OUTPUT"
 
       - name: Comment coverage gate report
-        if: hashFiles('coverage/gate-report.md') != ''
+        if: steps.pr.outputs.number != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           number: ${{ steps.pr.outputs.number }}
@@ -40,7 +40,7 @@ jobs:
           path: coverage/gate-report.md
 
       - name: Comment patch coverage report
-        if: hashFiles('coverage/patch-gate-report.md') != ''
+        if: steps.pr.outputs.number != '' && hashFiles('coverage/patch-gate-report.md') != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           number: ${{ steps.pr.outputs.number }}
