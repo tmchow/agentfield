@@ -1,6 +1,4 @@
 # TODO: source bug — see test_agent_stop_is_idempotent
-# TODO: source bug — see test_graceful_shutdown_cancels_in_flight_tasks_within_deadline
-# TODO: source bug — see test_graceful_shutdown_force_cancels_tasks_after_timeout
 
 import asyncio
 import os
@@ -137,12 +135,6 @@ async def test_graceful_shutdown_cancels_in_flight_tasks_within_deadline(monkeyp
     with pytest.raises(ExitCalled):
         await server._graceful_shutdown(timeout_seconds=0)
 
-    # if any(not task.done() for task in tasks):
-    #     for task in tasks:
-    #         task.cancel()
-    #     await asyncio.gather(*tasks, return_exceptions=True)
-    #     pytest.skip("source bug: graceful shutdown does not track or cancel in-flight tasks")
-
     assert all(task.done() for task in tasks)
 
 
@@ -162,10 +154,5 @@ async def test_graceful_shutdown_force_cancels_tasks_after_timeout(monkeypatch):
 
     with pytest.raises(ExitCalled):
         await server._graceful_shutdown(timeout_seconds=0)
-
-    # if not task.done():
-    #     task.cancel()
-    #     await asyncio.gather(task, return_exceptions=True)
-    #     pytest.skip("source bug: graceful shutdown does not enforce timeout-based task cancellation")
 
     assert task.cancelled()

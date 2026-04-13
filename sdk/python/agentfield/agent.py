@@ -1725,13 +1725,6 @@ class Agent(FastAPI):
                 
                 execution_id_header = request.headers.get("X-Execution-ID")
                 if execution_id_header and self.agentfield_server:
-                    # task = asyncio.create_task(
-                    #     self._execute_async_with_callback(
-                    #         reasoner_coro=run_reasoner,
-                    #         execution_id=execution_id_header,
-                    #         reasoner_name=reasoner_id,
-                    #     )
-                    # )
                     task = _track_in_flight_task(
                         asyncio.create_task(
                             self._execute_async_with_callback(
@@ -1752,7 +1745,6 @@ class Agent(FastAPI):
                         },
                     )
 
-                # return await run_reasoner()
                 task = _track_in_flight_task(asyncio.create_task(run_reasoner()))
                 return await task
 
