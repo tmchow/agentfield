@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 <!-- changelog:entries -->
 
+## [0.1.67-rc.2] - 2026-04-13
+
+
+### Chores
+
+- Chore(deps): bump next
+
+Bumps the npm_and_yarn group with 1 update in the /examples/python_agent_nodes/rag_evaluation/ui directory: [next](https://github.com/vercel/next.js).
+
+
+Updates `next` from 15.5.14 to 15.5.15
+- [Release notes](https://github.com/vercel/next.js/releases)
+- [Changelog](https://github.com/vercel/next.js/blob/canary/release.js)
+- [Commits](https://github.com/vercel/next.js/compare/v15.5.14...v15.5.15)
+
+---
+updated-dependencies:
+- dependency-name: next
+  dependency-version: 15.5.15
+  dependency-type: direct:production
+  dependency-group: npm_and_yarn
+...
+
+Signed-off-by: dependabot[bot] <support@github.com> (df44b0f)
+
+
+
+### Other
+
+- Remove python 3.9 from test matrix to align with sdk requirements (e876c5a)
+
+
+
+### Testing
+
+- Test: implement exhaustive coverage for AgentFieldLogger and modernize python requirements (b0a42c2)
+
+- Test: add logger coverage (ac41cf1)
+
 ## [0.1.67-rc.1] - 2026-04-11
 
 
